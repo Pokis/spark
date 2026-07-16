@@ -1,0 +1,8 @@
+HSPLcom/sparkhabits/app/MainActivity;
+HSPLcom/sparkhabits/app/MainApplication;
+HSPLcom/facebook/react/ReactActivity;
+HSPLcom/facebook/react/ReactActivityDelegate;
+HSPLexpo/modules/ReactActivityDelegateWrapper;
+HSPLexpo/modules/kotlin/ExpoModulesHelper;
+HSPLcom/reactnativeandroidwidget/RNWidgetProvider;
+

@@ -34,7 +34,7 @@ indexes, Terraform, and release documentation.
 Validation snapshot on **2026-07-16**:
 
 - workspace TypeScript checks passed;
-- 54 automated tests passed: 25 mobile, 10 domain, 18 API, and 1 admin;
+- 63 automated tests passed: 34 mobile, 10 domain, 18 API, and 1 admin;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
 - Expo Doctor passed 20/20 checks;
 - the release checker correctly blocks publication while privacy placeholders remain;
@@ -69,7 +69,8 @@ local/cloud data boundary, monetization choice, and remaining native-QA caveat i
 - **Private by default.** Core data remains local and an account is optional.
 - **Accessible and sensory-aware.** Reduced motion, high contrast, larger text, haptic controls,
   dark mode, labels, and touch targets are built into the design.
-- **Easy to leave.** Users can export a complete JSON backup or portable CSV and restore JSON later.
+- **Easy to leave.** Users can export JSON, password-encrypted backup, or portable CSV files and
+  restore validated backups later.
 
 Spark is a wellness and productivity tool. It does not diagnose, treat, or replace professional
 care for ADHD or any other condition.
@@ -82,6 +83,8 @@ care for ADHD or any other condition.
 - Today recommendations based on schedule, capacity, available time, context, and recent activity;
 - compact remembered check-ins, Same as yesterday, time-of-day context memory, Pick for me,
   a one-action Rescue my day mode, quiet return cards, and neutral deferrals;
+- Simple mode, contextual Help me now, a no-grade weekly reset, tomorrow context/tiny planning,
+  and a per-habit friction toolkit;
 - tiny, default, and stretch habit variants;
 - daily, weekday, weekly-frequency, interval, and flexible schedules;
 - interval-aware habit pause history, archive, detailed history/correction, completion tags,
@@ -94,17 +97,27 @@ care for ADHD or any other condition.
 - restart-safe focus/body-double timer with parked interruptions, prefilled two-minute launches,
   optional launch countdown, local offline soundscapes, transition capture, companions, and
   planned-versus-actual feedback;
+- explicit focus/departure calendar export without calendar reads, Departure mode with a real
+  buffer, and a Focus home-screen widget with pause/resume controls;
 - editable/template-based routines with reorder, duplicate, archive/restore, skip, tiny mode,
   pause/resume after restart, finish estimates, and habit/focus links;
 - Journey summaries, weekly reflection, per-habit calendars, locally derived/hideable supportive
   observations, and materialized long-term progress views;
 - configurable theme, high contrast, text scale, reduced motion, and haptics;
+- a one-action sensory Quiet now switch, optional device-authentication app lock, sensitive
+  app-preview protection, and notification lock-screen privacy;
 - occurrence-aware local notifications with windows, configurable snooze, Quiet today, preview,
   caps, and optional ignored-reminder quieting;
 - encrypted local SQLite in native builds;
 - validated/versioned JSON backup, every-version migrations, bounded migration/restore safety
   copies, integrity reporting, restore, and portable CSV export;
-- explicit-confirmation Android Today widget and a Quick Capture widget;
+- password/recovery-code encrypted backups and bounded automatic backups to one user-selected
+  Android folder;
+- deliberate selected-win image/text sharing and neutral one-week personal experiments;
+- explicit-confirmation Android Today widget, Quick Capture widget, Focus widget, and four safe
+  launcher shortcuts;
+- bundled language selection for 15 languages, including Lithuanian, with English fallback;
+- privacy-safe content-redacted diagnostics and an Android startup Baseline Profile;
 - privacy policy and data-boundary screens;
 - premium supporter themes, badge control, companions, celebration styles, offline soundscapes,
   and icon treatments.
@@ -175,8 +188,12 @@ More detail: [architecture.md](./docs/architecture.md).
 | Focus sessions and parked thoughts | encrypted device database | No | No |
 | Routines and quick capture | encrypted device database | No | No |
 | Capacity and accessibility settings | encrypted device database | No | No |
+| Weekly plans, departure plans, and personal experiments | encrypted device database | No | No |
 | Local notification schedule | device operating system | No | No |
-| JSON backup | location chosen by the user | No | No |
+| JSON or encrypted backup | location chosen by the user | No | No |
+| Generated backup recovery code | device secure storage | No | No |
+| Selected progress-card image | temporary device cache until system sharing finishes | No | No |
+| Calendar event draft | system calendar UI only after an explicit tap | No | No |
 | Anonymous Firebase UID | Firebase Auth/Firestore after cloud use | Yes | Yes |
 | Support messages | Firestore | Yes | Authorized support/admin only |
 | App version/platform/last cloud use | Firestore | Yes | Authorized admin only |
@@ -346,17 +363,22 @@ Official background:
 
 The first native build downloads Gradle and Maven dependencies and can take several minutes.
 
-### Add the Android widget
+### Add the Android widgets and shortcuts
 
 After a native build is installed:
 
 1. long-press an empty area of the Android home screen;
 2. choose **Widgets**;
-3. find **Spark Today**;
-4. drag it to the home screen;
-5. tap its tiny action and confirm Spark records the completion.
+3. find **Spark Today**, **Spark Quick Capture**, or **Spark Focus**;
+4. drag the desired widget to the home screen;
+5. confirm Today requires explicit logging, Quick Capture opens the minimal form, and Focus
+   reflects the persisted timer and opens pause/resume actions.
 
-Widget layout and refresh timing vary by launcher, so test Pixel and Samsung launchers manually.
+Long-press the Spark launcher icon to test **Quick capture**, **2-minute focus**,
+**Rescue my day**, and **Resume routine**.
+
+Widget layout, refresh timing, and shortcut presentation vary by launcher, so test Pixel and
+Samsung launchers manually.
 
 ## Environment configuration
 

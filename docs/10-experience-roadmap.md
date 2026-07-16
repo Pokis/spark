@@ -18,6 +18,35 @@ Completion summary:
   database migration coverage, bounded safety copies, integrity checks, and local drafts.
 - Ethical supporter additions: **implemented** as cosmetics/comfort; all core executive-function
   support remains free.
+- Subsequent assistive expansion: **implemented** in code—Simple mode, Help me now, weekly reset,
+  friction planning, departure mode, app lock/privacy controls, encrypted folder backups,
+  launcher shortcuts, privacy-safe diagnostics, popular-language support including Lithuanian,
+  deliberate progress cards, explicit calendar export, local personal experiments, and an
+  Android focus widget.
+
+## Subsequent assistive expansion
+
+The next implementation pass added another local-first layer without changing Spark’s product
+boundary:
+
+| Area | Implemented approach |
+| --- | --- |
+| Lower cognitive load | Simple mode limits Today to one action and keeps only Quick Capture, Focus, Help, and an active routine close by. |
+| In-the-moment support | Help me now routes “cannot start,” overwhelm, drifting, remembering, departure, and sensory overload to one relevant action. |
+| Weekly planning | Weekly reset stores a short reflection, up to three visible habits, tomorrow context, and a tiny action without missed-day scoring. |
+| Friction reduction | Habits can store environment, materials, first contact, obstacle, fallback, and a future-self note. |
+| Time blindness | Departure mode works backward from a leave time using a buffer and routine estimate. |
+| Privacy | Optional device-authentication lock, recent-app protection, screenshot protection on Android, and three notification-privacy levels. |
+| Recovery | Password/recovery-code AES-256-GCM backups and bounded automatic Android folder backups. |
+| Fast entry | Four launcher shortcuts plus a timestamp-derived Focus widget with pause/resume controls. |
+| Self-knowledge | User-created one-week experiments compare local before/during counts neutrally. |
+| Safe sharing | Only user-selected wins become an image/text share; no account connection or automatic reports. |
+| Calendar | Spark can hand one focus/departure block to the system calendar without reading calendars. |
+| Localization | Bundled selection for 15 languages, including English and Lithuanian; untranslated legacy strings fall back to English. |
+| Diagnostics/performance | Content-redacted local diagnostics and a packaged Android startup Baseline Profile. |
+
+All rows above have zero Spark cloud runtime cost. Native integrations still require the
+real-device checks listed in the feature catalog and testing guide.
 
 This was the product backlog after the release-readiness review. It favored improvements that
 make Spark calmer, faster, clearer, and more useful without adding a server, sensitive

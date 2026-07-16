@@ -10,7 +10,12 @@ This is an engineering and product checklist, not legal advice.
 | Completion history and capacity | encrypted device database | never | no |
 | Focus titles and interruptions | encrypted device database | never | no |
 | Capture text and routines | encrypted device database | never | no |
-| JSON backup | user-chosen file destination | user places it there | no |
+| Weekly plans, departure plans, personal experiments, friction notes | encrypted device database | never | no |
+| JSON or encrypted backup | user-chosen file destination | user places it there | no |
+| Automatic encrypted backup | one Android folder explicitly granted by user | user enables it; Spark never receives it | no |
+| Backup recovery code | operating-system secure storage and any copy made by user | never | no |
+| Selected progress card | temporary device cache/system share sheet | user explicitly shares it | no |
+| Focus/departure calendar draft | system create-event UI | user explicitly opens it | no |
 | Random support identity | Firebase Auth | support/purchase used | UID |
 | Support text | Firestore | user sends it | yes |
 | App/platform version | Firestore | support/purchase used | yes |
@@ -30,6 +35,10 @@ Do not add habit, focus, capacity, or capture fields to:
 - admin search
 
 Treat free-form text as sensitive even if it is not formally health data.
+
+Do not add automatic progress reporting, calendar reads/synchronization, experimentation
+assignment, backup uploads, or recipient/account graphs. The implemented calendar bridge creates
+one user-reviewed event and the progress card contains only checked wins.
 
 ## Account and deletion behavior
 
@@ -72,6 +81,11 @@ Answer based on the released binary, not this plan. Likely disclosures when clou
 State that local habit and health-related content is not collected by the developer. Verify every
 third-party SDK's behavior and current Play definitions.
 
+The release manifest intentionally removes `READ_CALENDAR`, `WRITE_CALENDAR`, broad external
+storage, location, contacts, microphone/recording, system-overlay, and accessibility-service
+permissions. The system event-creation UI and Storage Access Framework folder picker do not
+justify declaring full calendar or broad storage collection.
+
 ## Health policy positioning
 
 Spark is designed for executive-function challenges associated with ADHD, which may place it
@@ -99,7 +113,8 @@ Use the current policy text:
 ## Notifications
 
 Spark asks after an explicit settings choice, creates a low-importance named channel, remains
-quiet by default, and caps scheduled habits. It does not request exact-alarm permission.
+quiet by default, supports public/private/secret lock-screen visibility, uses no-vibration
+channels during Quiet now, and caps scheduled habits. It does not request exact-alarm permission.
 
 Do not use push notifications for engagement campaigns. If support-reply push is added, include
 only “You have a support reply,” never the message text.

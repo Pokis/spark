@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
@@ -30,6 +31,8 @@ import { clearDiagnostics, shareDiagnostics } from '../src/services/diagnostics'
 import { requestNotificationPermission } from '../src/services/notifications';
 import { useSpark } from '../src/state/SparkProvider';
 import { useTheme } from '../src/theme';
+import { supportedLocales } from '../src/i18n';
+import { endOfToday, isQuietNow } from '../src/lib/sensory';
 
 export default function SettingsScreen() {
   const spark = useSpark();
@@ -77,6 +80,28 @@ export default function SettingsScreen() {
       return;
     }
     await spark.updateSetting('notificationsEnabled', true);
+  }
+
+  async function toggleAppLock(value: boolean) {
+    if (!value) {
+      await spark.updateSetting('appLockEnabled', false);
+      return;
+    }
+    const hardware = await LocalAuthentication.hasHardwareAsync();
+    const enrolled = await LocalAuthentication.isEnrolledAsync();
+    if (!hardware || !enrolled) {
+      Alert.alert(
+        'Set up device authentication first',
+        'Add a device PIN, fingerprint, or supported face unlock in Android or iPhone settings.'
+      );
+      return;
+    }
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Turn on Spark app lock',
+      disableDeviceFallback: false,
+      fallbackLabel: 'Use device passcode'
+    });
+    if (result.success) await spark.updateSetting('appLockEnabled', true);
   }
 
   async function restore() {
@@ -179,7 +204,7 @@ export default function SettingsScreen() {
 
   async function previewFeedback() {
     setPreview(true);
-    if (!spark.settings.hapticsEnabled) return;
+    if (!spark.settings.hapticsEnabled || isQuietNow(spark.settings)) return;
     try {
       if (spark.settings.sensoryProfile === 'calm') {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -211,6 +236,24 @@ export default function SettingsScreen() {
       </Card>
 
       <Card>
+        <SectionHeading>Language</SectionHeading>
+        <Muted>
+          Navigation and the main support tools use your chosen language. Untranslated legacy
+          copy safely falls back to English.
+        </Muted>
+        <View style={styles.choiceRow}>
+          {supportedLocales.map((locale) => (
+            <Chip
+              key={locale.code}
+              label={locale.label}
+              selected={spark.settings.language === locale.code}
+              onPress={() => void spark.updateSetting('language', locale.code)}
+            />
+          ))}
+        </View>
+      </Card>
+
+      <Card>
         <SectionHeading>Sensory comfort</SectionHeading>
         <Muted>Choose how much celebration Spark uses. All modes keep rewards predictable.</Muted>
         <View style={styles.choiceRow}>
@@ -228,6 +271,14 @@ export default function SettingsScreen() {
           description="A short tactile response after a win."
           value={spark.settings.hapticsEnabled}
           onValueChange={(value) => void spark.updateSetting('hapticsEnabled', value)}
+        />
+        <SettingRow
+          title={isQuietNow(spark.settings) ? 'Quiet now is on' : 'Quiet now for today'}
+          description="One switch disables haptics, soundscapes, animations, and reward celebrations until tomorrow."
+          value={isQuietNow(spark.settings)}
+          onValueChange={(value) =>
+            void spark.updateSetting('quietUntil', value ? endOfToday() : null)
+          }
         />
         <SettingRow
           title="Reduce motion"
@@ -250,6 +301,20 @@ export default function SettingsScreen() {
 
       <Card>
         <SectionHeading>Cognitive load</SectionHeading>
+        <SettingRow
+          title="Simple mode"
+          description="Keep Today to one action plus Quick Capture, Focus, and a running routine; hide Journey from the tab bar."
+          value={spark.settings.simpleMode}
+          onValueChange={(value) => void spark.updateSetting('simpleMode', value)}
+        />
+        <SettingRow
+          title="Contextual help prompts"
+          description="Show a calm Help me now doorway when starting or choosing feels difficult."
+          value={spark.settings.progressiveHelpEnabled}
+          onValueChange={(value) =>
+            void spark.updateSetting('progressiveHelpEnabled', value)
+          }
+        />
         <SettingRow
           title="Remember context by time of day"
           description="Stores morning, afternoon, and evening context preferences only on this device."
@@ -315,6 +380,23 @@ export default function SettingsScreen() {
           value={spark.settings.notificationsEnabled}
           onValueChange={(value) => void toggleNotifications(value)}
         />
+        <Muted>Lock-screen privacy</Muted>
+        <View style={styles.choiceRow}>
+          {(
+            [
+              ['full', 'Show habit'],
+              ['private', 'Generic text'],
+              ['secret', 'Hide on lock screen']
+            ] as const
+          ).map(([value, label]) => (
+            <Chip
+              key={value}
+              label={label}
+              selected={spark.settings.notificationPrivacy === value}
+              onPress={() => void spark.updateSetting('notificationPrivacy', value)}
+            />
+          ))}
+        </View>
         <SettingRow
           title="Quiet repeatedly ignored reminders"
           description="After three unanswered invitations, pause that habit’s reminders for three days. Habit progress is unchanged."
@@ -357,6 +439,10 @@ export default function SettingsScreen() {
           Treat the file as private because its contents are not separately encrypted.
         </Muted>
         <Button
+          label="Encrypted backups and automatic folder"
+          onPress={() => router.push('/encrypted-backups')}
+        />
+        <Button
           label="Export local backup"
           variant="secondary"
           icon={<Ionicons name="share-outline" size={19} color={theme.text} />}
@@ -386,6 +472,56 @@ export default function SettingsScreen() {
         {safetyCopies ? (
           <Button label="Delete automatic safety copies" variant="ghost" onPress={clearSafetyCopies} />
         ) : null}
+      </Card>
+
+      <Card>
+        <SectionHeading>On-device privacy</SectionHeading>
+        <SettingRow
+          title="Lock Spark"
+          description="Require device authentication after Spark has been in the background."
+          value={spark.settings.appLockEnabled}
+          onValueChange={(value) => void toggleAppLock(value)}
+        />
+        {spark.settings.appLockEnabled ? (
+          <>
+            <Muted>Lock after being away</Muted>
+            <View style={styles.choiceRow}>
+              {[0, 1, 5, 15, 60].map((minutes) => (
+                <Chip
+                  key={minutes}
+                  label={minutes === 0 ? 'Immediately' : `${minutes} min`}
+                  selected={spark.settings.appLockTimeoutMinutes === minutes}
+                  onPress={() =>
+                    void spark.updateSetting('appLockTimeoutMinutes', minutes)
+                  }
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
+        <SettingRow
+          title="Hide sensitive app preview"
+          description="Android also prevents screenshots while enabled; iPhone protects the app-switcher preview."
+          value={spark.settings.hideSensitiveAppPreview}
+          onValueChange={(value) =>
+            void spark.updateSetting('hideSensitiveAppPreview', value)
+          }
+        />
+      </Card>
+
+      <Card>
+        <SectionHeading>More helpful tools</SectionHeading>
+        <SettingRow title="Help me now" onPress={() => router.push('/help')} />
+        <SettingRow title="Weekly reset" onPress={() => router.push('/weekly-reset')} />
+        <SettingRow title="Departure mode" onPress={() => router.push('/departure')} />
+        <SettingRow
+          title="Personal experiments"
+          onPress={() => router.push('/experiments')}
+        />
+        <SettingRow
+          title="Share selected wins"
+          onPress={() => router.push('/share-progress')}
+        />
       </Card>
 
       <Card>
@@ -534,6 +670,10 @@ export default function SettingsScreen() {
       <Card>
         <SectionHeading>Trust</SectionHeading>
         <SettingRow title="Privacy and data map" onPress={() => router.push('/privacy')} />
+        <SettingRow
+          title="Open diagnostics and self-check"
+          onPress={() => router.push('/diagnostics')}
+        />
         <Muted>{storageStatus}</Muted>
         <Button
           label="Export privacy-safe diagnostics"
@@ -569,7 +709,7 @@ export default function SettingsScreen() {
       </Card>
     </Screen>
     <SparkBurst
-      visible={preview}
+      visible={preview && !isQuietNow(spark.settings)}
       title="Preview win"
       reward={2}
       reducedMotion={spark.settings.reducedMotion}

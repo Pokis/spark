@@ -53,6 +53,20 @@ Build shared packages, API, dashboard, and the Android JavaScript bundle:
 npm.cmd run build
 ```
 
+Validate that native generation includes the shortcuts, three widgets, blocked calendar
+permissions, and Baseline Profile:
+
+```powershell
+Set-Location apps/mobile
+npx.cmd expo prebuild --platform android --no-install
+Select-String -Path android/app/src/main/AndroidManifest.xml -Pattern "SparkFocus|android.app.shortcuts|READ_CALENDAR|WRITE_CALENDAR"
+Test-Path android/app/src/main/baseline-prof.txt
+Set-Location ../..
+```
+
+`READ_CALENDAR` and `WRITE_CALENDAR` should appear only as `tools:node="remove"`. The calendar
+bridge must use system UI without broad calendar access.
+
 ## Android end-to-end tests
 
 Install [Maestro](https://maestro.mobile.dev/) and a Spark native development build. The release
@@ -97,6 +111,39 @@ timing vary.
 17. Test exact/morning/afternoon/evening reminders, configurable snooze, Log tiny, and Quiet today.
 18. Enable each local soundscape, change volume, lock/unlock, and confirm Spark never requests the
     microphone and does not keep background playback alive.
+19. Turn on Simple mode and verify Today shows one action plus Quick Capture, Focus, Help, and only
+    the currently running routine; turn it off and verify Journey returns without data loss.
+20. Use Help me now for all six barriers and verify every action is local, reversible, and
+    pressure-free.
+21. Complete Weekly reset, advance the device date, and verify the chosen context/tiny action is
+    presented first without marking other habits missed.
+22. Add every friction-toolkit field, restart Spark, and verify the expanded Today card shows only
+    the useful first/setup/fallback note.
+23. Create a Departure plan, add a buffer/routine, and confirm the calculated runway. Export it to
+    the calendar and verify Spark never requests calendar permission or lists existing events.
+24. Export an idle Focus block to the calendar and verify the system create-event screen is the
+    only calendar interaction.
+25. Turn on Quiet now while Focus sound is playing. Verify sound, haptics, companion/navigation
+    motion, celebrations, reward overlay, and reminder vibration stop until tomorrow.
+26. Test notification visibility in all three modes with the phone locked.
+27. Turn on app lock, background past each timeout, and test fingerprint/face and device
+    credential fallback. Remove enrolled authentication and verify Spark cannot trap the user.
+28. Enable sensitive-preview protection. Verify Android recent-app preview and screenshots are
+    protected; verify iOS app-switcher protection separately before an iPhone release.
+29. Create a password-encrypted backup, alter one byte, and verify restore fails. Restore the
+    original with the correct password and verify wrong passwords never replace data.
+30. Configure automatic folder backup, verify a daily encrypted file appears, run Back up now,
+    and verify only the seven newest Spark automatic files are retained.
+31. Select a few wins and share PNG/text. Verify unselected wins never appear and no recipient or
+    account is remembered.
+32. Run each personal experiment, verify the tiny/reminder behavior is applied only during its
+    date window, and check that the comparison language stays neutral.
+33. Add the Focus widget, start/pause/resume/finish a session from app and widget, force-stop the
+    process, and verify timestamp-derived state remains correct. Test the four launcher shortcuts.
+34. Switch through every bundled language, including Lithuanian and an RTL Arabic device. Verify
+    navigation never becomes blank and legacy copy falls back to English.
+35. Export diagnostics and inspect the JSON: no habit, focus, routine, Capture, weekly-reflection,
+    departure, experiment-note, display-name, file-path, or content-URI text should appear.
 
 ## Cloud security scenarios
 
@@ -144,8 +191,13 @@ Check:
 - keyboard navigation in admin dashboard
 - visible browser focus
 - widget accessibility label
+- focus-widget pause/resume semantics
+- app-lock screen reading order and unlock action
+- progress-card selection as checkboxes
+- language changes, Lithuanian copy, and RTL device layout
 
 Automated assertions also cover rapid-tap guarding, direct tiny/focus/deferral actions, backup
 migration from every released schema, routine recovery data, reminder windows, timezone/DST
-behavior, supportive observations, labelled completion actions, settings, and non-judgmental
+behavior, supportive observations, personal-experiment comparison, focus-widget timestamp math,
+Lithuanian localization/fallback, labelled completion actions, settings, and non-judgmental
 capacity language. They supplement rather than replace TalkBack and large-text device testing.

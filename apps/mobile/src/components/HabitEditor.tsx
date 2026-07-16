@@ -80,6 +80,12 @@ export function HabitEditor({
   const [title, setTitle] = useState(habit?.title ?? initialTitle ?? '');
   const [reason, setReason] = useState(habit?.reason ?? '');
   const [cue, setCue] = useState(habit?.cue ?? '');
+  const [environment, setEnvironment] = useState(habit?.friction?.environment ?? '');
+  const [materials, setMaterials] = useState(habit?.friction?.materials ?? '');
+  const [firstStep, setFirstStep] = useState(habit?.friction?.firstStep ?? '');
+  const [obstacle, setObstacle] = useState(habit?.friction?.obstacle ?? '');
+  const [fallback, setFallback] = useState(habit?.friction?.fallback ?? '');
+  const [futureNote, setFutureNote] = useState(habit?.friction?.futureNote ?? '');
   const [icon, setIcon] = useState(habit?.icon ?? '✨');
   const [color, setColor] = useState(habit?.color ?? habitColors[0]);
   const [tiny, setTiny] = useState(variantByKind(habit, 'tiny')?.label ?? 'Touch the first step');
@@ -128,6 +134,12 @@ export function HabitEditor({
       title,
       reason,
       cue,
+      environment,
+      materials,
+      firstStep,
+      obstacle,
+      fallback,
+      futureNote,
       icon,
       color,
       tiny,
@@ -151,6 +163,12 @@ export function HabitEditor({
       setTitle(draft.title);
       setReason(draft.reason);
       setCue(draft.cue);
+      setEnvironment(draft.environment ?? '');
+      setMaterials(draft.materials ?? '');
+      setFirstStep(draft.firstStep ?? '');
+      setObstacle(draft.obstacle ?? '');
+      setFallback(draft.fallback ?? '');
+      setFutureNote(draft.futureNote ?? '');
       setIcon(draft.icon);
       setColor(draft.color);
       setTiny(draft.tiny);
@@ -211,6 +229,14 @@ export function HabitEditor({
       title: title.trim(),
       reason: reason.trim() || undefined,
       cue: cue.trim() || undefined,
+      friction: {
+        environment: environment.trim() || undefined,
+        materials: materials.trim() || undefined,
+        firstStep: firstStep.trim() || undefined,
+        obstacle: obstacle.trim() || undefined,
+        fallback: fallback.trim() || undefined,
+        futureNote: futureNote.trim() || undefined
+      },
       color,
       icon,
       variants: [
@@ -455,6 +481,58 @@ export function HabitEditor({
             />
           </View>
         </View>
+      </Card>
+
+      <Card>
+        <SectionHeading>Friction toolkit</SectionHeading>
+        <Muted>
+          Optional prompts for making the action easier before motivation is required. Spark
+          stores these locally and never turns them into a score.
+        </Muted>
+        <FormField
+          label="Environment setup"
+          hint="What can already be open, visible, charged, or placed nearby?"
+          placeholder="Put the book on the pillow"
+          value={environment}
+          onChangeText={setEnvironment}
+          maxLength={240}
+        />
+        <FormField
+          label="Materials to gather"
+          placeholder="Shoes, water, keys…"
+          value={materials}
+          onChangeText={setMaterials}
+          maxLength={240}
+        />
+        <FormField
+          label="Literal first physical step"
+          placeholder="Open the document"
+          value={firstStep}
+          onChangeText={setFirstStep}
+          maxLength={240}
+        />
+        <FormField
+          label="Likely obstacle"
+          placeholder="I may not know where to begin"
+          value={obstacle}
+          onChangeText={setObstacle}
+          maxLength={240}
+        />
+        <FormField
+          label="Fallback if that happens"
+          placeholder="Read only the first heading"
+          value={fallback}
+          onChangeText={setFallback}
+          maxLength={240}
+        />
+        <FormField
+          label="Note to future me"
+          placeholder="Last time, music made this easier"
+          value={futureNote}
+          onChangeText={setFutureNote}
+          maxLength={400}
+          multiline
+        />
       </Card>
 
       <Card>

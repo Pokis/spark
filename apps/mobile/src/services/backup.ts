@@ -1,13 +1,24 @@
 import type { AppSnapshot } from '../data/models';
 import { defaultSettings } from '../data/models';
 import { exportSnapshot, importSnapshot } from '../data/database';
+import { gcm } from '@noble/ciphers/aes.js';
+import { pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { sha256 } from '@noble/hashes/sha2';
+import { bytesToUtf8, utf8ToBytes } from '@noble/hashes/utils';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as SecureStore from 'expo-secure-store';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import { z } from 'zod';
 
 const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
 const MAX_RESTORE_SAFETY_COPIES = 3;
+const MAX_AUTOMATIC_BACKUPS = 7;
+const RECOVERY_CODE_KEY = 'spark.backup.recovery-code.v1';
+const ENCRYPTION_ITERATIONS = 150_000;
+const ENCRYPTED_BACKUP_FORMAT = 'spark.encrypted-backup.v1';
 
 const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoSchema = z.string().datetime({ offset: true });
@@ -49,6 +60,16 @@ const habitSchema = z.object({
   title: z.string().min(1).max(200),
   reason: z.string().max(1000).optional(),
   cue: z.string().max(1000).optional(),
+  friction: z
+    .object({
+      environment: z.string().max(1000).optional(),
+      materials: z.string().max(1000).optional(),
+      firstStep: z.string().max(1000).optional(),
+      obstacle: z.string().max(1000).optional(),
+      fallback: z.string().max(1000).optional(),
+      futureNote: z.string().max(1000).optional()
+    })
+    .optional(),
   color: z.string().min(1).max(40),
   icon: z.string().min(1).max(20),
   variants: z.array(variantSchema).min(1).max(10),
@@ -147,9 +168,32 @@ const checkInSchema = z.object({
 const currentSettingsSchema = z.object({
   onboardingComplete: z.boolean(),
   displayName: z.string().max(80),
+  language: z
+    .enum([
+      'system',
+      'en',
+      'es',
+      'pt-BR',
+      'fr',
+      'de',
+      'it',
+      'pl',
+      'uk',
+      'ru',
+      'lt',
+      'ja',
+      'ko',
+      'zh-Hans',
+      'hi',
+      'ar'
+    ])
+    .default(defaultSettings.language),
+  simpleMode: z.boolean().default(defaultSettings.simpleMode),
+  progressiveHelpEnabled: z.boolean().default(defaultSettings.progressiveHelpEnabled),
   reducedMotion: z.boolean(),
   hapticsEnabled: z.boolean(),
   sensoryProfile: z.enum(['calm', 'balanced', 'celebratory']),
+  quietUntil: isoSchema.nullable().default(defaultSettings.quietUntil),
   highContrast: z.boolean(),
   minimumViableDay: z.boolean(),
   rememberContextByTime: z.boolean().default(defaultSettings.rememberContextByTime),
@@ -183,6 +227,9 @@ const currentSettingsSchema = z.object({
     .enum(['classic', 'calm', 'midnight'])
     .default(defaultSettings.appIconStyle),
   notificationsEnabled: z.boolean(),
+  notificationPrivacy: z
+    .enum(['full', 'private', 'secret'])
+    .default(defaultSettings.notificationPrivacy),
   autoQuietReminders: z.boolean().default(defaultSettings.autoQuietReminders),
   notificationCap: z.number().int().min(0).max(8),
   reminderSnoozeMinutes: z
@@ -197,6 +244,27 @@ const currentSettingsSchema = z.object({
     .enum(['brown', 'pink', 'soft'])
     .default(defaultSettings.soundscapeKind),
   soundscapeVolume: z.number().min(0).max(1).default(defaultSettings.soundscapeVolume),
+  appLockEnabled: z.boolean().default(defaultSettings.appLockEnabled),
+  appLockTimeoutMinutes: z
+    .number()
+    .int()
+    .min(0)
+    .max(1440)
+    .default(defaultSettings.appLockTimeoutMinutes),
+  hideSensitiveAppPreview: z
+    .boolean()
+    .default(defaultSettings.hideSensitiveAppPreview),
+  automaticBackupEnabled: z
+    .boolean()
+    .default(defaultSettings.automaticBackupEnabled),
+  automaticBackupDirectoryUri: z
+    .string()
+    .max(4000)
+    .nullable()
+    .default(defaultSettings.automaticBackupDirectoryUri),
+  lastAutomaticBackupAt: isoSchema
+    .nullable()
+    .default(defaultSettings.lastAutomaticBackupAt),
   cloudSupportEnabled: z.boolean()
 });
 
@@ -235,7 +303,53 @@ const routineRunSchema = z.object({
   updatedAt: isoSchema
 });
 
+const weeklyPlanSchema = z.object({
+  id: z.string().min(1).max(160),
+  weekStart: dateKeySchema,
+  selectedHabitIds: z.array(z.string().min(1).max(160)).max(20),
+  reflection: z.string().max(4000),
+  tomorrowContext: z
+    .enum(['anywhere', 'home', 'work', 'outside', 'phone'])
+    .nullable(),
+  tomorrowTinyHabitId: z.string().max(160).nullable(),
+  createdAt: isoSchema
+});
+
+const departurePlanSchema = z.object({
+  id: z.string().min(1).max(160),
+  title: z.string().min(1).max(200),
+  targetAt: isoSchema,
+  bufferMinutes: z.number().int().min(0).max(1440),
+  routineId: z.string().max(160).nullable(),
+  status: z.enum(['planned', 'active', 'complete', 'cancelled']),
+  createdAt: isoSchema,
+  completedAt: isoSchema.nullable()
+});
+
+const personalExperimentSchema = z.object({
+  id: z.string().min(1).max(160),
+  kind: z.enum(['tiny_week', 'afternoon_reminder']),
+  habitId: z.string().min(1).max(160),
+  startedAt: isoSchema,
+  endsAt: isoSchema,
+  status: z.enum(['active', 'complete', 'stopped']),
+  baselineStart: dateKeySchema,
+  baselineEnd: dateKeySchema,
+  note: z.string().max(2000)
+});
+
 const currentSnapshotSchema = z.object({
+  schemaVersion: z.literal(4),
+  ...snapshotBody,
+  habitDeferrals: z.array(deferralSchema).max(10_000),
+  routineRuns: z.array(routineRunSchema).max(10_000),
+  weeklyPlans: z.array(weeklyPlanSchema).max(10_000),
+  departurePlans: z.array(departurePlanSchema).max(10_000),
+  personalExperiments: z.array(personalExperimentSchema).max(10_000),
+  settings: currentSettingsSchema
+});
+
+const versionThreeSnapshotSchema = z.object({
   schemaVersion: z.literal(3),
   ...snapshotBody,
   habitDeferrals: z.array(deferralSchema).max(10_000),
@@ -267,6 +381,172 @@ export interface BackupPreview {
   };
 }
 
+interface EncryptedBackupEnvelope {
+  format: typeof ENCRYPTED_BACKUP_FORMAT;
+  createdAt: string;
+  kdf: {
+    name: 'PBKDF2-SHA256';
+    iterations: number;
+    salt: string;
+  };
+  cipher: {
+    name: 'AES-256-GCM';
+    nonce: string;
+    ciphertext: string;
+  };
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunkSize = 16_384;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return globalThis.btoa(binary);
+}
+
+function base64ToBytes(value: string): Uint8Array {
+  const binary = globalThis.atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+function humanRecoveryCode(bytes: Uint8Array): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let value = '';
+  let accumulator = 0;
+  let bits = 0;
+  for (const byte of bytes) {
+    accumulator = (accumulator << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      bits -= 5;
+      value += alphabet[(accumulator >>> bits) & 31];
+    }
+  }
+  if (bits > 0) value += alphabet[(accumulator << (5 - bits)) & 31];
+  return value.match(/.{1,4}/g)?.join('-') ?? value;
+}
+
+export async function ensureBackupRecoveryCode(): Promise<string> {
+  const existing = await SecureStore.getItemAsync(RECOVERY_CODE_KEY);
+  if (existing) return existing;
+  const code = humanRecoveryCode(Crypto.getRandomBytes(20));
+  await SecureStore.setItemAsync(RECOVERY_CODE_KEY, code, {
+    keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
+  });
+  return code;
+}
+
+export async function getBackupRecoveryCode(): Promise<string | null> {
+  return SecureStore.getItemAsync(RECOVERY_CODE_KEY);
+}
+
+export async function rotateBackupRecoveryCode(): Promise<string> {
+  await SecureStore.deleteItemAsync(RECOVERY_CODE_KEY);
+  return ensureBackupRecoveryCode();
+}
+
+async function encryptSnapshot(
+  snapshot: AppSnapshot,
+  secret: string
+): Promise<EncryptedBackupEnvelope> {
+  if (secret.trim().length < 10) {
+    throw new Error('Use at least 10 characters, or use Spark’s generated recovery code.');
+  }
+  const salt = Crypto.getRandomBytes(16);
+  const nonce = Crypto.getRandomBytes(12);
+  const key = await pbkdf2Async(sha256, secret.trim(), salt, {
+    c: ENCRYPTION_ITERATIONS,
+    dkLen: 32,
+    asyncTick: 10
+  });
+  const createdAt = new Date().toISOString();
+  const authenticatedHeader = utf8ToBytes(
+    `${ENCRYPTED_BACKUP_FORMAT}|${createdAt}|${ENCRYPTION_ITERATIONS}`
+  );
+  const ciphertext = gcm(key, nonce, authenticatedHeader).encrypt(
+    utf8ToBytes(JSON.stringify(snapshot))
+  );
+  key.fill(0);
+  return {
+    format: ENCRYPTED_BACKUP_FORMAT,
+    createdAt,
+    kdf: {
+      name: 'PBKDF2-SHA256',
+      iterations: ENCRYPTION_ITERATIONS,
+      salt: bytesToBase64(salt)
+    },
+    cipher: {
+      name: 'AES-256-GCM',
+      nonce: bytesToBase64(nonce),
+      ciphertext: bytesToBase64(ciphertext)
+    }
+  };
+}
+
+async function decryptEnvelope(raw: string, secret: string): Promise<AppSnapshot> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('That file is not a Spark encrypted backup.');
+  }
+  const schema = z.object({
+    format: z.literal(ENCRYPTED_BACKUP_FORMAT),
+    createdAt: isoSchema,
+    kdf: z.object({
+      name: z.literal('PBKDF2-SHA256'),
+      iterations: z.number().int().min(50_000).max(1_000_000),
+      salt: z.string().min(16).max(200)
+    }),
+    cipher: z.object({
+      name: z.literal('AES-256-GCM'),
+      nonce: z.string().min(12).max(200),
+      ciphertext: z.string().min(24).max(MAX_BACKUP_BYTES * 2)
+    })
+  });
+  const envelope = schema.parse(parsed);
+  const key = await pbkdf2Async(
+    sha256,
+    secret.trim(),
+    base64ToBytes(envelope.kdf.salt),
+    {
+      c: envelope.kdf.iterations,
+      dkLen: 32,
+      asyncTick: 10
+    }
+  );
+  try {
+    const authenticatedHeader = utf8ToBytes(
+      `${ENCRYPTED_BACKUP_FORMAT}|${envelope.createdAt}|${envelope.kdf.iterations}`
+    );
+    const plaintext = gcm(
+      key,
+      base64ToBytes(envelope.cipher.nonce),
+      authenticatedHeader
+    ).decrypt(base64ToBytes(envelope.cipher.ciphertext));
+    return parseBackupText(bytesToUtf8(plaintext));
+  } catch {
+    throw new Error('The password or recovery code did not unlock this backup.');
+  } finally {
+    key.fill(0);
+  }
+}
+
+export async function createEncryptedBackupText(
+  snapshot: AppSnapshot,
+  secret: string
+): Promise<string> {
+  return JSON.stringify(await encryptSnapshot(snapshot, secret));
+}
+
+export async function parseEncryptedBackupText(
+  raw: string,
+  secret: string
+): Promise<AppSnapshot> {
+  return decryptEnvelope(raw, secret);
+}
+
 function assertUniqueIds(label: string, values: { id: string }[]): void {
   const ids = new Set<string>();
   for (const value of values) {
@@ -281,6 +561,9 @@ function validateReferences(snapshot: AppSnapshot): void {
   assertUniqueIds('focus session', snapshot.focusSessions);
   assertUniqueIds('capture item', snapshot.captureItems);
   assertUniqueIds('routine', snapshot.routines);
+  assertUniqueIds('weekly plan', snapshot.weeklyPlans);
+  assertUniqueIds('departure plan', snapshot.departurePlans);
+  assertUniqueIds('personal experiment', snapshot.personalExperiments);
 
   const habitIds = new Set(snapshot.habits.map((habit) => habit.id));
   const variantIds = new Set<string>();
@@ -335,6 +618,33 @@ function validateReferences(snapshot: AppSnapshot): void {
       throw new Error('A saved routine position refers to a missing step.');
     }
   }
+  for (const plan of snapshot.weeklyPlans) {
+    if (plan.selectedHabitIds.some((habitId) => !habitIds.has(habitId))) {
+      throw new Error('A weekly plan refers to a habit that is missing from the backup.');
+    }
+    if (plan.tomorrowTinyHabitId && !habitIds.has(plan.tomorrowTinyHabitId)) {
+      throw new Error('A weekly plan refers to a missing tiny habit.');
+    }
+  }
+  for (const plan of snapshot.departurePlans) {
+    if (plan.routineId && !routineIds.has(plan.routineId)) {
+      throw new Error('A departure plan refers to a routine that is missing from the backup.');
+    }
+    if (plan.completedAt && plan.completedAt < plan.createdAt) {
+      throw new Error('A departure plan has reversed completion dates.');
+    }
+  }
+  for (const experiment of snapshot.personalExperiments) {
+    if (!habitIds.has(experiment.habitId)) {
+      throw new Error('A personal experiment refers to a habit that is missing from the backup.');
+    }
+    if (
+      experiment.endsAt <= experiment.startedAt ||
+      experiment.baselineEnd < experiment.baselineStart
+    ) {
+      throw new Error('A personal experiment has reversed dates.');
+    }
+  }
   for (const completion of snapshot.completions) {
     if (!habitIds.has(completion.habitId)) {
       throw new Error('A completion refers to a habit that is missing from the backup.');
@@ -368,15 +678,31 @@ export function parseBackupText(raw: string): AppSnapshot {
       ? (value as { schemaVersion?: unknown }).schemaVersion
       : undefined;
   let snapshot: AppSnapshot;
-  if (version === 3) {
+  if (version === 4) {
     snapshot = currentSnapshotSchema.parse(value) as AppSnapshot;
+  } else if (version === 3) {
+    const legacy = versionThreeSnapshotSchema.parse(value);
+    snapshot = {
+      ...legacy,
+      schemaVersion: 4,
+      weeklyPlans: [],
+      departurePlans: [],
+      personalExperiments: [],
+      settings: {
+        ...defaultSettings,
+        ...legacy.settings
+      }
+    };
   } else if (version === 2) {
     const legacy = versionTwoSnapshotSchema.parse(value);
     snapshot = {
       ...legacy,
-      schemaVersion: 3,
+      schemaVersion: 4,
       habitDeferrals: [],
       routineRuns: [],
+      weeklyPlans: [],
+      departurePlans: [],
+      personalExperiments: [],
       settings: {
         ...defaultSettings,
         ...legacy.settings
@@ -387,7 +713,7 @@ export function parseBackupText(raw: string): AppSnapshot {
     const exportedDate = legacy.exportedAt.slice(0, 10);
     snapshot = {
       ...legacy,
-      schemaVersion: 3,
+      schemaVersion: 4,
       habits: legacy.habits.map((habit) => ({
         ...habit,
         pausedAt:
@@ -399,7 +725,10 @@ export function parseBackupText(raw: string): AppSnapshot {
         ...legacy.settings
       },
       habitDeferrals: [],
-      routineRuns: []
+      routineRuns: [],
+      weeklyPlans: [],
+      departurePlans: [],
+      personalExperiments: []
     };
   } else {
     throw new Error('This Spark backup version is not supported.');
@@ -459,6 +788,85 @@ export async function shareBackup(): Promise<void> {
     mimeType: 'application/json',
     dialogTitle: 'Save your private Spark backup'
   });
+}
+
+export async function shareEncryptedBackup(secret: string): Promise<void> {
+  const directory = FileSystem.cacheDirectory;
+  if (!directory) throw new Error('A temporary folder is not available.');
+  const encryptedText = await createEncryptedBackupText(
+    await exportSnapshot(),
+    secret
+  );
+  const path = `${directory}spark-encrypted-${new Date()
+    .toISOString()
+    .replaceAll(':', '-')}.sparkbackup`;
+  await FileSystem.writeAsStringAsync(path, encryptedText, {
+    encoding: FileSystem.EncodingType.UTF8
+  });
+  if (!(await Sharing.isAvailableAsync())) {
+    throw new Error('Sharing is not available on this device.');
+  }
+  await Sharing.shareAsync(path, {
+    mimeType: 'application/json',
+    dialogTitle: 'Save your encrypted Spark backup'
+  });
+}
+
+export async function chooseAutomaticBackupDirectory(): Promise<string> {
+  if (Platform.OS !== 'android') {
+    throw new Error('Automatic folder backups are currently available on Android.');
+  }
+  const result =
+    await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+  if (!result.granted) throw new Error('No backup folder was selected.');
+  return result.directoryUri;
+}
+
+export async function writeAutomaticEncryptedBackup(
+  directoryUri: string
+): Promise<string> {
+  if (Platform.OS !== 'android') {
+    throw new Error('Automatic folder backups are currently available on Android.');
+  }
+  const recoveryCode = await ensureBackupRecoveryCode();
+  const encryptedText = await createEncryptedBackupText(
+    await exportSnapshot(),
+    recoveryCode
+  );
+  const name = `spark-auto-${new Date().toISOString().replaceAll(':', '-')}`;
+  const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+    directoryUri,
+    name,
+    'application/json'
+  );
+  await FileSystem.StorageAccessFramework.writeAsStringAsync(
+    uri,
+    encryptedText,
+    { encoding: FileSystem.EncodingType.UTF8 }
+  );
+  const automaticFiles = (
+    await FileSystem.StorageAccessFramework.readDirectoryAsync(directoryUri).catch(
+      () => [] as string[]
+    )
+  )
+    .filter((fileUri) => {
+      try {
+        return decodeURIComponent(fileUri).includes('spark-auto-');
+      } catch {
+        return fileUri.includes('spark-auto-');
+      }
+    })
+    .sort((a, b) => b.localeCompare(a));
+  await Promise.all(
+    automaticFiles
+      .slice(MAX_AUTOMATIC_BACKUPS)
+      .map((fileUri) =>
+        FileSystem.StorageAccessFramework.deleteAsync(fileUri, {
+          idempotent: true
+        }).catch(() => undefined)
+      )
+  );
+  return uri;
 }
 
 function csvCell(value: unknown): string {
@@ -547,6 +955,37 @@ export async function pickBackupForPreview(): Promise<BackupPreview | null> {
     encoding: FileSystem.EncodingType.UTF8
   });
   const snapshot = parseBackupText(raw);
+  return {
+    snapshot,
+    fileName: asset.name,
+    counts: {
+      habits: snapshot.habits.length,
+      completions: snapshot.completions.length,
+      focusSessions: snapshot.focusSessions.length,
+      captureItems: snapshot.captureItems.length,
+      routines: snapshot.routines.length
+    }
+  };
+}
+
+export async function pickEncryptedBackupForPreview(
+  secret: string
+): Promise<BackupPreview | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ['application/json', 'application/octet-stream'],
+    copyToCacheDirectory: true,
+    multiple: false
+  });
+  if (result.canceled) return null;
+  const asset = result.assets[0];
+  if (!asset) throw new Error('Spark could not read the selected file.');
+  if (asset.size != null && asset.size > MAX_BACKUP_BYTES * 2) {
+    throw new Error('That encrypted backup is larger than Spark’s safety limit.');
+  }
+  const raw = await FileSystem.readAsStringAsync(asset.uri, {
+    encoding: FileSystem.EncodingType.UTF8
+  });
+  const snapshot = await parseEncryptedBackupText(raw, secret);
   return {
     snapshot,
     fileName: asset.name,

@@ -19,9 +19,29 @@ export interface DailyCheckIn {
 export interface AppSettings {
   onboardingComplete: boolean;
   displayName: string;
+  language:
+    | 'system'
+    | 'en'
+    | 'es'
+    | 'pt-BR'
+    | 'fr'
+    | 'de'
+    | 'it'
+    | 'pl'
+    | 'uk'
+    | 'ru'
+    | 'lt'
+    | 'ja'
+    | 'ko'
+    | 'zh-Hans'
+    | 'hi'
+    | 'ar';
+  simpleMode: boolean;
+  progressiveHelpEnabled: boolean;
   reducedMotion: boolean;
   hapticsEnabled: boolean;
   sensoryProfile: 'calm' | 'balanced' | 'celebratory';
+  quietUntil: string | null;
   highContrast: boolean;
   minimumViableDay: boolean;
   rememberContextByTime: boolean;
@@ -43,6 +63,7 @@ export interface AppSettings {
   celebrationStyle: 'burst' | 'ripple' | 'confetti';
   appIconStyle: 'classic' | 'calm' | 'midnight';
   notificationsEnabled: boolean;
+  notificationPrivacy: 'full' | 'private' | 'secret';
   autoQuietReminders: boolean;
   notificationCap: number;
   reminderSnoozeMinutes: number;
@@ -50,6 +71,12 @@ export interface AppSettings {
   soundscapeEnabled: boolean;
   soundscapeKind: 'brown' | 'pink' | 'soft';
   soundscapeVolume: number;
+  appLockEnabled: boolean;
+  appLockTimeoutMinutes: number;
+  hideSensitiveAppPreview: boolean;
+  automaticBackupEnabled: boolean;
+  automaticBackupDirectoryUri: string | null;
+  lastAutomaticBackupAt: string | null;
   cloudSupportEnabled: boolean;
 }
 
@@ -88,8 +115,41 @@ export interface RoutineRunState {
   updatedAt: string;
 }
 
+export interface WeeklyPlan {
+  id: string;
+  weekStart: string;
+  selectedHabitIds: string[];
+  reflection: string;
+  tomorrowContext: HabitContext | null;
+  tomorrowTinyHabitId: string | null;
+  createdAt: string;
+}
+
+export interface DeparturePlan {
+  id: string;
+  title: string;
+  targetAt: string;
+  bufferMinutes: number;
+  routineId: string | null;
+  status: 'planned' | 'active' | 'complete' | 'cancelled';
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface PersonalExperiment {
+  id: string;
+  kind: 'tiny_week' | 'afternoon_reminder';
+  habitId: string;
+  startedAt: string;
+  endsAt: string;
+  status: 'active' | 'complete' | 'stopped';
+  baselineStart: string;
+  baselineEnd: string;
+  note: string;
+}
+
 export interface AppSnapshot {
-  schemaVersion: 3;
+  schemaVersion: 4;
   exportedAt: string;
   habits: Habit[];
   completions: Completion[];
@@ -99,6 +159,9 @@ export interface AppSnapshot {
   dailyCheckIns: DailyCheckIn[];
   habitDeferrals: HabitDeferral[];
   routineRuns: RoutineRunState[];
+  weeklyPlans: WeeklyPlan[];
+  departurePlans: DeparturePlan[];
+  personalExperiments: PersonalExperiment[];
   settings: AppSettings;
 }
 
@@ -113,6 +176,9 @@ export interface AppData {
   dailyCheckIns: DailyCheckIn[];
   habitDeferrals: HabitDeferral[];
   routineRuns: RoutineRunState[];
+  weeklyPlans: WeeklyPlan[];
+  departurePlans: DeparturePlan[];
+  personalExperiments: PersonalExperiment[];
   settings: AppSettings;
   entitlement: Entitlement;
 }
@@ -120,9 +186,13 @@ export interface AppData {
 export const defaultSettings: AppSettings = {
   onboardingComplete: false,
   displayName: '',
+  language: 'system',
+  simpleMode: false,
+  progressiveHelpEnabled: true,
   reducedMotion: false,
   hapticsEnabled: true,
   sensoryProfile: 'balanced',
+  quietUntil: null,
   highContrast: false,
   minimumViableDay: false,
   rememberContextByTime: true,
@@ -144,6 +214,7 @@ export const defaultSettings: AppSettings = {
   celebrationStyle: 'burst',
   appIconStyle: 'classic',
   notificationsEnabled: false,
+  notificationPrivacy: 'private',
   autoQuietReminders: false,
   notificationCap: 4,
   reminderSnoozeMinutes: 15,
@@ -151,6 +222,12 @@ export const defaultSettings: AppSettings = {
   soundscapeEnabled: false,
   soundscapeKind: 'brown',
   soundscapeVolume: 0.25,
+  appLockEnabled: false,
+  appLockTimeoutMinutes: 5,
+  hideSensitiveAppPreview: false,
+  automaticBackupEnabled: false,
+  automaticBackupDirectoryUri: null,
+  lastAutomaticBackupAt: null,
   cloudSupportEnabled: false
 };
 

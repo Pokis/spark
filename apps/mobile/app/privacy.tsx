@@ -29,6 +29,32 @@ export default function PrivacyScreen() {
         </Body>
       </Card>
       <Card>
+        <SectionHeading>Calendar and sharing are deliberate bridges</SectionHeading>
+        <Body>
+          Spark can open the system calendar with one focus or departure block already filled in.
+          It does not request or read your calendar list. Progress sharing includes only the wins
+          you select and uses the system share sheet; there is no automatic report or connected
+          accountability account.
+        </Body>
+      </Card>
+      <Card>
+        <SectionHeading>Portable backups can be encrypted</SectionHeading>
+        <Body>
+          Manual and automatic folder backups can use AES-256-GCM. Automatic Android backups are
+          written only to a folder you choose, using a recovery code kept in device secure
+          storage. Spark has no server-side password recovery.
+        </Body>
+      </Card>
+      <Card>
+        <SectionHeading>Optional screen and app lock</SectionHeading>
+        <Body>
+          Spark can require device authentication after backgrounding. Sensitive-preview
+          protection is optional; on Android it also blocks screenshots while enabled.
+          Notification lock-screen visibility can show habit details, generic wording, or hide
+          the reminder.
+        </Body>
+      </Card>
+      <Card>
         <SectionHeading>You can delete the optional cloud identity</SectionHeading>
         <Body>
           Settings can remove support conversations, cloud access, and the random Firebase

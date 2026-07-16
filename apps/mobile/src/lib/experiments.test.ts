@@ -1,0 +1,78 @@
+import type { Completion, Habit } from '@spark/domain';
+import { compareExperiment, habitsWithExperimentReminders } from './experiments';
+import type { PersonalExperiment } from '../data/models';
+
+const habit: Habit = {
+  id: 'habit',
+  title: 'Read',
+  color: '#fff',
+  icon: '📚',
+  variants: [
+    { id: 'tiny', kind: 'tiny', label: 'One line', targetMinutes: 1, reward: 1 }
+  ],
+  schedule: { type: 'daily' },
+  reminderEnabled: false,
+  priority: 1,
+  contexts: ['anywhere'],
+  createdAt: '2026-07-01T00:00:00.000Z',
+  sortOrder: 0
+};
+
+const experiment: PersonalExperiment = {
+  id: 'experiment',
+  kind: 'afternoon_reminder',
+  habitId: habit.id,
+  startedAt: '2026-07-08T00:00:00.000Z',
+  endsAt: '2026-07-15T00:00:00.000Z',
+  status: 'active',
+  baselineStart: '2026-07-01',
+  baselineEnd: '2026-07-07',
+  note: ''
+};
+
+describe('personal experiments', () => {
+  it('temporarily applies the afternoon reminder without mutating the habit', () => {
+    const [adjusted] = habitsWithExperimentReminders(
+      [habit],
+      [experiment],
+      new Date('2026-07-10T12:00:00.000Z')
+    );
+    expect(adjusted).toMatchObject({ reminderEnabled: true, reminderWindow: 'afternoon' });
+    expect(habit.reminderEnabled).toBe(false);
+  });
+
+  it('produces a neutral local comparison', () => {
+    const completions: Completion[] = [
+      {
+        id: 'before',
+        habitId: 'habit',
+        variantId: 'tiny',
+        variantKind: 'tiny',
+        reward: 1,
+        occurredAt: '2026-07-04T13:00:00.000Z',
+        loggedAt: '2026-07-04T13:00:00.000Z',
+        localDate: '2026-07-04',
+        source: 'today'
+      },
+      {
+        id: 'during',
+        habitId: 'habit',
+        variantId: 'tiny',
+        variantKind: 'tiny',
+        reward: 1,
+        occurredAt: '2026-07-10T14:00:00.000Z',
+        loggedAt: '2026-07-10T14:00:00.000Z',
+        localDate: '2026-07-10',
+        source: 'today'
+      }
+    ];
+    const result = compareExperiment(
+      { ...experiment, status: 'complete' },
+      completions,
+      'UTC'
+    );
+    expect(result.baselineDays).toBe(1);
+    expect(result.summary).toContain('No clear difference');
+  });
+});
+

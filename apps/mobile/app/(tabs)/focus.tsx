@@ -6,6 +6,7 @@ import { useAudioPlayer } from 'expo-audio';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   AppState,
   StyleSheet,
@@ -23,8 +24,10 @@ import { createId } from '../../src/lib/id';
 import { reportError } from '../../src/services/diagnostics';
 import { ensureSoundscape } from '../../src/services/soundscapes';
 import { useLocalDraft } from '../../src/hooks/useLocalDraft';
+import { isQuietNow } from '../../src/lib/sensory';
 import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
+import { openCalendarExport } from '../../src/services/calendarBridge';
 
 type TimerPhase = 'idle' | 'running' | 'paused' | 'finished';
 
@@ -152,6 +155,7 @@ export default function FocusScreen() {
   const restored = useRef(false);
   const finishing = useRef(false);
   const soundPlayer = useAudioPlayer(null);
+  const quietNow = isQuietNow(spark.settings);
   const clearDraft = useLocalDraft(
     'focus-idle',
     { title, minutes, interruptionText, nextMove },
@@ -171,7 +175,8 @@ export default function FocusScreen() {
     if (
       phase !== 'running' ||
       !spark.entitlement.premium ||
-      !spark.settings.soundscapeEnabled
+      !spark.settings.soundscapeEnabled ||
+      quietNow
     ) {
       soundPlayer.pause();
       return;
@@ -197,6 +202,7 @@ export default function FocusScreen() {
     spark.settings.soundscapeEnabled,
     spark.settings.soundscapeKind,
     spark.settings.soundscapeVolume
+    ,quietNow
   ]);
 
   useEffect(() => {
@@ -241,7 +247,7 @@ export default function FocusScreen() {
         await spark.saveFocus(ended);
         setSession(ended);
         setPhase('finished');
-        if (spark.settings.hapticsEnabled) {
+        if (spark.settings.hapticsEnabled && !isQuietNow(spark.settings)) {
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } catch (reason) {
@@ -376,7 +382,7 @@ export default function FocusScreen() {
         setSession(updated);
         await spark.saveFocus(updated);
       }
-      if (spark.settings.hapticsEnabled) {
+      if (spark.settings.hapticsEnabled && !isQuietNow(spark.settings)) {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (reason) {
@@ -422,7 +428,7 @@ export default function FocusScreen() {
       <Card style={styles.timerCard}>
         <Companion
           active={phase === 'running'}
-          reducedMotion={spark.settings.reducedMotion}
+          reducedMotion={spark.settings.reducedMotion || quietNow}
           style={spark.entitlement.premium ? spark.settings.companionStyle : 'spark'}
         />
         <Text
@@ -494,6 +500,26 @@ export default function FocusScreen() {
               </Muted>
             ) : null}
             <Button label="Start together" onPress={start} testID="start-focus" />
+            <Button
+              label="Add this focus block to calendar"
+              variant="ghost"
+              onPress={() => {
+                const startAt = new Date();
+                const endAt = new Date(startAt.getTime() + minutes * 60_000);
+                void openCalendarExport({
+                  title: `Spark focus: ${title.trim() || 'Open focus'}`,
+                  startAt,
+                  endAt,
+                  notes:
+                    'Created explicitly from Spark. Spark did not read or connect to your calendar.'
+                }).catch((reason: unknown) =>
+                  Alert.alert(
+                    'Could not open calendar',
+                    reason instanceof Error ? reason.message : 'Try again.'
+                  )
+                );
+              }}
+            />
             </>
           )
         ) : phase === 'finished' ? (

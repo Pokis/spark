@@ -21,16 +21,19 @@ import {
   type CompletionDailySummary,
   type CompletionTotals,
   type DailyCheckIn,
+  type DeparturePlan,
   type Entitlement,
   type HabitDeferral,
+  type PersonalExperiment,
   type RoutineRunState
+  ,type WeeklyPlan
 } from './models';
 import { starterHabits, starterRoutines } from './seed';
 
 const DATABASE_NAME = 'spark.db';
 const DATABASE_KEY_NAME = 'spark.database.key.v1';
-export const CURRENT_DATABASE_SCHEMA_VERSION = 5;
-export const DATABASE_MIGRATION_VERSIONS = [1, 2, 3, 4, 5] as const;
+export const CURRENT_DATABASE_SCHEMA_VERSION = 6;
+export const DATABASE_MIGRATION_VERSIONS = [1, 2, 3, 4, 5, 6] as const;
 const MAX_DATABASE_SAFETY_COPIES = 3;
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 let databaseSecurity = {
@@ -355,6 +358,60 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
     );
   }
 
+  if (version < 6) {
+    const habitColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(habits);'
+    );
+    if (!habitColumns.some((column) => column.name === 'friction_json')) {
+      await db.execAsync(
+        "ALTER TABLE habits ADD COLUMN friction_json TEXT NOT NULL DEFAULT '{}';"
+      );
+    }
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS weekly_plans (
+        id TEXT PRIMARY KEY NOT NULL,
+        week_start TEXT NOT NULL,
+        selected_habit_ids_json TEXT NOT NULL DEFAULT '[]',
+        reflection TEXT NOT NULL DEFAULT '',
+        tomorrow_context TEXT,
+        tomorrow_tiny_habit_id TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS weekly_plans_week
+        ON weekly_plans(week_start DESC);
+      CREATE TABLE IF NOT EXISTS departure_plans (
+        id TEXT PRIMARY KEY NOT NULL,
+        title TEXT NOT NULL,
+        target_at TEXT NOT NULL,
+        buffer_minutes INTEGER NOT NULL DEFAULT 0,
+        routine_id TEXT,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        completed_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS departure_plans_target
+        ON departure_plans(target_at DESC);
+      CREATE TABLE IF NOT EXISTS personal_experiments (
+        id TEXT PRIMARY KEY NOT NULL,
+        kind TEXT NOT NULL,
+        habit_id TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        ends_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        baseline_start TEXT NOT NULL,
+        baseline_end TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT ''
+      );
+      CREATE INDEX IF NOT EXISTS personal_experiments_status
+        ON personal_experiments(status, ends_at);
+    `);
+    version = 6;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
   if (version !== CURRENT_DATABASE_SCHEMA_VERSION) {
     throw new Error(`Unsupported local database schema version ${version}.`);
   }
@@ -442,6 +499,9 @@ function mapHabit(
     title: String(row.title),
     reason: row.reason ? String(row.reason) : undefined,
     cue: row.cue ? String(row.cue) : undefined,
+    friction: row.friction_json
+      ? (JSON.parse(String(row.friction_json)) as Habit['friction'])
+      : undefined,
     color: String(row.color),
     icon: String(row.icon),
     schedule: JSON.parse(String(row.schedule_json)) as Habit['schedule'],
@@ -466,14 +526,15 @@ function mapHabit(
 async function saveHabit(db: SQLite.SQLiteDatabase, habit: Habit): Promise<void> {
   await db.runAsync(
     `INSERT OR REPLACE INTO habits(
-      id, title, reason, cue, color, icon, schedule_json, preferred_time,
+      id, title, reason, cue, friction_json, color, icon, schedule_json, preferred_time,
       reminder_window, reminder_enabled, priority, contexts_json, created_at,
       paused_until, paused_at, pause_history_json, archived_at, sort_order
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     habit.id,
     habit.title,
     habit.reason ?? null,
     habit.cue ?? null,
+    JSON.stringify(habit.friction ?? {}),
     habit.color,
     habit.icon,
     JSON.stringify(habit.schedule),
@@ -691,6 +752,36 @@ export async function loadAppData(): Promise<AppData> {
     started_at: string;
     updated_at: string;
   }>('SELECT * FROM routine_runs ORDER BY updated_at DESC');
+  const weeklyPlans = await db.getAllAsync<{
+    id: string;
+    week_start: string;
+    selected_habit_ids_json: string;
+    reflection: string;
+    tomorrow_context: WeeklyPlan['tomorrowContext'];
+    tomorrow_tiny_habit_id: string | null;
+    created_at: string;
+  }>('SELECT * FROM weekly_plans ORDER BY week_start DESC, created_at DESC');
+  const departurePlans = await db.getAllAsync<{
+    id: string;
+    title: string;
+    target_at: string;
+    buffer_minutes: number;
+    routine_id: string | null;
+    status: DeparturePlan['status'];
+    created_at: string;
+    completed_at: string | null;
+  }>('SELECT * FROM departure_plans ORDER BY target_at DESC');
+  const personalExperiments = await db.getAllAsync<{
+    id: string;
+    kind: PersonalExperiment['kind'];
+    habit_id: string;
+    started_at: string;
+    ends_at: string;
+    status: PersonalExperiment['status'];
+    baseline_start: string;
+    baseline_end: string;
+    note: string;
+  }>('SELECT * FROM personal_experiments ORDER BY started_at DESC');
   const settingsRows = await db.getAllAsync<{ key: string; value_json: string }>(
     'SELECT * FROM settings'
   );
@@ -770,6 +861,36 @@ export async function loadAppData(): Promise<AppData> {
       skippedStepIds: JSON.parse(row.skipped_step_ids_json) as string[],
       startedAt: row.started_at,
       updatedAt: row.updated_at
+    })),
+    weeklyPlans: weeklyPlans.map((row) => ({
+      id: row.id,
+      weekStart: row.week_start,
+      selectedHabitIds: JSON.parse(row.selected_habit_ids_json) as string[],
+      reflection: row.reflection,
+      tomorrowContext: row.tomorrow_context ?? null,
+      tomorrowTinyHabitId: row.tomorrow_tiny_habit_id,
+      createdAt: row.created_at
+    })),
+    departurePlans: departurePlans.map((row) => ({
+      id: row.id,
+      title: row.title,
+      targetAt: row.target_at,
+      bufferMinutes: Number(row.buffer_minutes),
+      routineId: row.routine_id,
+      status: row.status,
+      createdAt: row.created_at,
+      completedAt: row.completed_at
+    })),
+    personalExperiments: personalExperiments.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      habitId: row.habit_id,
+      startedAt: row.started_at,
+      endsAt: row.ends_at,
+      status: row.status,
+      baselineStart: row.baseline_start,
+      baselineEnd: row.baseline_end,
+      note: row.note
     })),
     settings: settings as unknown as AppSettings,
     entitlement: entitlementRow
@@ -977,6 +1098,61 @@ export async function deleteRoutineRun(routineId: string): Promise<void> {
   await db.runAsync('DELETE FROM routine_runs WHERE routine_id = ?', routineId);
 }
 
+export async function saveWeeklyPlan(plan: WeeklyPlan): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO weekly_plans(
+      id, week_start, selected_habit_ids_json, reflection,
+      tomorrow_context, tomorrow_tiny_habit_id, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    plan.id,
+    plan.weekStart,
+    JSON.stringify(plan.selectedHabitIds),
+    plan.reflection,
+    plan.tomorrowContext,
+    plan.tomorrowTinyHabitId,
+    plan.createdAt
+  );
+}
+
+export async function saveDeparturePlan(plan: DeparturePlan): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO departure_plans(
+      id, title, target_at, buffer_minutes, routine_id, status, created_at, completed_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    plan.id,
+    plan.title,
+    plan.targetAt,
+    plan.bufferMinutes,
+    plan.routineId,
+    plan.status,
+    plan.createdAt,
+    plan.completedAt
+  );
+}
+
+export async function savePersonalExperiment(
+  experiment: PersonalExperiment
+): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO personal_experiments(
+      id, kind, habit_id, started_at, ends_at, status,
+      baseline_start, baseline_end, note
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    experiment.id,
+    experiment.kind,
+    experiment.habitId,
+    experiment.startedAt,
+    experiment.endsAt,
+    experiment.status,
+    experiment.baselineStart,
+    experiment.baselineEnd,
+    experiment.note
+  );
+}
+
 export async function saveSetting<K extends keyof AppSettings>(
   key: K,
   value: AppSettings[K]
@@ -1006,7 +1182,7 @@ export async function exportSnapshot(): Promise<AppSnapshot> {
   const data = await loadAppData();
   const db = await getDatabase();
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     exportedAt: new Date().toISOString(),
     habits: data.habits,
     completions: await loadAllCompletions(db),
@@ -1016,12 +1192,22 @@ export async function exportSnapshot(): Promise<AppSnapshot> {
     dailyCheckIns: data.dailyCheckIns,
     habitDeferrals: data.habitDeferrals,
     routineRuns: data.routineRuns,
-    settings: data.settings
+    weeklyPlans: data.weeklyPlans,
+    departurePlans: data.departurePlans,
+    personalExperiments: data.personalExperiments,
+    settings: {
+      ...data.settings,
+      quietUntil: null,
+      appLockEnabled: false,
+      automaticBackupEnabled: false,
+      automaticBackupDirectoryUri: null,
+      lastAutomaticBackupAt: null
+    }
   };
 }
 
 export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
-  if (snapshot.schemaVersion !== 3) throw new Error('This backup version is not supported.');
+  if (snapshot.schemaVersion !== 4) throw new Error('This backup version is not supported.');
   const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     await db.execAsync(`
@@ -1036,6 +1222,9 @@ export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
       DELETE FROM daily_checkins;
       DELETE FROM habit_deferrals;
       DELETE FROM routine_runs;
+      DELETE FROM weekly_plans;
+      DELETE FROM departure_plans;
+      DELETE FROM personal_experiments;
       DELETE FROM settings;
     `);
     for (const habit of snapshot.habits) await saveHabit(db, habit);
@@ -1054,6 +1243,11 @@ export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
     for (const checkIn of snapshot.dailyCheckIns) await saveCheckIn(checkIn);
     for (const deferral of snapshot.habitDeferrals) await saveHabitDeferral(deferral);
     for (const run of snapshot.routineRuns) await saveRoutineRun(run);
+    for (const plan of snapshot.weeklyPlans) await saveWeeklyPlan(plan);
+    for (const plan of snapshot.departurePlans) await saveDeparturePlan(plan);
+    for (const experiment of snapshot.personalExperiments) {
+      await savePersonalExperiment(experiment);
+    }
     for (const [keyName, value] of Object.entries(snapshot.settings)) {
       await db.runAsync(
         'INSERT INTO settings(key, value_json) VALUES (?, ?)',

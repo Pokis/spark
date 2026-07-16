@@ -1,9 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { useI18n } from '../../src/i18n';
+import { useSpark } from '../../src/state/SparkProvider';
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const { t } = useI18n();
+  const spark = useSpark();
   return (
     <Tabs
       screenOptions={{
@@ -23,7 +27,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Today',
+          title: t('today'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="sparkles-outline" color={color} size={size} />
           )
@@ -32,7 +36,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="focus"
         options={{
-          title: 'Focus',
+          title: t('focus'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="timer-outline" color={color} size={size} />
           )
@@ -41,7 +45,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="capture"
         options={{
-          title: 'Capture',
+          title: t('capture'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="flash-outline" color={color} size={size} />
           )
@@ -50,7 +54,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="journey"
         options={{
-          title: 'Journey',
+          title: t('journey'),
+          href: spark.settings.simpleMode ? null : '/(tabs)/journey',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map-outline" color={color} size={size} />
           )

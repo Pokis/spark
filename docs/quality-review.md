@@ -72,7 +72,8 @@ disabled.
   `PRAGMA cipher_version` and fail safely if SQLCipher is unavailable.
 - The database materializes daily completion summaries and keeps only recent history plus the two
   latest records per habit in application memory; full raw history remains available for export.
-- Users can export both the complete JSON backup and a formula-safe portable CSV.
+- Users can export complete JSON, password-encrypted backup, and formula-safe portable CSV files;
+  Android can also keep seven encrypted files in one explicitly selected folder.
 - A React error boundary, privacy-safe local diagnostic ring buffer, export, and clear operation
   are implemented.
 
@@ -130,7 +131,7 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **54 tests passed**: 25 mobile, 10 domain, 18 API, 1 admin.
+- `npm.cmd run test:ci` — **63 tests passed**: 34 mobile, 10 domain, 18 API, 1 admin.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.
 - Expo Doctor — passed after aligning `@types/jest` to the Expo SDK recommendation.

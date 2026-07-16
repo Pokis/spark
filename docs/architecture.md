@@ -5,7 +5,9 @@
 ```mermaid
 flowchart LR
     Person["Person using Spark"] --> Mobile["Expo mobile app"]
-    Widget["Android home widget"] --> Mobile
+    Widget["Android widgets and shortcuts"] --> Mobile
+    Calendar["System calendar create-event UI"] <-->|"one explicit draft"| Mobile
+    Share["System share/file UI"] <-->|"selected export only"| Mobile
     Mobile --> Local["Encrypted local SQLite"]
     Mobile -. "only if enabled" .-> Auth["Firebase Auth"]
     Mobile -. "support, config, purchase only" .-> API["Cloud Run control plane"]
@@ -20,7 +22,7 @@ The solid path is the entire free product. The dotted paths are optional.
 
 | Location | Responsibility |
 |---|---|
-| `apps/mobile` | UI, device database, local notifications, widget, backup, optional API client |
+| `apps/mobile` | UI, device database, local notifications, widgets/shortcuts, calendar/share bridges, encrypted backup, optional API client |
 | `packages/domain` | Pure scheduling, planning, rhythm, and reward rules |
 | `packages/cloud-contracts` | Zod schemas shared by mobile, API, and dashboard |
 | `services/control-plane` | Authenticated support, purchase verification, grants, config, audit |
@@ -37,6 +39,10 @@ The mobile database stores:
 - capture items
 - routines and steps
 - daily capacity check-ins
+- habit friction plans
+- weekly plans
+- departure plans
+- personal experiments
 - preferences
 - a cached entitlement
 
@@ -44,8 +50,15 @@ SQLCipher encrypts the database in native development and store builds. Its rand
 key is stored with Expo SecureStore. SQLCipher is not available in Expo Go, so a development
 build is required for a production-like test.
 
-Backups are explicit JSON exports. The database is encrypted at rest, but an exported JSON file
-is readable. The user chooses its destination.
+Backups can be explicit readable JSON, explicit password-encrypted files, or bounded automatic
+encrypted files in one Android folder selected through the Storage Access Framework. Encrypted
+files use PBKDF2-SHA256 and AES-256-GCM; the optional generated recovery code stays in
+SecureStore. Spark never receives a backup. Device-specific folder permissions, active app lock,
+and temporary Quiet now state are deliberately removed from portable snapshots.
+
+The system calendar bridge only opens a create-event UI with one focus/departure block. Android
+calendar read/write permissions are removed. Progress sharing renders only selected completions
+into a temporary image/text payload for the system share sheet.
 
 ## Cloud data
 

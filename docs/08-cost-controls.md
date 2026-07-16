@@ -14,6 +14,32 @@ An offline Android or iPhone build costs **$0/month in cloud runtime**. Habits,
 completions, reminders, focus, soundscapes, Capture, routines, widgets, insights,
 backups, and all accessibility features stay on the device.
 
+The 2026-07-16 assistive expansion also remains **$0/month for Spark at every user
+count**:
+
+| Local feature | 100 users | 1,000 users | 10,000 users | 50,000 users | User control / cost note |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Simple mode and contextual Help me now | $0 | $0 | $0 | $0 | Local settings; both can be disabled |
+| Weekly reset and friction toolkit | $0 | $0 | $0 | $0 | Encrypted local records |
+| Departure mode | $0 | $0 | $0 | $0 | Local plan; no location API |
+| Calendar bridge | $0 | $0 | $0 | $0 | Opens one system calendar event; Spark blocks Android calendar read/write permissions |
+| Personal experiments | $0 | $0 | $0 | $0 | User-created local comparison; no analytics or experimentation service |
+| Progress-card image/text sharing | $0 | $0 | $0 | $0 | System share sheet only after explicit selection |
+| Quiet now, app lock, and preview protection | $0 | $0 | $0 | $0 | Local/OS controls; off by default |
+| Notification lock-screen privacy | $0 | $0 | $0 | $0 | Local notification channels; notifications remain off by default |
+| Password-encrypted manual backups | $0 | $0 | $0 | $0 | Local cryptography and system file/share UI |
+| Automatic encrypted folder backups | $0 | $0 | $0 | $0 | Off by default; user chooses one Android folder; seven-file retention |
+| Launcher shortcuts and Focus widget | $0 | $0 | $0 | $0 | Android OS integrations; no background server |
+| Bundled localization | $0 | $0 | $0 | $0 | Bundled strings; no translation API |
+| Privacy-safe diagnostics | $0 | $0 | $0 | $0 | Local self-check and explicit file share |
+| Startup Baseline Profile | $0 | $0 | $0 | $0 | Packaged build artifact |
+
+If a user deliberately selects a Google Drive, OneDrive, Dropbox, or another
+cloud-backed folder for automatic backup, any storage quota, subscription, or
+network charge belongs to that user’s chosen provider. Spark does not create that
+account, select the provider, receive the file, or incur a Google Cloud project
+charge. The automatic-backup switch defaults to `false`.
+
 There are two independent controls for optional cloud behavior:
 
 1. Terraform must explicitly create the cloud runtime with

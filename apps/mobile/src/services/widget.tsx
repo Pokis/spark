@@ -2,7 +2,15 @@ import { buildTodayPlan, localDateKey, type Completion, type Habit } from '@spar
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { SparkTodayWidget, type SparkWidgetSnapshot } from '../widgets/SparkTodayWidget';
-import { WIDGET_SNAPSHOT_KEY } from '../widgets/widgetTaskHandler';
+import {
+  SparkFocusWidget,
+  type SparkFocusSnapshot
+} from '../widgets/SparkFocusWidget';
+import {
+  FOCUS_WIDGET_SNAPSHOT_KEY,
+  WIDGET_SNAPSHOT_KEY
+} from '../widgets/widgetTaskHandler';
+import type { FocusSession } from '@spark/domain';
 
 export async function syncTodayWidget(input: {
   habits: Habit[];
@@ -61,5 +69,23 @@ export async function syncTodayWidget(input: {
     });
   } catch {
     // Expo Go does not include the native widget module. The app remains fully usable.
+  }
+}
+
+export async function syncFocusWidget(focusSessions: FocusSession[]): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const snapshot: SparkFocusSnapshot = {
+    session: focusSessions.find((session) => !session.endedAt) ?? null,
+    syncedAt: new Date().toISOString()
+  };
+  await AsyncStorage.setItem(FOCUS_WIDGET_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  try {
+    const { requestWidgetUpdate } = await import('react-native-android-widget');
+    requestWidgetUpdate({
+      widgetName: 'SparkFocus',
+      renderWidget: () => <SparkFocusWidget snapshot={snapshot} />
+    });
+  } catch {
+    // Native widgets are unavailable in Expo Go.
   }
 }

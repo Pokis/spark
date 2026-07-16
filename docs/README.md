@@ -34,7 +34,8 @@ No Firebase, Google Cloud, admin dashboard, or payment setup is needed.
 3. [Feature catalog](./11-feature-catalog.md) to choose the manual feature matrix
 
 Automated tests are not a substitute for real-device checks of widgets,
-notifications, billing, accessibility, SQLCipher, sound, and Android process death.
+notifications, biometric/device lock, screenshot/app-switcher protection, calendar handoff,
+folder backup permissions, billing, accessibility, SQLCipher, sound, and Android process death.
 
 ### I want to release the free Android app
 
@@ -120,3 +121,12 @@ target; iOS-specific StoreKit, widget, native build, and device QA remain future
   setting, credential-free permission, or store action.
 - **Deliberately deferred** means it is not secretly unfinished; it was excluded
   for privacy, safety, cost, or scope reasons.
+
+## Where the newest local-first features are documented
+
+Use the [feature catalog](./11-feature-catalog.md) for exact behavior and data boundaries. The
+[experience roadmap](./10-experience-roadmap.md) explains why Spark uses Simple mode, contextual
+help, weekly planning, friction support, Departure mode, personal experiments, deliberate
+sharing, and explicit calendar bridges. The [cost register](./08-cost-controls.md) confirms that
+all of those features, encrypted folder backups, localization, diagnostics, shortcuts, and the
+Focus widget have $0 Spark cloud runtime cost.

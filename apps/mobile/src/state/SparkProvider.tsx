@@ -45,8 +45,11 @@ import {
   saveCheckIn,
   saveEntitlement,
   saveHabitDeferral,
+  saveDeparturePlan as persistDeparturePlan,
+  savePersonalExperiment as persistPersonalExperiment,
   saveRoutineRun,
   saveSetting,
+  saveWeeklyPlan as persistWeeklyPlan,
   updateCompletionTags,
   upsertHabit,
   upsertRoutine
@@ -57,21 +60,26 @@ import {
   type AppData,
   type AppSettings,
   type DailyCheckIn,
+  type DeparturePlan,
   type Entitlement,
   type HabitDeferral,
-  type RoutineRunState
+  type PersonalExperiment,
+  type RoutineRunState,
+  type WeeklyPlan
 } from '../data/models';
 import { deviceTimeZone } from '../lib/date';
 import { createId } from '../lib/id';
 import { COMPLETION_GUARD_MS, tryAcquireCompletion } from '../lib/completionGuard';
+import { habitsWithExperimentReminders } from '../lib/experiments';
 import { loadAppConfig } from '../services/cloudConfig';
+import { writeAutomaticEncryptedBackup } from '../services/backup';
 import { reportError, runSafely } from '../services/diagnostics';
 import {
   notificationActionKind,
   rescheduleHabitNotifications,
   snoozeHabit
 } from '../services/notifications';
-import { syncTodayWidget } from '../services/widget';
+import { syncFocusWidget, syncTodayWidget } from '../services/widget';
 
 interface SparkContextValue extends AppData {
   loading: boolean;
@@ -112,6 +120,9 @@ interface SparkContextValue extends AppData {
   clearRoutinePosition(routineId: string): Promise<void>;
   deferHabit(habitId: string, kind: HabitDeferral['kind']): Promise<void>;
   clearHabitDeferral(habitId: string): Promise<void>;
+  saveWeeklyPlan(plan: WeeklyPlan): Promise<void>;
+  saveDeparturePlan(plan: DeparturePlan): Promise<void>;
+  savePersonalExperiment(experiment: PersonalExperiment): Promise<void>;
   updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]): Promise<void>;
   updateEntitlement(value: Entitlement): Promise<void>;
   routines: Routine[];
@@ -128,6 +139,9 @@ const emptyData: AppData = {
   dailyCheckIns: [],
   habitDeferrals: [],
   routineRuns: [],
+  weeklyPlans: [],
+  departurePlans: [],
+  personalExperiments: [],
   settings: defaultSettings,
   entitlement: defaultEntitlement
 };
@@ -141,6 +155,7 @@ export function SparkProvider({ children }: PropsWithChildren) {
   const [remoteConfig, setRemoteConfig] = useState<AppConfig>(defaultAppConfig);
   const [timeZone, setTimeZone] = useState(deviceTimeZone);
   const completionLocks = useRef(new Map<string, number>());
+  const automaticBackupAttemptAt = useRef(0);
   const [sharedPayloads, setSharedPayloads] = useState<SharePayload[]>([]);
   const refreshSharedPayloads = useCallback(() => {
     try {
@@ -218,7 +233,7 @@ export function SparkProvider({ children }: PropsWithChildren) {
       'notifications.reschedule',
       () =>
         rescheduleHabitNotifications(
-          data.habits.filter(
+          habitsWithExperimentReminders(data.habits, data.personalExperiments).filter(
             (habit) =>
               !data.habitDeferrals.some(
                 (deferral) =>
@@ -232,15 +247,20 @@ export function SparkProvider({ children }: PropsWithChildren) {
             remoteConfig.defaults.maxDailyHabitNotifications
           ),
           timeZone,
-          data.settings.autoQuietReminders
+          data.settings.autoQuietReminders,
+          data.settings.notificationPrivacy,
+          data.settings.quietUntil
         )
     );
   }, [
     data.completions,
     data.habitDeferrals,
     data.habits,
+    data.personalExperiments,
     data.settings.notificationCap,
     data.settings.notificationsEnabled,
+    data.settings.notificationPrivacy,
+    data.settings.quietUntil,
     data.settings.autoQuietReminders,
     loading,
     remoteConfig.defaults.maxDailyHabitNotifications,
@@ -259,6 +279,50 @@ export function SparkProvider({ children }: PropsWithChildren) {
       );
     }
   }, [data.completions, data.habits, data.settings.appIconStyle, loading, timeZone]);
+
+  useEffect(() => {
+    if (!loading) {
+      runSafely('focus-widget.sync', () => syncFocusWidget(data.focusSessions));
+    }
+  }, [data.focusSessions, loading]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !data.settings.automaticBackupEnabled ||
+      !data.settings.automaticBackupDirectoryUri
+    ) {
+      return;
+    }
+    const lastSuccess = data.settings.lastAutomaticBackupAt
+      ? Date.parse(data.settings.lastAutomaticBackupAt)
+      : 0;
+    if (Date.now() - lastSuccess < 24 * 60 * 60_000) return;
+    if (Date.now() - automaticBackupAttemptAt.current < 60 * 60_000) return;
+    automaticBackupAttemptAt.current = Date.now();
+    runSafely('backup.automatic', async () => {
+      await writeAutomaticEncryptedBackup(
+        data.settings.automaticBackupDirectoryUri!
+      );
+      const completedAt = new Date().toISOString();
+      await saveSetting('lastAutomaticBackupAt', completedAt);
+      setData((current) => ({
+        ...current,
+        settings: { ...current.settings, lastAutomaticBackupAt: completedAt }
+      }));
+    });
+  }, [
+    data.completionTotals.totalWins,
+    data.departurePlans,
+    data.habits,
+    data.personalExperiments,
+    data.routines,
+    data.settings.automaticBackupDirectoryUri,
+    data.settings.automaticBackupEnabled,
+    data.settings.lastAutomaticBackupAt,
+    data.weeklyPlans,
+    loading
+  ]);
 
   useEffect(() => {
     if (loading || data.habitDeferrals.length === 0) return;
@@ -314,7 +378,10 @@ export function SparkProvider({ children }: PropsWithChildren) {
             : current.habitDeferrals,
           ...insights
         }));
-        if (data.settings.hapticsEnabled) {
+        const quietNow = Boolean(
+          data.settings.quietUntil && Date.parse(data.settings.quietUntil) > Date.now()
+        );
+        if (data.settings.hapticsEnabled && !quietNow) {
           try {
             if (data.settings.sensoryProfile === 'calm') {
               await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -351,7 +418,15 @@ export function SparkProvider({ children }: PropsWithChildren) {
         }
       } else if (action === 'snooze') {
         runSafely('notifications.snooze', () =>
-          snoozeHabit(habit.id, data.settings.reminderSnoozeMinutes)
+          snoozeHabit(
+            habit.id,
+            data.settings.reminderSnoozeMinutes,
+            data.settings.notificationPrivacy,
+            Boolean(
+              data.settings.quietUntil &&
+                Date.parse(data.settings.quietUntil) > Date.now()
+            )
+          )
         );
       } else if (action === 'quiet_today') {
         const tomorrow = new Date();
@@ -374,7 +449,13 @@ export function SparkProvider({ children }: PropsWithChildren) {
       }
     });
     return () => subscription.remove();
-  }, [completeHabit, data.habits, data.settings.reminderSnoozeMinutes]);
+  }, [
+    completeHabit,
+    data.habits,
+    data.settings.notificationPrivacy,
+    data.settings.quietUntil,
+    data.settings.reminderSnoozeMinutes
+  ]);
 
   const value = useMemo<SparkContextValue>(
     () => ({
@@ -618,6 +699,36 @@ export function SparkProvider({ children }: PropsWithChildren) {
           habitDeferrals: current.habitDeferrals.filter(
             (item) => item.habitId !== habitId
           )
+        }));
+      },
+      async saveWeeklyPlan(plan) {
+        await persistWeeklyPlan(plan);
+        setData((current) => ({
+          ...current,
+          weeklyPlans: [
+            plan,
+            ...current.weeklyPlans.filter((item) => item.id !== plan.id)
+          ]
+        }));
+      },
+      async saveDeparturePlan(plan) {
+        await persistDeparturePlan(plan);
+        setData((current) => ({
+          ...current,
+          departurePlans: [
+            plan,
+            ...current.departurePlans.filter((item) => item.id !== plan.id)
+          ]
+        }));
+      },
+      async savePersonalExperiment(experiment) {
+        await persistPersonalExperiment(experiment);
+        setData((current) => ({
+          ...current,
+          personalExperiments: [
+            experiment,
+            ...current.personalExperiments.filter((item) => item.id !== experiment.id)
+          ]
         }));
       },
       async updateSetting(key, settingValue) {

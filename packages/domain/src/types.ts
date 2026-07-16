@@ -30,6 +30,14 @@ export interface Habit {
   title: string;
   reason?: string;
   cue?: string;
+  friction?: {
+    environment?: string;
+    materials?: string;
+    firstStep?: string;
+    obstacle?: string;
+    fallback?: string;
+    futureNote?: string;
+  };
   color: string;
   icon: string;
   variants: HabitVariant[];

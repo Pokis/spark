@@ -24,7 +24,8 @@ Email: `REPLACE_ME@example.com`
 
 Spark stores the information needed to provide its habit, focus, capture, routine, reminder,
 progress, preference, and entitlement-cache features. This data stays on the device unless the
-user deliberately exports a backup.
+user deliberately exports a backup, shares selected wins, opens a calendar event draft, or sends
+an optional cloud support message.
 
 The native app database uses SQLCipher encryption and a key stored through the operating
 system's secure credential storage. No storage mechanism can guarantee security on a compromised
@@ -32,9 +33,39 @@ or unlocked device.
 
 ## Backups
 
-Spark creates a backup only when the user selects Export. The backup is readable JSON and is not
-separately encrypted. The user chooses the receiving application or destination and is
-responsible for protecting and deleting that copy. Spark does not receive the backup.
+Spark offers three local backup paths:
+
+- a user-exported readable JSON file;
+- a user-exported password-encrypted file using PBKDF2-SHA256 and AES-256-GCM; and
+- an optional encrypted Android folder backup, disabled by default, written at most once per day
+  when Spark is opened and changed.
+
+For automatic backup, the user grants Spark access to one chosen folder through Android's system
+folder picker. Spark retains up to seven of its own newest automatic files. A generated recovery
+code is stored in operating-system secure storage; Spark does not upload it and cannot recover it
+for the user. The user is responsible for protecting and deleting exported files and recovery
+codes. If the chosen folder belongs to a third-party cloud-drive provider, that provider's
+privacy terms apply. Spark does not receive any backup.
+
+Portable backups intentionally do not carry device-specific automatic-folder permissions, active
+app lock, or a temporary Quiet now state to a restored device.
+
+## Deliberate sharing and calendar export
+
+Spark can create a progress-card image or text only from the recent wins the user explicitly
+selects. The system share sheet chooses the destination. Spark has no automatic reporting,
+connected accountability account, public feed, or recipient list.
+
+Spark can open the operating system's create-event screen with one focus or departure block
+prefilled. Spark does not list, read, or synchronize the user's calendars and blocks Android
+calendar read/write permissions.
+
+## Device privacy controls
+
+The user may enable device-authentication app lock, sensitive recent-app preview protection,
+Android screenshot protection, and generic/hidden lock-screen reminder wording. Authentication
+is performed by the operating system; Spark does not receive biometric templates or a device
+passcode.
 
 ## Optional cloud services
 
@@ -121,7 +152,8 @@ authorization and policy compliance.
 
 Spark uses encrypted local storage in native builds, HTTPS, Firebase token verification,
 least-privilege administrator roles, deny-all Firestore client rules, request limits, and audited
-grant actions. No system can guarantee absolute security.
+grant actions. Portable encrypted backups use authenticated encryption. No system can guarantee
+absolute security.
 
 ## Health disclaimer
 

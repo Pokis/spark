@@ -114,6 +114,27 @@ export function HabitCard({
           </Pressable>
         ))}
       </View>
+      {expanded &&
+      (habit.friction?.firstStep ||
+        habit.friction?.environment ||
+        habit.friction?.fallback ||
+        habit.friction?.futureNote) ? (
+        <View style={[styles.friction, { backgroundColor: theme.surfaceAlt }]}>
+          <Text style={[styles.frictionTitle, { color: theme.text }]}>Make starting easier</Text>
+          {habit.friction.firstStep ? (
+            <Muted>First contact: {habit.friction.firstStep}</Muted>
+          ) : null}
+          {habit.friction.environment ? (
+            <Muted>Set up: {habit.friction.environment}</Muted>
+          ) : null}
+          {habit.friction.fallback ? (
+            <Muted>If stuck: {habit.friction.fallback}</Muted>
+          ) : null}
+          {habit.friction.futureNote ? (
+            <Muted>Future-you note: {habit.friction.futureNote}</Muted>
+          ) : null}
+        </View>
+      ) : null}
       {onTiny || onFocus || onDefer ? <View style={styles.quickActions}>
         {onTiny ? (
         <Pressable
@@ -193,6 +214,8 @@ const styles = StyleSheet.create({
   titleText: { flex: 1, gap: 2 },
   title: { fontSize: 17, fontWeight: '800' },
   variants: { gap: 8 },
+  friction: { borderRadius: 14, padding: 12, gap: 4 },
+  frictionTitle: { fontSize: 13, fontWeight: '800' },
   variant: {
     minHeight: 62,
     borderRadius: 17,

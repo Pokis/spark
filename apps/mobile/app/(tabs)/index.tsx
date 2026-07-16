@@ -23,6 +23,8 @@ import { SparkBurst } from '../../src/components/SparkBurst';
 import { Body, Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
 import { friendlyDate } from '../../src/lib/date';
 import { useSpark } from '../../src/state/SparkProvider';
+import { isQuietNow } from '../../src/lib/sensory';
+import { activeExperimentForHabit } from '../../src/lib/experiments';
 import { useTheme } from '../../src/theme';
 
 const timeOptions = [2, 5, 10, 20];
@@ -45,8 +47,18 @@ export default function TodayScreen() {
   const yesterday = addCalendarDays(today, -1);
   const checkIn = spark.dailyCheckIns.find((item) => item.localDate === today);
   const yesterdayCheckIn = spark.dailyCheckIns.find((item) => item.localDate === yesterday);
+  const weeklyPlan = spark.weeklyPlans.find(
+    (plan) => plan.weekStart <= today && addCalendarDays(plan.weekStart, 6) >= today
+  );
+  const weeklyPlanIsForToday =
+    weeklyPlan &&
+    addCalendarDays(
+      localDateKey(new Date(weeklyPlan.createdAt), spark.timeZone),
+      1
+    ) === today;
   const rememberedContext = spark.settings.rememberContextByTime
-    ? spark.settings.contextByPeriod[currentPeriod()]
+    ? (weeklyPlanIsForToday ? weeklyPlan.tomorrowContext : null) ??
+      spark.settings.contextByPeriod[currentPeriod()]
     : null;
   const [capacity, setCapacity] = useState<Capacity | null>(checkIn?.capacity ?? null);
   const [minutes, setMinutes] = useState<number | undefined>(
@@ -79,16 +91,40 @@ export default function TodayScreen() {
         .filter((item) => Date.parse(item.until) > Date.now())
         .map((item) => item.habitId)
     );
+    const weeklyHabitIds = new Set(weeklyPlan?.selectedHabitIds ?? []);
+    const tomorrowTinyHabitId = weeklyPlanIsForToday
+      ? weeklyPlan?.tomorrowTinyHabitId
+      : null;
     return buildTodayPlan({
       habits: spark.habits,
       completions: spark.completions,
       now: new Date(),
       timeZone: spark.timeZone,
-      capacity: spark.settings.minimumViableDay ? 'empty' : capacity ?? 'steady',
+      capacity:
+        spark.settings.minimumViableDay || spark.settings.simpleMode
+          ? 'empty'
+          : capacity ?? 'steady',
       availableMinutes: timeChosen ? minutes : undefined,
       context,
-      limit: spark.settings.minimumViableDay ? 1 : 6
-    }).filter((suggestion) => !deferred.has(suggestion.habit.id));
+      limit: spark.settings.minimumViableDay || spark.settings.simpleMode ? 1 : 6
+    })
+      .filter((suggestion) => !deferred.has(suggestion.habit.id))
+      .map((suggestion) => {
+        const experiment = activeExperimentForHabit(
+          spark.personalExperiments,
+          suggestion.habit.id,
+          'tiny_week'
+        );
+        const tiny = suggestion.habit.variants.find((variant) => variant.kind === 'tiny');
+        return (experiment || suggestion.habit.id === tomorrowTinyHabitId) && tiny
+          ? { ...suggestion, variant: tiny }
+          : suggestion;
+      })
+      .sort((a, b) => {
+        if (a.habit.id === tomorrowTinyHabitId) return -1;
+        if (b.habit.id === tomorrowTinyHabitId) return 1;
+        return Number(weeklyHabitIds.has(b.habit.id)) - Number(weeklyHabitIds.has(a.habit.id));
+      });
   }, [
     capacity,
     context,
@@ -97,13 +133,20 @@ export default function TodayScreen() {
     spark.habitDeferrals,
     spark.habits,
     spark.settings.minimumViableDay,
+    spark.settings.simpleMode,
+    spark.personalExperiments,
+    weeklyPlan,
+    weeklyPlanIsForToday,
     spark.timeZone,
     timeChosen
   ]);
 
   const plan = pickedHabitId
     ? eligiblePlan.filter((suggestion) => suggestion.habit.id === pickedHabitId)
-    : eligiblePlan.slice(0, spark.settings.minimumViableDay ? 1 : 3);
+    : eligiblePlan.slice(
+        0,
+        spark.settings.minimumViableDay || spark.settings.simpleMode ? 1 : 3
+      );
   const winsToday = spark.completions.filter((item) => item.localDate === today);
   const blankReturnWindow = [1, 2, 3].every((daysAgo) => {
     const date = addCalendarDays(today, -daysAgo);
@@ -168,7 +211,7 @@ export default function TodayScreen() {
     try {
       const completion = await spark.completeHabit(habit, variant, 'today', { context });
       const entry = { title, reward: completion.reward, completion };
-      setCelebration(entry);
+      if (!isQuietNow(spark.settings)) setCelebration(entry);
       setUndoEntry(entry);
     } catch (reason) {
       if (!(reason instanceof Error) || !reason.message.includes('already being saved')) {
@@ -245,7 +288,36 @@ export default function TodayScreen() {
           </Pressable>
         </View>
 
-        {spark.settings.showRewards ? (
+        {spark.settings.simpleMode ? (
+          <Card style={{ borderColor: theme.purple }}>
+            <Eyebrow>Simple mode</Eyebrow>
+            <SectionHeading>Only the next useful doorways.</SectionHeading>
+            <View style={styles.quickActions}>
+              <Button
+                label="Quick capture"
+                variant="secondary"
+                onPress={() => router.push('/quick-capture')}
+              />
+              <Button
+                label="Start 2-minute focus"
+                variant="secondary"
+                onPress={() =>
+                  router.push({ pathname: '/(tabs)/focus', params: { minutes: '2' } })
+                }
+              />
+            </View>
+            {spark.routineRuns[0] ? (
+              <Button
+                label="Resume running routine"
+                variant="secondary"
+                onPress={() => router.push(`/routine/${spark.routineRuns[0]!.routineId}`)}
+              />
+            ) : null}
+            <Button label="Help me now" variant="ghost" onPress={() => router.push('/help')} />
+          </Card>
+        ) : null}
+
+        {spark.settings.showRewards && !spark.settings.simpleMode ? (
           <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
             <View>
               <Text style={[styles.score, { color: theme.text }]}>{rewards.totalSparks}</Text>
@@ -351,6 +423,14 @@ export default function TodayScreen() {
             void spark.updateSetting('minimumViableDay', !spark.settings.minimumViableDay)
           }
         />
+
+        {spark.settings.progressiveHelpEnabled && !spark.settings.simpleMode ? (
+          <Button
+            label="I’m stuck — help me choose what to do"
+            variant="ghost"
+            onPress={() => router.push('/help')}
+          />
+        ) : null}
 
         <View style={styles.sectionTitle}>
           <View>
@@ -496,13 +576,13 @@ export default function TodayScreen() {
         />
       </Screen>
       <SparkBurst
-        visible={Boolean(celebration)}
+        visible={Boolean(celebration) && !isQuietNow(spark.settings)}
         title={celebration?.title ?? ''}
         reward={celebration?.reward ?? 0}
-        reducedMotion={spark.settings.reducedMotion}
-        sensoryProfile={spark.settings.sensoryProfile}
+        reducedMotion={spark.settings.reducedMotion || isQuietNow(spark.settings)}
+        sensoryProfile={isQuietNow(spark.settings) ? 'calm' : spark.settings.sensoryProfile}
         celebrationStyle={spark.entitlement.premium ? spark.settings.celebrationStyle : 'burst'}
-        showReward={spark.settings.showRewards}
+        showReward={spark.settings.showRewards && !isQuietNow(spark.settings)}
         tags={celebration?.completion.tags ?? []}
         onToggleTag={(tag) => void toggleTag(tag)}
         onDismiss={() => setCelebration(null)}
@@ -554,6 +634,7 @@ const styles = StyleSheet.create({
   textAction: { fontSize: 13, fontWeight: '800' },
   compactCheckIn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   notice: { fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
   enough: { alignItems: 'center', paddingVertical: 26 },
   enoughEmoji: { fontSize: 40 },

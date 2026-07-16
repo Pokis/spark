@@ -4,6 +4,11 @@ The app is already written with shared React Native screens, domain logic, local
 SecureStore, local notifications, support, and entitlement interfaces. Android is the first
 release because it can be built and published with the account you already have.
 
+Shared iPhone-compatible code now also includes Simple mode, Help me now, weekly reset, friction
+plans, Departure mode, explicit system-calendar event creation, selected-win sharing, personal
+experiments, Quiet now, Face ID/device-credential app lock, app-switcher snapshot protection,
+password-encrypted backup, diagnostics, and the 15-language catalog.
+
 ## What can be done now on Windows
 
 - all TypeScript development
@@ -43,6 +48,16 @@ for Apple receipts.
 `react-native-android-widget` is Android-only. The mobile app itself runs on iPhone, but the iOS
 home-screen widget needs a WidgetKit extension. Add that after the core app has been validated;
 it is a native target with its own signing and shared-container considerations.
+
+Automatic backups to a persistent user-selected folder are currently Android-only because they
+use Android's Storage Access Framework. iPhone users can still create manual password-encrypted
+files through the system share/file UI. Validate a suitable iOS document-provider/background
+strategy before promising automatic iPhone backups.
+
+Sensitive-preview protection uses the iOS app-switcher overlay rather than Android's
+secure-window screenshot block. Face ID requires the included usage description and must be
+tested in a signed development build. Calendar export uses the system create-event UI and should
+not request full calendar access.
 
 ## Release order
 

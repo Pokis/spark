@@ -17,16 +17,34 @@
 - [ ] `npm.cmd run release:check`
 - [ ] Release-like Android build tested
 - [ ] Backup/restore tested on a clean install
+- [ ] Schema 1/2/3 backups migrate to schema 4; schema-4 weekly/departure/experiment data restores
+- [ ] Password-encrypted backup rejects wrong keys and modified ciphertext before replacing data
+- [ ] Automatic folder backup permission survives restart and retains no more than seven files
+- [ ] Recovery code is copied somewhere private; old-code behavior after rotation is understood
 - [ ] Database encryption checked in a native build
-- [ ] Widget checked on three launchers
+- [ ] Today, Quick Capture, and Focus widgets checked on three launchers
 - [ ] Widget tap behavior is explicit and cannot create a surprising completion
 - [ ] Quick Capture widget parks only after explicit submission
+- [ ] Focus widget pause/resume and force-stop recovery use the same persisted timer
+- [ ] Four launcher shortcuts open the correct narrow routes and expose no user content
 - [ ] Android Share to Spark receives text/URLs locally
 - [ ] Rapid repeated taps do not create duplicate completions
 - [ ] Exact/window reminders, custom snooze, Log tiny, and Quiet today tested
 - [ ] Routine pause/step/tiny/skipped state survives force-stop and restart
 - [ ] Habit, routine, focus, and Capture drafts survive process death
 - [ ] Offline soundscapes stop outside active Focus and no microphone permission appears
+- [ ] Quiet now disables sound, haptics, motion, celebrations, reward overlay, and same-day reminder vibration
+- [ ] App lock tested with biometric and device credential; unavailable authentication cannot lock the user out
+- [ ] Sensitive app preview/screenshot behavior tested on Android; iOS app-switcher behavior tested before iPhone release
+- [ ] Full/private/secret notification lock-screen visibility tested
+- [ ] Calendar export opens one create-event dialog without requesting/listing calendar data
+- [ ] Generated manifest contains calendar permissions only as `tools:node="remove"`
+- [ ] Selected-win PNG/text contains only explicitly checked wins
+- [ ] Personal experiment starts/stops at its local date window and uses neutral comparison language
+- [ ] Simple mode, Help me now, Weekly reset, friction fields, and Departure mode survive restart
+- [ ] All 15 language choices open; Lithuanian and Arabic/RTL device QA completed
+- [ ] Privacy-safe diagnostics manually inspected for content/path/URI redaction
+- [ ] Packaged Baseline Profile exists; startup/ANR results reviewed in Play pre-launch and vitals
 - [ ] Android target API re-checked
 - [ ] Version and versionCode updated
 
@@ -38,6 +56,8 @@
 - [ ] contrast
 - [ ] touch targets
 - [ ] no color-only meaning
+- [ ] app-lock gate and progress-card checkboxes have correct TalkBack semantics
+- [ ] widgets and shortcuts have understandable accessible labels
 - [ ] admin keyboard navigation
 
 ## Privacy and policy

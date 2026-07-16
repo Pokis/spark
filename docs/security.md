@@ -43,3 +43,29 @@ steps, impact, and any suggested mitigation.
 - Rotate any credential immediately if it appears in a log, screenshot, issue, or commit.
 - Keep Play purchase verification server-side.
 - Review admin audit events after grants, promo assignments, and role changes.
+
+## Local privacy and portable-data controls
+
+- Native app data uses SQLCipher with a random key stored as
+  `WHEN_UNLOCKED_THIS_DEVICE_ONLY`.
+- Password/recovery-code backups use PBKDF2-SHA256 (150,000 iterations) and authenticated
+  AES-256-GCM with a fresh 16-byte salt and 12-byte nonce. Header metadata is authenticated.
+- Wrong keys, modified authentication tags, unsupported formats, oversized input, invalid
+  references, and reversed plan/experiment dates fail before the current database is replaced.
+- Manual backup passwords are not stored. The optional automatic-backup recovery code stays in
+  SecureStore and has no server recovery path.
+- Automatic Android backup has access only to one user-selected SAF folder, writes at most daily
+  when the app is opened/changed, and removes its own files beyond the seven newest.
+- Portable snapshots clear the device-specific folder URI, automatic-backup state, active app
+  lock, and temporary Quiet now value.
+- App lock delegates authentication to the operating system; Spark never handles biometric
+  templates or device credentials. Missing enrollment disables the lock to avoid lockout.
+- Android sensitive-preview protection uses secure-window behavior and therefore also blocks
+  screenshots while enabled. iOS uses app-switcher snapshot protection.
+- Calendar integration uses only system create-event UI. Android calendar permissions are
+  explicitly removed from the generated manifest.
+- Diagnostics contain only platform/app state, counts, safe setting names, and redacted technical
+  errors. Habit, focus, routine, Capture, weekly-reflection, departure, experiment-note,
+  display-name, local-path, and content-URI text are excluded.
+- Progress cards render only completions the user checks and are shared through the system sheet;
+  Spark stores no recipient or social graph.

@@ -284,6 +284,25 @@ export default function JourneyScreen() {
         </Body>
       </Card>
       <Button label="Manage settings" variant="ghost" onPress={() => router.push('/settings')} />
+      <Card>
+        <SectionHeading>Plan and share deliberately</SectionHeading>
+        <Muted>These tools stay local unless you explicitly open the system share sheet or calendar.</Muted>
+        <Button
+          label="Gentle weekly reset"
+          variant="secondary"
+          onPress={() => router.push('/weekly-reset')}
+        />
+        <Button
+          label="Personal experiments"
+          variant="secondary"
+          onPress={() => router.push('/experiments')}
+        />
+        <Button
+          label="Share selected wins"
+          variant="ghost"
+          onPress={() => router.push('/share-progress')}
+        />
+      </Card>
     </Screen>
   );
 }

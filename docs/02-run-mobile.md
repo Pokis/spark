@@ -10,8 +10,10 @@ npm.cmd run start
 ```
 
 Expo Go can preview most ordinary screens, but it does **not** accurately include Spark's
-SQLCipher, Android widgets, Android share receiver, notification actions, offline-audio native
-configuration, or Play Billing code. Use it only for a quick UI preview.
+SQLCipher, Android widgets/shortcuts, Android share receiver, notification actions,
+biometric/device lock, sensitive-preview protection, user-selected folder persistence,
+system-calendar handoff, offline-audio native configuration, or Play Billing code. Use it only
+for a quick UI preview.
 
 ## Recommended Android development build
 
@@ -64,10 +66,14 @@ EAS build quota.
 - Today recommendations and completion celebrations
 - rhythms, rewards, focus, capture, and routines
 - local reminders
-- Android Today and Quick Capture widgets in a native build
+- Android Today, Quick Capture, and Focus widgets plus four launcher shortcuts in a native build
 - Android Share to Spark in a native build
 - locally generated focus soundscapes in a native build
-- backup and restore
+- JSON, encrypted, automatic-folder backup and restore
+- Simple mode, Help me now, weekly reset, friction plans, Departure mode, selected-win sharing,
+  and personal experiments
+- device authentication/app-preview protection and privacy-safe diagnostics
+- 15 bundled languages including Lithuanian
 
 Support, admin, and verified purchase buttons remain safely disabled.
 
@@ -86,22 +92,30 @@ application bundle, so treat those values as public configuration.
 
 ## Reset test data
 
-Uninstall Spark or clear its storage in Android Settings. This removes the SQLCipher database and
-secure key. A JSON backup can be exported first from Spark Settings.
+Uninstall Spark or clear its storage in Android Settings. This removes the SQLCipher database,
+secure key, generated recovery code, and folder grant. Export a JSON or encrypted backup and copy
+the recovery code first if you need to restore later.
 
-## Add the Android widget
+## Add the Android widgets and launcher shortcuts
 
 After installing a native build:
 
 1. Long-press an empty area of the Android home screen.
 2. Choose **Widgets**.
-3. Find **Spark Today** or **Spark Quick Capture**.
+3. Find **Spark Today**, **Spark Quick Capture**, or **Spark Focus**.
 4. Drag it to the home screen.
 
 The Today widget updates when Spark data changes and receives a periodic Android refresh. Its
 action is labeled **Log tiny**, but tapping it first opens a confirmation screen. The confirmation
 offers **Log tiny win**, **Open Today without logging**, and **Not now**. The Quick Capture widget
 opens the minimal local capture form and does not create an item until **Park it** is pressed.
+The Focus widget derives remaining time from the persisted session timestamps and opens narrow
+pause/resume action routes. Android launchers may refresh the displayed minute label only on their
+own schedule, but opening Pause/Resume always recalculates from the database.
 
-Both widgets must still be checked across representative launchers because layout, font scaling,
-and refresh timing vary.
+Long-press Spark's launcher icon to open **Quick capture**, **2-minute focus**,
+**Rescue my day**, or **Resume routine**. Shortcut metadata intentionally contains no habit,
+focus, Capture, or routine text.
+
+All widgets and shortcuts must still be checked across representative launchers because layout,
+font scaling, ordering, and refresh timing vary.

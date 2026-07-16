@@ -10,6 +10,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import type { AppSettings } from '../data/models';
 
 export const HABIT_CATEGORY = 'spark-habit';
 export const ACTION_TINY = 'spark-tiny';
@@ -54,17 +55,49 @@ Notifications.setNotificationHandler({
   })
 });
 
+function reminderChannelId(
+  privacy: AppSettings['notificationPrivacy'],
+  quiet = false
+): string {
+  return `gentle-reminders-${privacy}${quiet ? '-quiet' : ''}`;
+}
+
 export async function configureNotifications(): Promise<void> {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('gentle-reminders', {
-      name: 'Gentle habit reminders',
-      description: 'Low-pressure invitations for habits you chose.',
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 70],
-      lightColor: '#FF6B5F',
-      enableVibrate: true,
-      showBadge: false
-    });
+    await Promise.all([
+      Notifications.setNotificationChannelAsync('gentle-reminders', {
+        name: 'General Spark timers',
+        description: 'Focus timers and private Spark status notifications.',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        enableVibrate: false,
+        showBadge: false,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE
+      }),
+      ...(['full', 'private', 'secret'] as const).flatMap((privacy) =>
+        ([false, true] as const).map((quiet) =>
+        Notifications.setNotificationChannelAsync(reminderChannelId(privacy, quiet), {
+          name: `${
+            privacy === 'full'
+              ? 'Gentle reminders'
+              : privacy === 'private'
+                ? 'Private gentle reminders'
+                : 'Hidden gentle reminders'
+          }${quiet ? ' (quiet)' : ''}`,
+          description: 'Low-pressure invitations for habits you chose.',
+          importance: Notifications.AndroidImportance.DEFAULT,
+          vibrationPattern: quiet ? null : [0, 70],
+          lightColor: '#FF6B5F',
+          enableVibrate: !quiet,
+          showBadge: false,
+          lockscreenVisibility:
+            privacy === 'full'
+              ? Notifications.AndroidNotificationVisibility.PUBLIC
+              : privacy === 'private'
+                ? Notifications.AndroidNotificationVisibility.PRIVATE
+                : Notifications.AndroidNotificationVisibility.SECRET
+        }))
+      )
+    ]);
   }
   await Notifications.setNotificationCategoryAsync(HABIT_CATEGORY, [
     {
@@ -324,7 +357,9 @@ export async function rescheduleHabitNotifications(
   enabled: boolean,
   cap: number,
   timeZone: string,
-  autoQuietReminders = false
+  autoQuietReminders = false,
+  privacy: AppSettings['notificationPrivacy'] = 'private',
+  quietUntil: string | null = null
 ): Promise<void> {
   await cancelHabitNotifications();
   if (!enabled || cap <= 0) {
@@ -346,8 +381,16 @@ export async function rescheduleHabitNotifications(
       item.habit.variants[0];
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `${item.habit.icon} A small Spark?`,
-        body: tiny?.label ?? item.habit.title,
+        title:
+          privacy === 'full'
+            ? `${item.habit.icon} A small Spark?`
+            : 'A gentle Spark is ready',
+        body:
+          privacy === 'full'
+            ? tiny?.label ?? item.habit.title
+            : privacy === 'private'
+              ? 'Open Spark to see the tiny option.'
+              : 'Private reminder',
         data: {
           sparkNotificationType: 'habit',
           habitId: item.habit.id,
@@ -359,17 +402,28 @@ export async function rescheduleHabitNotifications(
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: item.date,
-        channelId: 'gentle-reminders'
+        channelId: reminderChannelId(
+          privacy,
+          Boolean(quietUntil && item.date.getTime() < Date.parse(quietUntil))
+        )
       }
     });
   }
 }
 
-export async function snoozeHabit(habitId: string, minutes = 15): Promise<void> {
+export async function snoozeHabit(
+  habitId: string,
+  minutes = 15,
+  privacy: AppSettings['notificationPrivacy'] = 'private',
+  quiet = false
+): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Your Spark is still here',
-      body: 'No rush. The tiny version still counts.',
+      title: privacy === 'full' ? 'Your Spark is still here' : 'Gentle reminder',
+      body:
+        privacy === 'full'
+          ? 'No rush. The tiny version still counts.'
+          : 'Open Spark when you are ready.',
       data: { sparkNotificationType: 'habit', habitId },
       categoryIdentifier: HABIT_CATEGORY,
       sound: false
@@ -377,7 +431,7 @@ export async function snoozeHabit(habitId: string, minutes = 15): Promise<void> 
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: minutes * 60,
-      channelId: 'gentle-reminders'
+      channelId: reminderChannelId(privacy, quiet)
     }
   });
 }

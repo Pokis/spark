@@ -30,6 +30,17 @@ const widgetConfig: WithAndroidWidgetsParams = {
       targetCellHeight: 1,
       previewImage: './assets/spark-icon-v2.png',
       updatePeriodMillis: 86_400_000
+    },
+    {
+      name: 'SparkFocus',
+      label: 'Spark Focus',
+      description: 'See, pause, or resume the current focus session.',
+      minWidth: '180dp',
+      minHeight: '110dp',
+      targetCellWidth: 3,
+      targetCellHeight: 2,
+      previewImage: './assets/spark-icon-v2.png',
+      updatePeriodMillis: 1_800_000
     }
   ]
 };
@@ -58,7 +69,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     blockedPermissions: [
       'android.permission.READ_EXTERNAL_STORAGE',
       'android.permission.WRITE_EXTERNAL_STORAGE',
-      'android.permission.SYSTEM_ALERT_WINDOW'
+      'android.permission.SYSTEM_ALERT_WINDOW',
+      'android.permission.READ_CALENDAR',
+      'android.permission.WRITE_CALENDAR'
     ],
     adaptiveIcon: {
       foregroundImage: iconAsset,
@@ -73,7 +86,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    'expo-localization',
+    [
+      'expo-local-authentication',
+      {
+        faceIDPermission: 'Allow Spark to unlock your private local habits and notes.'
+      }
+    ],
     'expo-secure-store',
+    './plugins/withSparkShortcuts',
+    './plugins/withSparkPerformance',
     [
       'expo-splash-screen',
       {

@@ -32,8 +32,9 @@ npm.cmd run test:ci
 npm.cmd run release:check
 ```
 
-Test a native release-like build because Expo Go does not contain SQLCipher, the widget, or Play
-Billing:
+Test a native release-like build because Expo Go does not contain SQLCipher, widgets/shortcuts,
+biometric lock, screen/app-switcher protection, persistent folder access, calendar system UI, or
+Play Billing:
 
 ```powershell
 Set-Location apps/mobile
@@ -82,11 +83,19 @@ Complete every Play Console **App content** form. At minimum:
 
 - privacy policy: deploy `apps/admin/public/privacy.html` and replace its email first
 - Data safety: local habit data stays on-device; support/purchase data is optional
-- permissions: the release manifest should contain notification/haptic boot rescheduling and
-  audio-output settings only; it must not contain microphone/recording, location, contacts,
-  storage, accessibility-service, or background-audio permissions
+- permissions: the release manifest may contain notification/haptic boot rescheduling,
+  biometric/device credential, and audio-output settings; `READ_CALENDAR`, `WRITE_CALENDAR`,
+  broad storage, system overlay, microphone/recording, location, contacts, accessibility-service,
+  and background-audio permissions must be absent or explicitly removed with
+  `tools:node="remove"`
 - Android Share to Spark: disclose that user-selected shared text/URLs are stored locally in
   Capture and are not uploaded
+- calendar bridge: disclose that Spark opens one system create-event screen and does not read or
+  synchronize calendars
+- backup: disclose readable JSON, password/recovery-code encrypted files, and optional bounded
+  automatic files in one user-selected Android folder
+- progress sharing: disclose that only user-selected wins are placed in a temporary image/text
+  share and there is no automatic report/account connection
 - ads: Spark includes no ads
 - app access: explain admin sign-in only if Google reviews the separate dashboard
 - target audience

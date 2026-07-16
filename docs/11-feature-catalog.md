@@ -34,6 +34,10 @@ The core strategy is **flexible consistency**:
 | Starter routines | Seeds literal, one-step-at-a-time transition support. | Encrypted SQLite. |
 | Optional display name | Personalizes Today without requiring identity or an account. | Local setting only. |
 | Minimum viable day | Reduces Today to one intentionally tiny action. It can be enabled from Today or Settings and does not lower rewards after the fact. | Local setting only. |
+| Simple mode | Keeps Today to one suggested action plus explicit Quick Capture, two-minute Focus, Help, and resume-running-routine doorways. Journey is hidden from the tab bar while Simple mode is on, but no data or capability is deleted. | Local setting only; no cloud. |
+| Contextual Help me now | Lets a user name the immediate barrier—cannot start, overwhelmed, drifting, remembering, leaving, or sensory overload—and offers one relevant local action instead of a generic help article. | UI and existing local settings/routes only. |
+| Progressive help doorway | Optionally keeps a calm “I’m stuck” entry point on Today. It can be disabled without losing Help itself. | Local setting only. |
+| Popular-language catalog | Adds system-language selection plus English, Spanish, Brazilian Portuguese, French, German, Italian, Polish, Ukrainian, Russian, Lithuanian, Japanese, Korean, Simplified Chinese, Hindi, and Arabic. Navigation and the main support-tool labels switch immediately; any legacy string not yet translated falls back to English instead of becoming blank. | Local setting plus bundled strings; no translation API or network. |
 
 ## Today: choosing and starting
 
@@ -54,6 +58,8 @@ The core strategy is **flexible consistency**:
 | Return card | After several blank days, offers a previously successful tiny action as a quiet return. It does not summarize missed days. | Derived locally from history. |
 | Rescue my day | Switches Today into the minimum-viable one-action mode. | Local setting only. |
 | Enough state | When nothing is eligible, Spark says there is nothing overdue and explicitly permits rest. | Derived locally. |
+| Weekly visibility plan | A gentle weekly reset selects up to three habits to keep visible. Selected habits are locally prioritized without turning unselected habits into failures. | `weekly_plans` local table; backup included. |
+| Tomorrow context and tiny action | Weekly reset can name tomorrow’s likely context and one tiny action. The next day, Today uses that context and puts that tiny version first. | Local weekly plan; date-scoped derivation. |
 
 ## Completion trust and feedback
 
@@ -85,6 +91,7 @@ The core strategy is **flexible consistency**:
 | Accidental-entry correction | Individual completions can be removed after confirmation without marking a failure. | Local deletion. |
 | Draft preservation | New and edited habit form state is debounced into local draft storage and restored after background/process loss. It is cleared after a successful save. | AsyncStorage; no cloud. |
 | Color-safe labels | Habit/routine color controls have human-readable accessibility names and selected check marks; state is not communicated by color alone. | UI/accessibility only. |
+| Friction toolkit | A habit can record environment setup, materials, literal first physical step, likely obstacle, fallback, and a note to future self. The useful starting fields appear inside the expanded Today card and never affect scoring. | `friction_json` in encrypted SQLite; schema validation and backup included. |
 
 ## Reminders
 
@@ -100,6 +107,8 @@ The core strategy is **flexible consistency**:
 | Automatic quieting | After three unanswered planned invitations, that habit’s reminders rest for three days. Progress is untouched. | Local AsyncStorage state. |
 | Reminder preview | Habit editor shows exact wording, timing/window, sensory behavior, and actions before permission is needed. | No notification permission required. |
 | Permission restraint | Spark requests notification permission only after the user enables notifications. | OS permission; no cloud. |
+| Lock-screen privacy levels | The user can show the habit wording, show generic reminder copy, or use Android secret visibility so the reminder is hidden on the lock screen. Separate Android channels preserve the chosen OS visibility. | Local setting and OS notification channels. |
+| Sensory-quiet reminder channels | When Quiet now is active, reminders due before tomorrow use no-vibration channels; later reminders retain normal behavior. | Local scheduling only. |
 
 ## Focus and body doubling
 
@@ -117,6 +126,8 @@ The core strategy is **flexible consistency**:
 | Offline soundscapes | Brown, pink, and soft loops are generated as local WAV files, played only during active focus, and have independent 10–75% volume controls and mute. Nothing streams. | Device cache; no server/license runtime. |
 | Minimal permissions | Audio recording, microphone access, and background playback are disabled in Expo configuration. Only local foreground playback is used. | Android retains audio-output settings permission only. |
 | Draft preservation | Idle focus target, duration, interruption text, and next-move text survive background/process loss. | AsyncStorage. |
+| Explicit calendar bridge | The idle focus form can open the system calendar with only the chosen focus title and duration prefilled. Spark does not list, read, or synchronize calendars and Android calendar read/write permissions are explicitly removed. | System-provided calendar UI; no Spark cloud or calendar account connection. |
+| Focus home-screen widget | Shows the persisted active timer title, running/paused state, and timestamp-derived approximate time remaining. Pause/resume controls open a narrow Spark action route that updates the same persisted focus session and its completion notification. | Android widget plus local SQLite/AsyncStorage; no background server. Periodic launcher refresh is OS-controlled. |
 
 ## Capture: external memory
 
@@ -164,6 +175,11 @@ The core strategy is **flexible consistency**:
 | Supportive observations | Can note frequent tiny use, helpful context, and better-fitting focus durations. Requires enough local evidence. | On-device derivation only. |
 | Hide or disable observations | Each observation can be hidden; all observations can be disabled; hidden observations can be restored in Settings. | Local settings. |
 | Optional points/percentages | Spark totals, levels, and rhythm percentages can each be hidden when they create pressure. | Local settings. |
+| Gentle weekly reset | Combines a short reflection, up to three visible habits, tomorrow context, and one tiny next action. It contains no missed-day counts or red deficit state. | Encrypted local weekly-plan record. |
+| Personal experiments | Runs a user-chosen one-week “tiny version first” or “afternoon reminder” experiment. Spark compares local before/during counts with neutral language, never assigns users to variants, and never optimizes engagement. | `personal_experiments` table; no analytics SDK, account, or server. |
+| Deliberate progress sharing | The user selects up to five recent wins, previews a local card, then explicitly shares a PNG or plain text through the system share sheet. Nothing is sent automatically and no accountability account is connected. | Temporary device image/text only; no cloud upload by Spark. |
+| Departure mode | Works backward from a chosen leave time using an explicit buffer and optional routine estimate, saves the plan locally, and can start the routine or a two-minute runway. | `departure_plans` table; no location tracking. |
+| Departure calendar bridge | Opens the system calendar with only the chosen departure block, buffer, and optional routine title. Spark does not read the calendar. | System-provided calendar UI; no Spark cloud. |
 
 ## Sensory, visual, and accessibility behavior
 
@@ -178,6 +194,10 @@ The core strategy is **flexible consistency**:
 | Button states | Pressed, disabled, and loading states are consistent; loading exposes text plus a progress indicator. | UI only. |
 | Loading skeleton | Initial local-data loading uses static structural placeholders, not a decorative or endless animation. | UI only. |
 | Color independence | Selection check marks, icons, wording, borders, and accessible names supplement color. | UI only. |
+| Sensory Quiet now | One setting disables in-app haptics, soundscapes, navigation/companion motion, reward display, and celebration overlays until local midnight. It also moves reminders in that interval to no-vibration channels. | Expiring local setting only. |
+| Optional app lock | Uses the device’s enrolled authentication and configurable background timeout. If authentication is unavailable after a restore or device change, Spark safely disables the lock rather than trapping the user. | Device authentication only; no Spark credential or account. |
+| Sensitive app preview protection | On Android, optional secure-window protection hides the app switcher and blocks screenshots. On iOS, the app-switcher snapshot is protected without imposing Android behavior. | Local setting and OS privacy API. |
+| Startup baseline profile | A packaged seed Baseline Profile covers Spark/React/Expo startup entry classes and is copied into every generated Android native project. It is a safe starting profile, not a substitute for later physical-device Macrobenchmark generation. | Build artifact only; no runtime service. |
 
 ## Supporter monetization
 
@@ -211,14 +231,18 @@ companion, burst celebration, and muted soundscape.
 | Feature | Implementation | Notes |
 | --- | --- | --- |
 | Encrypted database | SQLCipher-backed Expo SQLite in native builds. Spark refuses private-data use in a native build when encryption cannot be verified. | Expo Go is explicitly labeled an unencrypted preview. |
-| Current database schema | Version 5 with forward migrations for every released version. | Migration manifest is tested as contiguous. |
+| Current database schema | Version 6 with forward migrations for every released version. | Migration manifest is tested as contiguous. |
 | Migration safety copies | Before a database migration, Spark creates an encrypted database copy and retains at most three. | Skipped in Expo Go preview. |
 | Restore safety copies | Before JSON restore, Spark writes a private local JSON safety copy and retains at most three. | User can delete all automatic safety copies in Settings. |
 | SQLite integrity check | `PRAGMA quick_check` runs after migration/open and is shown as a plain-language diagnostics result. | Failure is visible in Settings. |
-| Versioned JSON backup | Schema 3 validates IDs, dates, references, pauses, linked habits, deferrals, routine run state, settings, tags, and contexts. | Maximum imported size is 10 MB. |
-| Legacy backup migration | Backup schemas 1 and 2 migrate into schema 3 with safe defaults. | Automated tests cover every released backup schema. |
+| Versioned JSON backup | Schema 4 validates IDs, dates, references, pauses, friction plans, linked habits, deferrals, routine run state, weekly/departure plans, personal experiments, settings, tags, and contexts. | Maximum imported plaintext size is 10 MB. |
+| Legacy backup migration | Backup schemas 1, 2, and 3 migrate into schema 4 with safe defaults. | Automated tests cover every released backup schema. |
 | Portable CSV | Exports habit and completion history, including context and completion tags. | Spreadsheet-formula prefixes are neutralized. |
 | Restore preview | Shows file name and entity counts before confirmation. | Current data is replaced only after explicit confirmation. |
+| Password-encrypted portable backup | Uses PBKDF2-SHA256 and authenticated AES-256-GCM. A wrong password or modified file fails before restore. Manual-export passwords are not stored. | Local cryptography and system share sheet; no server. |
+| Recovery code | Generates a high-entropy human-readable code in device secure storage, reveals it behind device authentication when available, and lets the user explicitly share/print it. Spark has no server-side recovery. | SecureStore only. |
+| Automatic Android folder backup | The user grants access to one folder through Android’s Storage Access Framework. Spark writes at most once per day when opened and changed, keeps seven newest encrypted files, and never requests broad storage permission. | Local/user-selected provider. If the user chooses a third-party cloud-drive folder, that provider’s own plan/network usage is outside Spark. |
+| Device-specific restore safety | Portable backups intentionally clear Quiet now, app lock, automatic-backup folder URI, automatic-backup enabled state, and last-backup time so a restore cannot carry stale device permissions or lock a new device. | Import/export safety rule. |
 | Draft storage | Habit, routine, focus, main Capture, and quick-capture unfinished text/state is debounced locally. | Cleared after successful submission. |
 | Materialized progress | Long histories use totals and daily summaries rather than loading every completion for the normal app shell. | Habit history queries are bounded. |
 
@@ -232,6 +256,9 @@ companion, burst celebration, and muted soundscape.
 - `daily_checkins`, including context
 - `habit_deferrals`
 - `routine_runs`
+- `weekly_plans`
+- `departure_plans`
+- `personal_experiments`
 - `settings`
 - `entitlement`
 - `meta`
@@ -244,10 +271,15 @@ All of these user-facing local entities are represented in JSON export/import wh
 | --- | --- | --- |
 | Today widget | Displays one eligible action and a clearly labeled Log tiny entry point. Opening it requires confirmation before logging. | Native development/release build required. |
 | Quick Capture widget | Opens the minimal quick-capture route. | Native development/release build required. |
+| Focus widget | Shows local timer state and opens reliable pause/resume action routes. The displayed remaining time is derived from timestamps on every OS widget render; launchers still control periodic refresh frequency. | Native development/release build and launcher QA required. |
+| Static launcher shortcuts | Long-pressing Spark exposes Quick capture, 2-minute focus, Rescue my day, and Resume routine. Shortcut metadata contains no habit or note content. | Generated native Android resources; launcher QA required. |
 | Share target | Receives shared text/URLs into Capture. | Android is enabled first; no storage/contact/location permission. |
 | Local notifications | Schedules occurrence-aware reminders and actions. | Native development build needed for reliable action QA. |
 | Haptics | Optional foreground completion feedback. | Uses device haptic capability. |
 | Offline audio | Foreground-only local WAV playback. | Microphone, recording, and background playback are disabled. |
+| System calendar export | Creates a single user-reviewed event through system UI. Calendar read/write permissions are blocked in the generated Android manifest. | Native build required; no full-calendar access. |
+| Biometric/device lock | Uses Android biometric/device-credential APIs only after the user turns on app lock. | Native build/device enrollment required. |
+| Sensitive-preview protection | Uses secure-window behavior on Android when explicitly enabled. | Screenshot and recent-app behavior require real-device QA. |
 
 Expo Go remains useful for ordinary screen work but cannot accurately validate SQLCipher, Android
 widgets, notification actions, the share receiver, in-app purchases, or the final native manifest.
@@ -297,12 +329,18 @@ permissions disproportionate to current value:
 - microphone recording;
 - health-platform data access;
 - background sound streaming.
+- automatic calendar reading or account-wide calendar synchronization;
+- automatic progress reports or connected accountability accounts;
+- product-managed A/B engagement experiments.
 
 ## Proposal audit: what is still not implemented
 
 All actionable local-first UX items in
-[10-experience-roadmap.md](./10-experience-roadmap.md), including its **Helpful next layer**, are
-implemented in code. What remains falls into four explicit groups:
+[10-experience-roadmap.md](./10-experience-roadmap.md), including its **Helpful next layer**, plus
+the subsequent assistive expansion (Simple mode, contextual help, weekly reset, friction toolkit,
+departure planning, privacy controls, encrypted folder backup, shortcuts, diagnostics,
+localization, deliberate sharing, calendar export, personal experiments, and the focus widget)
+are implemented in code. What remains falls into four explicit groups:
 
 1. **Deliberately rejected/deferred product ideas:** the items above, plus optional aggregate
    analytics until there is a real decision need and an explicit disclosure/consent design.
@@ -333,7 +371,11 @@ The repository includes focused checks for:
 - rapid duplicate-completion guarding;
 - disabled completion controls and direct tiny/focus/deferral actions;
 - current and legacy backup schemas, reference validation, context, and routine recovery state;
+- schema-4 plans/experiments/friction migration and reference validation;
 - contiguous database migration versions;
+- personal-experiment application and neutral comparison;
+- Lithuanian localization plus English fallback behavior;
+- timestamp-derived focus-widget state;
 - capacity and settings accessibility components;
 - optional API/admin behavior in their respective workspaces.
 
@@ -348,12 +390,18 @@ and routine recovery after the operating system kills the process.
 | Shared recommendation/progress logic | `packages/domain/src/` |
 | Local schema, migrations, integrity, export/import | `apps/mobile/src/data/database.ts` |
 | Backup validation and safety copies | `apps/mobile/src/services/backup.ts` |
+| Encrypted and automatic folder backups | `apps/mobile/src/services/backup.ts`, `app/encrypted-backups.tsx` |
 | Today and Journey | `apps/mobile/app/(tabs)/index.tsx`, `journey.tsx` |
 | Focus and soundscape | `apps/mobile/app/(tabs)/focus.tsx`, `src/services/soundscapes.ts` |
+| Help, weekly reset, departure, experiments | `apps/mobile/app/help.tsx`, `weekly-reset.tsx`, `departure.tsx`, `experiments.tsx` |
+| Progress-card sharing and calendar bridge | `apps/mobile/app/share-progress.tsx`, `src/services/calendarBridge.ts` |
 | Capture and Android share | `apps/mobile/app/(tabs)/capture.tsx`, `src/state/SparkProvider.tsx` |
 | Habit editing/history | `src/components/HabitEditor.tsx`, `app/habit/[id]/history.tsx` |
 | Routine editing/running | `src/components/RoutineEditor.tsx`, `app/routine/[id].tsx` |
 | Notifications | `apps/mobile/src/services/notifications.ts` |
 | Android widgets | `apps/mobile/src/widgets/`, `apps/mobile/app.config.ts` |
+| Android launcher shortcuts/startup profile | `apps/mobile/plugins/`, `apps/mobile/assets/baseline-prof.txt` |
 | Sensory/accessibility theme | `apps/mobile/src/theme.ts`, `src/components/` |
+| Localization | `apps/mobile/src/i18n/` |
+| App lock, preview protection, diagnostics | `src/components/PrivacyGate.tsx`, `app/diagnostics.tsx` |
 | Optional cloud/admin | `services/control-plane/`, `apps/admin/` |

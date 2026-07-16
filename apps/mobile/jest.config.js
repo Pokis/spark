@@ -8,6 +8,6 @@ module.exports = {
   },
   testPathIgnorePatterns: ['/node_modules/', '/e2e/'],
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|expo-.*|@expo(nent)?/.*|expo-router|@spark/.*)/)'
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|expo-.*|@expo(nent)?/.*|expo-router|@spark/.*|@noble/.*)/)'
   ]
 };

@@ -57,6 +57,7 @@ optional cosmetic themes—not casino mechanics.
 - one-step-at-a-time transition routines
 - capped, quiet local reminders with Log tiny, Later, and Quiet today actions
 - Android Today and Quick Capture widgets with explicit confirmation before a completion
+  (later expanded with a Focus widget and launcher shortcuts)
 - sensory settings, screen-reader labels, large touch targets, and dark mode
 
 ### Phase 4 — ethical monetization
@@ -87,6 +88,22 @@ optional cosmetic themes—not casino mechanics.
 - CI, manual EAS build, and manual cloud-deploy workflows
 - beginner setup, cost, policy, testing, release, and troubleshooting documentation
 
+### Phase 7 — assistive local-first expansion
+
+- Simple mode and contextual Help me now
+- gentle weekly reset with tomorrow context/tiny planning
+- per-habit friction toolkit
+- Departure mode with optional routine and real buffer
+- explicit focus/departure calendar handoff without calendar reads
+- user-selected progress-card image/text sharing without connected accounts
+- one-week personal experiments with neutral local comparison
+- one-action sensory Quiet now
+- optional device-authentication lock, recent-app/screenshot protection, and notification privacy
+- password/recovery-code encrypted backup plus bounded automatic Android folder backup
+- Android Focus widget and four launcher shortcuts
+- bundled selection for 15 languages including Lithuanian
+- content-redacted diagnostics and a packaged Android startup Baseline Profile
+
 ## Features intentionally not in the first public release
 
 These should be evaluated with real users instead of being enabled speculatively:
@@ -107,11 +124,13 @@ and restart-safe routines, Capture cleanup/share/search/conversions, reminder wi
 observations, generated offline soundscapes, supporter cosmetics, bounded safety copies, integrity
 reporting, and unfinished-form drafts.
 
-The remaining work is manual validation or deliberately deferred scope:
+The subsequent Phase 7 expansion is also complete in code. The remaining work is manual
+validation or deliberately deferred scope:
 
-1. Test both Android widgets across Pixel, Samsung, and Xiaomi launchers.
+1. Test all three Android widgets and four shortcuts across Pixel, Samsung, and Xiaomi launchers.
 2. Test larger fonts, TalkBack, switch access, reduced motion, notification actions, share
-   receiving, sound output, and color-blind use on real devices.
+   receiving, app lock, preview protection, calendar handoff, folder backup, sound output,
+   localization/RTL, and color-blind use on real devices.
 3. Conduct the final threat-model and privacy review before cloud production.
 4. Add only opt-in aggregate product events if real product decisions eventually require them.
 5. Build the iOS binary and iOS widget when Apple release work begins.
