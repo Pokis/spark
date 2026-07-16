@@ -9,8 +9,9 @@ npm.cmd install
 npm.cmd run start
 ```
 
-Expo Go can preview most screens and local notifications, but it does **not** include Spark's
-SQLCipher, Android widget, or Play Billing native code. Use it only for a quick UI preview.
+Expo Go can preview most ordinary screens, but it does **not** accurately include Spark's
+SQLCipher, Android widgets, Android share receiver, notification actions, offline-audio native
+configuration, or Play Billing code. Use it only for a quick UI preview.
 
 ## Recommended Android development build
 
@@ -63,7 +64,9 @@ EAS build quota.
 - Today recommendations and completion celebrations
 - rhythms, rewards, focus, capture, and routines
 - local reminders
-- Android widget in a native build
+- Android Today and Quick Capture widgets in a native build
+- Android Share to Spark in a native build
+- locally generated focus soundscapes in a native build
 - backup and restore
 
 Support, admin, and verified purchase buttons remain safely disabled.
@@ -92,8 +95,13 @@ After installing a native build:
 
 1. Long-press an empty area of the Android home screen.
 2. Choose **Widgets**.
-3. Find **Spark Today**.
+3. Find **Spark Today** or **Spark Quick Capture**.
 4. Drag it to the home screen.
 
-The widget updates when Spark data changes and receives a periodic Android refresh. Tapping its
-visible tiny action opens Spark and logs that tiny win.
+The Today widget updates when Spark data changes and receives a periodic Android refresh. Its
+action is labeled **Log tiny**, but tapping it first opens a confirmation screen. The confirmation
+offers **Log tiny win**, **Open Today without logging**, and **Not now**. The Quick Capture widget
+opens the minimal local capture form and does not create an item until **Park it** is pressed.
+
+Both widgets must still be checked across representative launchers because layout, font scaling,
+and refresh timing vary.

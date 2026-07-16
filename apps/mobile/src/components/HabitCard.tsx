@@ -9,15 +9,24 @@ import { Muted } from './Typography';
 export function HabitCard({
   suggestion,
   onComplete,
+  onTiny,
+  onFocus,
+  onDefer,
   onEdit,
+  saving = false,
   showRewards = true
 }: {
   suggestion: ActionSuggestion;
   onComplete(variant: HabitVariant): void;
+  onTiny?(): void;
+  onFocus?(minutes: number): void;
+  onDefer?(kind: 'not_now' | 'later_today' | 'tomorrow' | 'quiet_today'): void;
   onEdit(): void;
+  saving?: boolean;
   showRewards?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showLater, setShowLater] = useState(false);
   const theme = useTheme();
   const { habit, variant } = suggestion;
   const variants = expanded ? habit.variants : [variant];
@@ -60,13 +69,15 @@ export function HabitCard({
             accessibilityLabel={`Complete ${habit.title}: ${candidate.label}, ${candidate.targetMinutes} ${
               candidate.targetMinutes === 1 ? 'minute' : 'minutes'
             }`}
+            accessibilityState={{ disabled: saving, busy: saving }}
+            disabled={saving}
             onPress={() => onComplete(candidate)}
             style={({ pressed }) => [
               styles.variant,
               {
                 backgroundColor: candidate.kind === 'tiny' ? theme.surfaceAlt : habit.color,
                 borderColor: candidate.kind === 'tiny' ? theme.border : habit.color,
-                opacity: pressed ? 0.72 : 1
+                opacity: saving ? 0.5 : pressed ? 0.72 : 1
               }
             ]}
           >
@@ -103,6 +114,66 @@ export function HabitCard({
           </Pressable>
         ))}
       </View>
+      {onTiny || onFocus || onDefer ? <View style={styles.quickActions}>
+        {onTiny ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Log the tiny version of ${habit.title}`}
+          accessibilityState={{ disabled: saving, busy: saving }}
+          disabled={saving}
+          onPress={onTiny}
+          style={[styles.quickAction, { backgroundColor: theme.surfaceAlt }]}
+        >
+          <Ionicons name="resize-outline" size={17} color={theme.primary} />
+          <Text style={[styles.quickActionText, { color: theme.text }]}>Log tiny</Text>
+        </Pressable>
+        ) : null}
+        {onFocus ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Start a two minute focus session for ${habit.title}`}
+          onPress={() => onFocus(2)}
+          style={[styles.quickAction, { backgroundColor: theme.surfaceAlt }]}
+        >
+          <Ionicons name="timer-outline" size={17} color={theme.primary} />
+          <Text style={[styles.quickActionText, { color: theme.text }]}>2-min launch</Text>
+        </Pressable>
+        ) : null}
+        {onDefer ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Show neutral deferral choices for ${habit.title}`}
+          accessibilityState={{ expanded: showLater }}
+          onPress={() => setShowLater((value) => !value)}
+          style={[styles.quickAction, { backgroundColor: theme.surfaceAlt }]}
+        >
+          <Ionicons name="time-outline" size={17} color={theme.textMuted} />
+          <Text style={[styles.quickActionText, { color: theme.text }]}>Later</Text>
+        </Pressable>
+        ) : null}
+      </View> : null}
+      {showLater && onDefer ? (
+        <View style={styles.deferActions}>
+          {(
+            [
+              ['not_now', 'Not now'],
+              ['later_today', 'Later today'],
+              ['tomorrow', 'Tomorrow'],
+              ['quiet_today', 'Quiet today']
+            ] as const
+          ).map(([kind, label]) => (
+            <Pressable
+              key={kind}
+              accessibilityRole="button"
+              accessibilityLabel={`${label} for ${habit.title}; this does not record a failure`}
+              onPress={() => onDefer(kind)}
+              style={[styles.defer, { borderColor: theme.border }]}
+            >
+              <Text style={[styles.deferText, { color: theme.textMuted }]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </Card>
   );
 }
@@ -142,5 +213,25 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center'
-  }
+  },
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  quickAction: {
+    minHeight: 42,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5
+  },
+  quickActionText: { fontSize: 12, fontWeight: '700' },
+  deferActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  defer: {
+    minHeight: 40,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  deferText: { fontSize: 12, fontWeight: '700' }
 });

@@ -1,5 +1,10 @@
 # Spark quality and release-readiness review
 
+> Update, 2026-07-16: the local-first experience items that followed this review have now been
+> implemented. Use [the feature catalog](./11-feature-catalog.md) for current behavior and
+> [the experience roadmap](./10-experience-roadmap.md) for the original rationale. Manual
+> native-device and store-console gates in this review still apply.
+
 Last implementation pass: **2026-07-16**
 
 This started as a product and engineering review. Every item that could be implemented without
@@ -125,7 +130,7 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **38 tests passed**: 13 mobile, 8 domain, 16 API, 1 admin.
+- `npm.cmd run test:ci` — **50 tests passed**: 23 mobile, 10 domain, 16 API, 1 admin.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.
 - Expo Doctor — passed after aligning `@types/jest` to the Expo SDK recommendation.
@@ -168,6 +173,14 @@ These cannot be safely guessed or automated:
     incident controls.
 
 The exact go/no-go list is [release-checklist.md](release-checklist.md).
+
+## Next experience work
+
+The original quality findings that could be implemented automatically are complete. Further work
+is optional product polish rather than hidden release hardening. The recommended order is
+documented in [10-experience-roadmap.md](10-experience-roadmap.md), starting with explicit widget
+behavior, duplicate-tap protection, lighter daily check-ins, neutral deferral, and editable
+routines/history.
 
 ## Cost judgment
 

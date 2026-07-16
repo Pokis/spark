@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Body, Muted } from './Typography';
 
@@ -13,7 +13,11 @@ export function LoadingState({ error }: { error?: string | null }) {
         </>
       ) : (
         <>
-          <ActivityIndicator color={theme.primary} size="large" />
+          <View accessibilityRole="progressbar" accessibilityLabel="Loading Spark" style={styles.skeletons}>
+            <View style={[styles.skeletonTitle, { backgroundColor: theme.surfaceAlt }]} />
+            <View style={[styles.skeletonCard, { backgroundColor: theme.surfaceAlt }]} />
+            <View style={[styles.skeletonCard, { backgroundColor: theme.surfaceAlt }]} />
+          </View>
           <Muted>Gathering your Sparks…</Muted>
         </>
       )}
@@ -28,5 +32,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 14
-  }
+  },
+  skeletons: { width: '100%', maxWidth: 420, gap: 12 },
+  skeletonTitle: { width: '62%', height: 26, borderRadius: 8 },
+  skeletonCard: { width: '100%', height: 82, borderRadius: 18 }
 });

@@ -2,6 +2,11 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 import type { WithAndroidWidgetsParams } from 'react-native-android-widget';
 
 const packageName = 'com.sparkhabits.app';
+const iconVariant = process.env.SPARK_ICON_VARIANT || 'calm';
+const iconAsset =
+  iconVariant === 'classic' ? './assets/spark-icon.png' : './assets/spark-icon-v2.png';
+const iconBackground =
+  iconVariant === 'midnight' ? '#070B17' : iconVariant === 'classic' ? '#FF6B5F' : '#0B1020';
 const widgetConfig: WithAndroidWidgetsParams = {
   widgets: [
     {
@@ -14,6 +19,17 @@ const widgetConfig: WithAndroidWidgetsParams = {
       targetCellHeight: 2,
       previewImage: './assets/spark-icon-v2.png',
       updatePeriodMillis: 1_800_000
+    },
+    {
+      name: 'SparkCapture',
+      label: 'Spark Quick Capture',
+      description: 'Park a thought without searching for the app.',
+      minWidth: '180dp',
+      minHeight: '70dp',
+      targetCellWidth: 3,
+      targetCellHeight: 1,
+      previewImage: './assets/spark-icon-v2.png',
+      updatePeriodMillis: 86_400_000
     }
   ]
 };
@@ -25,7 +41,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   owner: process.env.EXPO_OWNER || undefined,
   version: '0.1.0',
   orientation: 'portrait',
-  icon: './assets/spark-icon-v2.png',
+  icon: iconAsset,
   scheme: 'spark',
   userInterfaceStyle: 'automatic',
   ios: {
@@ -45,8 +61,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'android.permission.SYSTEM_ALERT_WINDOW'
     ],
     adaptiveIcon: {
-      foregroundImage: './assets/spark-icon-v2.png',
-      backgroundColor: '#0B1020'
+      foregroundImage: iconAsset,
+      backgroundColor: iconBackground
     },
     permissions: ['VIBRATE', 'RECEIVE_BOOT_COMPLETED']
   },
@@ -89,6 +105,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-document-picker',
       {
         iCloudContainerEnvironment: 'Production'
+      }
+    ],
+    [
+      'expo-audio',
+      {
+        microphonePermission: false,
+        recordAudioAndroid: false,
+        enableBackgroundRecording: false,
+        enableBackgroundPlayback: false
+      }
+    ],
+    [
+      'expo-sharing',
+      {
+        android: {
+          enabled: true,
+          singleShareMimeTypes: ['text/plain', 'text/*']
+        }
       }
     ],
     'react-native-iap',

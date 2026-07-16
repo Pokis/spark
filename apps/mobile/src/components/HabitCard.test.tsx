@@ -48,4 +48,53 @@ describe('HabitCard', () => {
     expect(view.getByText('One glass')).toBeTruthy();
     expect(view.getByText('5 min · +3 sparks')).toBeTruthy();
   });
+
+  it('blocks completion controls while a completion is saving', async () => {
+    const onComplete = jest.fn();
+    const view = await render(
+      <HabitCard
+        suggestion={suggestion}
+        onComplete={onComplete}
+        onEdit={jest.fn()}
+        saving
+      />
+    );
+    await fireEvent.press(
+      view.getByRole('button', {
+        name: 'Complete Drink water: One sip, 1 minute'
+      })
+    );
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('exposes direct tiny, two-minute, and neutral deferral actions', async () => {
+    const onTiny = jest.fn();
+    const onFocus = jest.fn();
+    const onDefer = jest.fn();
+    const view = await render(
+      <HabitCard
+        suggestion={suggestion}
+        onComplete={jest.fn()}
+        onEdit={jest.fn()}
+        onTiny={onTiny}
+        onFocus={onFocus}
+        onDefer={onDefer}
+      />
+    );
+    await fireEvent.press(view.getByRole('button', { name: 'Log the tiny version of Drink water' }));
+    await fireEvent.press(
+      view.getByRole('button', { name: 'Start a two minute focus session for Drink water' })
+    );
+    await fireEvent.press(
+      view.getByRole('button', { name: 'Show neutral deferral choices for Drink water' })
+    );
+    await fireEvent.press(
+      view.getByRole('button', {
+        name: 'Tomorrow for Drink water; this does not record a failure'
+      })
+    );
+    expect(onTiny).toHaveBeenCalledTimes(1);
+    expect(onFocus).toHaveBeenCalledWith(2);
+    expect(onDefer).toHaveBeenCalledWith('tomorrow');
+  });
 });

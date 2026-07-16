@@ -8,6 +8,7 @@ export async function syncTodayWidget(input: {
   habits: Habit[];
   completions: Completion[];
   timeZone: string;
+  appIconStyle?: 'classic' | 'calm' | 'midnight';
 }): Promise<void> {
   if (Platform.OS !== 'android') return;
   const suggestion = buildTodayPlan({
@@ -24,6 +25,8 @@ export async function syncTodayWidget(input: {
     [...today].reduce((sum, character) => sum + character.charCodeAt(0), 0)
   ) % 3;
   const tinyPrefixes = ['Tiny option', 'Starting point', 'Just begin with'];
+  const brandMark =
+    input.appIconStyle === 'calm' ? '◌' : input.appIconStyle === 'midnight' ? '✧' : '✦';
   const restMessages = [
     'Rest is allowed. Tap to see your Journey.',
     'Nothing is overdue. Your wins are still here.',
@@ -38,14 +41,16 @@ export async function syncTodayWidget(input: {
           suggestion.variant.label
         }`,
         winsToday,
-        accent: suggestion.habit.color
+        accent: suggestion.habit.color,
+        brandMark
       }
     : {
         habitId: null,
         title: 'Enough for today',
         tinyLabel: restMessages[wordingIndex]!,
         winsToday,
-        accent: '#20B8B2'
+        accent: '#20B8B2',
+        brandMark
       };
   await AsyncStorage.setItem(WIDGET_SNAPSHOT_KEY, JSON.stringify(snapshot));
   try {

@@ -85,7 +85,18 @@ timing vary.
 7. Enable reduced motion and verify celebration and body double stop pulsing.
 8. Deny notifications and verify the app remains useful and does not reprompt aggressively.
 9. Export, clear app storage, restore, and compare data.
-10. Put the widget on the home screen, complete its tiny action, and verify one completion.
+10. Put the Today widget on the home screen, tap Log tiny, verify nothing is written before the
+    confirmation, then confirm and verify exactly one completion.
+11. Rapidly tap a completion and verify only one entry exists and Undo remains accessible.
+12. Defer actions with Not now, Later today, Tomorrow, and Quiet today; verify no completion or
+    failure state is created.
+13. Start Focus from a habit, routine step, and Capture item and verify title/duration prefilling.
+14. Pause a routine, force-stop Spark, reopen it, and verify the exact step/tiny/skipped state.
+15. Share text from a browser into Spark and verify it appears only in local Capture.
+16. Add the Quick Capture widget and verify unfinished text survives background/process loss.
+17. Test exact/morning/afternoon/evening reminders, configurable snooze, Log tiny, and Quiet today.
+18. Enable each local soundscape, change volume, lock/unlock, and confirm Spark never requests the
+    microphone and does not keep background playback alive.
 
 ## Cloud security scenarios
 
@@ -134,6 +145,7 @@ Check:
 - visible browser focus
 - widget accessibility label
 
-Automated component assertions cover labelled completion actions, setting switches, navigation
-row names/hints, and non-judgmental capacity language. They supplement rather than replace
-TalkBack and large-text device testing.
+Automated assertions also cover rapid-tap guarding, direct tiny/focus/deferral actions, backup
+migration from every released schema, routine recovery data, reminder windows, timezone/DST
+behavior, supportive observations, labelled completion actions, settings, and non-judgmental
+capacity language. They supplement rather than replace TalkBack and large-text device testing.

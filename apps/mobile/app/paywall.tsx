@@ -26,10 +26,12 @@ const freeFeatures = [
 ];
 
 const premiumFeatures = [
-  'Aurora purple accent theme',
-  'Visible Spark supporter badge',
+  'Aurora, Ocean, and Forest accent themes',
+  'Spark, owl, and cloud body-double companions',
+  'Alternate celebrations and icon treatments',
+  'Generated offline focus soundscapes with volume control',
+  'Optional Spark supporter badge',
   'Restore supporter status on another device',
-  'Future supporter cosmetics when they are released'
 ];
 
 export default function PaywallScreen() {

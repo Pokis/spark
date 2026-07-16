@@ -14,6 +14,7 @@ import { Platform } from 'react-native';
 export const HABIT_CATEGORY = 'spark-habit';
 export const ACTION_TINY = 'spark-tiny';
 export const ACTION_SNOOZE = 'spark-snooze';
+export const ACTION_QUIET_TODAY = 'spark-quiet-today';
 const MAX_SCHEDULED_HABIT_NOTIFICATIONS = 56;
 const HORIZON_DAYS = 14;
 const REMINDER_PLAN_KEY = 'spark.reminder.plan.v1';
@@ -27,6 +28,15 @@ interface StoredReminderPlan {
 interface ReminderQuietState {
   misses: number;
   quietUntil?: string;
+}
+
+export function notificationActionKind(
+  identifier: string
+): 'log_tiny' | 'snooze' | 'quiet_today' | 'open' {
+  if (identifier === ACTION_TINY) return 'log_tiny';
+  if (identifier === ACTION_SNOOZE) return 'snooze';
+  if (identifier === ACTION_QUIET_TODAY) return 'quiet_today';
+  return 'open';
 }
 
 export interface PlannedHabitNotification {
@@ -59,13 +69,18 @@ export async function configureNotifications(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(HABIT_CATEGORY, [
     {
       identifier: ACTION_TINY,
-      buttonTitle: 'Tiny version',
+      buttonTitle: 'Log tiny win',
       options: { opensAppToForeground: true }
     },
     {
       identifier: ACTION_SNOOZE,
       buttonTitle: 'Later',
       options: { opensAppToForeground: false }
+    },
+    {
+      identifier: ACTION_QUIET_TODAY,
+      buttonTitle: 'Quiet today',
+      options: { opensAppToForeground: true }
     }
   ]);
 }
@@ -95,6 +110,20 @@ function localDateAt(dateKey: string, hour: number, minute: number): Date {
   const date = new Date(`${dateKey}T00:00:00`);
   date.setHours(hour, minute, 0, 0);
   return date;
+}
+
+function reminderTime(habit: Habit): { hour: number; minute: number } | null {
+  if (!habit.reminderWindow || habit.reminderWindow === 'exact') {
+    return parsePreferredTime(habit.preferredTime);
+  }
+  const defaults = {
+    morning: { hour: 9, minute: 30 },
+    afternoon: { hour: 14, minute: 0 },
+    evening: { hour: 19, minute: 0 }
+  } as const;
+  const base = defaults[habit.reminderWindow];
+  const spread = [...habit.id].reduce((total, character) => total + character.charCodeAt(0), 0);
+  return { hour: base.hour, minute: (base.minute + spread % 25) % 60 };
 }
 
 function completedOn(
@@ -173,7 +202,7 @@ export function planHabitNotifications(
 
   return selected
     .flatMap((habit) => {
-      const time = parsePreferredTime(habit.preferredTime);
+      const time = reminderTime(habit);
       if (!time) return [];
       return nextReminderDates(habit, completions, now, timeZone).map(
         (dateKey): PlannedHabitNotification => ({

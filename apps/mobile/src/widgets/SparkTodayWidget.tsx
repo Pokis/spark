@@ -11,6 +11,7 @@ export interface SparkWidgetSnapshot {
   tinyLabel: string;
   winsToday: number;
   accent: string;
+  brandMark?: string;
 }
 
 export const emptyWidgetSnapshot: SparkWidgetSnapshot = {
@@ -21,10 +22,14 @@ export const emptyWidgetSnapshot: SparkWidgetSnapshot = {
   accent: '#FF6B5F'
 };
 
-export function SparkTodayWidget({ snapshot }: { snapshot: SparkWidgetSnapshot }) {
-  const uri = snapshot.habitId
-    ? `spark://widget-action?habitId=${encodeURIComponent(snapshot.habitId)}`
+export function widgetActionUri(habitId: string | null): string {
+  return habitId
+    ? `spark://widget-action?habitId=${encodeURIComponent(habitId)}`
     : 'spark://';
+}
+
+export function SparkTodayWidget({ snapshot }: { snapshot: SparkWidgetSnapshot }) {
+  const uri = widgetActionUri(snapshot.habitId);
   return (
     <FlexWidget
       accessibilityLabel={`${snapshot.title}. ${snapshot.tinyLabel}. ${snapshot.winsToday} wins today. Tap to open Spark.`}
@@ -49,7 +54,7 @@ export function SparkTodayWidget({ snapshot }: { snapshot: SparkWidgetSnapshot }
         }}
       >
         <TextWidget
-          text="✦  SPARK"
+          text={`${snapshot.brandMark ?? '✦'}  SPARK`}
           style={{
             color: snapshot.accent as `#${string}`,
             fontSize: 13,
@@ -91,7 +96,7 @@ export function SparkTodayWidget({ snapshot }: { snapshot: SparkWidgetSnapshot }
           }}
         />
         <TextWidget
-          text="OPEN  ›"
+          text={snapshot.habitId ? 'LOG TINY  ›' : 'OPEN  ›'}
           style={{
             color: '#FFFFFF',
             fontSize: 12,

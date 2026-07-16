@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
@@ -8,16 +9,23 @@ import { Chip } from '../src/components/Chip';
 import { FormField } from '../src/components/FormField';
 import { Screen } from '../src/components/Screen';
 import { SettingRow } from '../src/components/SettingRow';
+import { SparkBurst } from '../src/components/SparkBurst';
 import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
 import {
   pickBackupForPreview,
   restoreBackup,
   shareBackup,
-  sharePortableCsv
+  sharePortableCsv,
+  clearRestoreSafetyCopies,
+  listRestoreSafetyCopies
 } from '../src/services/backup';
 import { cloudConfigured } from '../src/services/cloudConfig';
 import { deleteCloudIdentity } from '../src/services/api';
-import { getDatabaseSecurityStatus } from '../src/data/database';
+import {
+  clearDatabaseSafetyCopies,
+  getDatabaseSecurityStatus,
+  listDatabaseSafetyCopies
+} from '../src/data/database';
 import { clearDiagnostics, shareDiagnostics } from '../src/services/diagnostics';
 import { requestNotificationPermission } from '../src/services/notifications';
 import { useSpark } from '../src/state/SparkProvider';
@@ -29,18 +37,27 @@ export default function SettingsScreen() {
   const cloudAvailable = cloudConfigured();
   const supportAvailable = cloudAvailable && spark.remoteConfig.defaults.supportEnabled;
   const [storageStatus, setStorageStatus] = useState('Checking local storage…');
+  const [safetyCopies, setSafetyCopies] = useState(0);
+  const [preview, setPreview] = useState(false);
 
   useEffect(() => {
-    void getDatabaseSecurityStatus()
-      .then((status) =>
+    void Promise.all([
+      getDatabaseSecurityStatus(),
+      listDatabaseSafetyCopies(),
+      listRestoreSafetyCopies()
+    ])
+      .then(([status, databaseCopies, restoreCopies]) => {
         setStorageStatus(
           status.encrypted
-            ? `Encrypted with SQLCipher ${status.cipherVersion ?? ''}`.trim()
+            ? `Encrypted with SQLCipher ${status.cipherVersion ?? ''}. Database check: ${
+                status.integrity === 'ok' ? 'healthy' : status.integrityMessage
+              }`.trim()
             : status.expoGoPreview
               ? 'Expo Go preview: local database is not encrypted'
               : 'Encryption could not be verified'
-        )
-      )
+        );
+        setSafetyCopies(databaseCopies.length + restoreCopies.length);
+      })
       .catch((reason: unknown) =>
         setStorageStatus(reason instanceof Error ? reason.message : 'Storage check failed')
       );
@@ -134,7 +151,48 @@ export default function SettingsScreen() {
     );
   }
 
+  function clearSafetyCopies() {
+    Alert.alert(
+      'Delete automatic safety copies?',
+      'This removes bounded pre-migration and pre-restore copies. Your current data and exported backups are unchanged.',
+      [
+        { text: 'Keep them', style: 'cancel' },
+        {
+          text: 'Delete copies',
+          style: 'destructive',
+          onPress: () =>
+            void Promise.all([
+              clearDatabaseSafetyCopies(),
+              clearRestoreSafetyCopies()
+            ])
+              .then(() => setSafetyCopies(0))
+              .catch((error: unknown) =>
+                Alert.alert(
+                  'Could not delete safety copies',
+                  error instanceof Error ? error.message : 'Try again.'
+                )
+              )
+        }
+      ]
+    );
+  }
+
+  async function previewFeedback() {
+    setPreview(true);
+    if (!spark.settings.hapticsEnabled) return;
+    try {
+      if (spark.settings.sensoryProfile === 'calm') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      // Visual preview remains available when the device has no haptic engine.
+    }
+  }
+
   return (
+    <>
     <Screen>
       <View>
         <Eyebrow>Make Spark yours</Eyebrow>
@@ -183,10 +241,36 @@ export default function SettingsScreen() {
           value={spark.settings.highContrast}
           onValueChange={(value) => void spark.updateSetting('highContrast', value)}
         />
+        <Button
+          label="Preview feedback"
+          variant="secondary"
+          onPress={() => void previewFeedback()}
+        />
       </Card>
 
       <Card>
         <SectionHeading>Cognitive load</SectionHeading>
+        <SettingRow
+          title="Remember context by time of day"
+          description="Stores morning, afternoon, and evening context preferences only on this device."
+          value={spark.settings.rememberContextByTime}
+          onValueChange={(value) => void spark.updateSetting('rememberContextByTime', value)}
+        />
+        <SettingRow
+          title="Supportive observations"
+          description="Derives neutral patterns from local completions and focus sessions."
+          value={spark.settings.insightsEnabled}
+          onValueChange={(value) => void spark.updateSetting('insightsEnabled', value)}
+        />
+        {spark.settings.hiddenInsightIds.length ? (
+          <Button
+            label={`Restore ${spark.settings.hiddenInsightIds.length} hidden observation${
+              spark.settings.hiddenInsightIds.length === 1 ? '' : 's'
+            }`}
+            variant="ghost"
+            onPress={() => void spark.updateSetting('hiddenInsightIds', [])}
+          />
+        ) : null}
         <SettingRow
           title="Minimum viable day"
           description="Today shows one deliberately tiny next action instead of a list."
@@ -243,6 +327,17 @@ export default function SettingsScreen() {
           Spark schedules at most {spark.settings.notificationCap} habit reminders and prioritizes
           the habits you marked important.
         </Muted>
+        <Muted>Snooze length</Muted>
+        <View style={styles.choiceRow}>
+          {[5, 15, 30, 60].map((value) => (
+            <Chip
+              key={value}
+              label={`${value} min`}
+              selected={spark.settings.reminderSnoozeMinutes === value}
+              onPress={() => void spark.updateSetting('reminderSnoozeMinutes', value)}
+            />
+          ))}
+        </View>
         <View style={styles.capRow}>
           {[1, 2, 3, 4].map((value) => (
             <Button
@@ -284,6 +379,13 @@ export default function SettingsScreen() {
           }
         />
         <Button label="Restore a backup" variant="ghost" onPress={() => void restore()} />
+        <Muted>
+          Spark keeps at most three pre-migration database copies and three pre-restore JSON
+          copies. Current automatic safety copies: {safetyCopies}.
+        </Muted>
+        {safetyCopies ? (
+          <Button label="Delete automatic safety copies" variant="ghost" onPress={clearSafetyCopies} />
+        ) : null}
       </Card>
 
       <Card>
@@ -316,7 +418,7 @@ export default function SettingsScreen() {
         <SectionHeading>Support Spark, never unlock basic functioning</SectionHeading>
         <Muted>
           Habits, focus, capture, reminders, and local backups remain free. Premium is for
-          supporter cosmetics and advanced insights.
+          supporter cosmetics and comfort options.
         </Muted>
         <SettingRow
           title={spark.entitlement.premium ? 'Premium active' : 'Spark premium'}
@@ -328,12 +430,104 @@ export default function SettingsScreen() {
           onPress={() => router.push('/paywall')}
         />
         {spark.entitlement.premium ? (
-          <SettingRow
-            title="Aurora supporter theme"
-            description="A purple accent theme included with supporter access."
-            value={spark.settings.supporterThemeEnabled}
-            onValueChange={(value) => void spark.updateSetting('supporterThemeEnabled', value)}
-          />
+          <>
+            <SettingRow
+              title="Supporter theme"
+              description="Cosmetic accent themes; all core tools stay free."
+              value={spark.settings.supporterThemeEnabled}
+              onValueChange={(value) => void spark.updateSetting('supporterThemeEnabled', value)}
+            />
+            {spark.settings.supporterThemeEnabled ? (
+              <>
+                <Muted>Theme</Muted>
+                <View style={styles.choiceRow}>
+                  {(['aurora', 'ocean', 'forest'] as const).map((value) => (
+                    <Chip
+                      key={value}
+                      label={value[0]!.toUpperCase() + value.slice(1)}
+                      selected={spark.settings.supporterTheme === value}
+                      onPress={() => void spark.updateSetting('supporterTheme', value)}
+                    />
+                  ))}
+                </View>
+              </>
+            ) : null}
+            <SettingRow
+              title="Show supporter badge"
+              description="Controls the small supporter label on Today."
+              value={spark.settings.supporterBadgeVisible}
+              onValueChange={(value) => void spark.updateSetting('supporterBadgeVisible', value)}
+            />
+            <Muted>Body-double companion</Muted>
+            <View style={styles.choiceRow}>
+              {(['spark', 'owl', 'cloud'] as const).map((value) => (
+                <Chip
+                  key={value}
+                  label={value[0]!.toUpperCase() + value.slice(1)}
+                  selected={spark.settings.companionStyle === value}
+                  onPress={() => void spark.updateSetting('companionStyle', value)}
+                />
+              ))}
+            </View>
+            <Muted>Celebration style</Muted>
+            <View style={styles.choiceRow}>
+              {(['burst', 'ripple', 'confetti'] as const).map((value) => (
+                <Chip
+                  key={value}
+                  label={value[0]!.toUpperCase() + value.slice(1)}
+                  selected={spark.settings.celebrationStyle === value}
+                  onPress={() => void spark.updateSetting('celebrationStyle', value)}
+                />
+              ))}
+            </View>
+            <SettingRow
+              title="Offline soundscape"
+              description="A generated local loop with no streaming, account, tracking, or recurring cost."
+              value={spark.settings.soundscapeEnabled}
+              onValueChange={(value) => void spark.updateSetting('soundscapeEnabled', value)}
+            />
+            {spark.settings.soundscapeEnabled ? (
+              <>
+                <View style={styles.choiceRow}>
+                  {(['brown', 'pink', 'soft'] as const).map((value) => (
+                    <Chip
+                      key={value}
+                      label={`${value[0]!.toUpperCase() + value.slice(1)} sound`}
+                      selected={spark.settings.soundscapeKind === value}
+                      onPress={() => void spark.updateSetting('soundscapeKind', value)}
+                    />
+                  ))}
+                </View>
+                <Muted>Soundscape volume</Muted>
+                <View style={styles.choiceRow}>
+                  {[0.1, 0.25, 0.5, 0.75].map((value) => (
+                    <Chip
+                      key={value}
+                      label={`${Math.round(value * 100)}%`}
+                      selected={spark.settings.soundscapeVolume === value}
+                      onPress={() => void spark.updateSetting('soundscapeVolume', value)}
+                    />
+                  ))}
+                </View>
+              </>
+            ) : null}
+            <Muted>App icon treatment</Muted>
+            <View style={styles.choiceRow}>
+              {(['classic', 'calm', 'midnight'] as const).map((value) => (
+                <Chip
+                  key={value}
+                  label={value[0]!.toUpperCase() + value.slice(1)}
+                  selected={spark.settings.appIconStyle === value}
+                  onPress={() => void spark.updateSetting('appIconStyle', value)}
+                />
+              ))}
+            </View>
+            <Muted>
+              Icon treatment is reflected inside Spark and its widgets. Android launcher icon
+              variants remain a build-time release choice so Spark does not add a fragile native
+              alias permission.
+            </Muted>
+          </>
         ) : null}
       </Card>
 
@@ -374,6 +568,17 @@ export default function SettingsScreen() {
         <Muted>Version 0.1.0 · Android first, iPhone compatible</Muted>
       </Card>
     </Screen>
+    <SparkBurst
+      visible={preview}
+      title="Preview win"
+      reward={2}
+      reducedMotion={spark.settings.reducedMotion}
+      sensoryProfile={spark.settings.sensoryProfile}
+      celebrationStyle={spark.entitlement.premium ? spark.settings.celebrationStyle : 'burst'}
+      showReward={spark.settings.showRewards}
+      onDismiss={() => setPreview(false)}
+    />
+    </>
   );
 }
 

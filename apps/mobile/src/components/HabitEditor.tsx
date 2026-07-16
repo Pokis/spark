@@ -1,6 +1,7 @@
 import type {
   Habit,
   HabitContext,
+  ReminderWindow,
   HabitVariantKind,
   ScheduleRule
 } from '@spark/domain';
@@ -19,8 +20,10 @@ import { SettingRow } from './SettingRow';
 import { Body, Muted, SectionHeading } from './Typography';
 import { createId } from '../lib/id';
 import { isValidPreferredTime } from '../services/notifications';
+import { useLocalDraft } from '../hooks/useLocalDraft';
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const colorNames = ['Coral', 'Teal', 'Purple', 'Blue', 'Gold', 'Green'];
 const iconChoices = ['✨', '💧', '🧠', '🌿', '📚', '🏃', '🧹', '💊', '🫶', '🎨'];
 const contexts: { value: HabitContext; label: string }[] = [
   { value: 'anywhere', label: 'Anywhere' },
@@ -63,12 +66,14 @@ export function HabitEditor({
   habit,
   initialTitle,
   onSaved,
-  onArchive
+  onArchive,
+  onHistory
 }: {
   habit?: Habit;
   initialTitle?: string;
   onSaved(): void;
   onArchive?(): void;
+  onHistory?(): void;
 }) {
   const spark = useSpark();
   const theme = useTheme();
@@ -108,12 +113,64 @@ export function HabitEditor({
   const [preferredTime, setPreferredTime] = useState(habit?.preferredTime ?? '09:00');
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(habit?.reminderEnabled ?? false);
+  const [reminderWindow, setReminderWindow] = useState<ReminderWindow>(
+    habit?.reminderWindow ?? 'exact'
+  );
   const [priority, setPriority] = useState<1 | 2 | 3>(habit?.priority ?? 2);
   const [selectedContexts, setSelectedContexts] = useState<HabitContext[]>(
     habit?.contexts ?? ['anywhere']
   );
   const [saving, setSaving] = useState(false);
   const [advanced, setAdvanced] = useState(Boolean(habit));
+  const clearDraft = useLocalDraft(
+    `habit-${habit?.id ?? 'new'}`,
+    {
+      title,
+      reason,
+      cue,
+      icon,
+      color,
+      tiny,
+      standard,
+      stretch,
+      tinyMinutes,
+      standardMinutes,
+      stretchMinutes,
+      scheduleType,
+      days,
+      weeklyCount,
+      intervalDays,
+      preferredTime,
+      reminderEnabled,
+      reminderWindow,
+      priority,
+      selectedContexts,
+      advanced
+    },
+    (draft) => {
+      setTitle(draft.title);
+      setReason(draft.reason);
+      setCue(draft.cue);
+      setIcon(draft.icon);
+      setColor(draft.color);
+      setTiny(draft.tiny);
+      setStandard(draft.standard);
+      setStretch(draft.stretch);
+      setTinyMinutes(draft.tinyMinutes);
+      setStandardMinutes(draft.standardMinutes);
+      setStretchMinutes(draft.stretchMinutes);
+      setScheduleType(draft.scheduleType);
+      setDays(draft.days);
+      setWeeklyCount(draft.weeklyCount);
+      setIntervalDays(draft.intervalDays);
+      setPreferredTime(draft.preferredTime);
+      setReminderEnabled(draft.reminderEnabled);
+      setReminderWindow(draft.reminderWindow);
+      setPriority(draft.priority);
+      setSelectedContexts(draft.selectedContexts);
+      setAdvanced(draft.advanced);
+    }
+  );
 
   function schedule(): ScheduleRule {
     if (scheduleType === 'weekdays') return { type: 'weekdays', days };
@@ -140,7 +197,7 @@ export function HabitEditor({
       Alert.alert('Choose a day', 'Select at least one day for this rhythm.');
       return;
     }
-    if (reminderEnabled && !isValidPreferredTime(preferredTime)) {
+    if (reminderEnabled && reminderWindow === 'exact' && !isValidPreferredTime(preferredTime)) {
       Alert.alert(
         'Check the reminder time',
         'Use a 24-hour time from 00:00 through 23:59, for example 09:30.'
@@ -182,6 +239,7 @@ export function HabitEditor({
       schedule: schedule(),
       preferredTime,
       reminderEnabled,
+      reminderWindow,
       priority,
       contexts: selectedContexts.length ? selectedContexts : ['anywhere'],
       createdAt: habit?.createdAt ?? new Date().toISOString(),
@@ -193,6 +251,7 @@ export function HabitEditor({
     };
     try {
       await spark.saveHabit(next);
+      await clearDraft();
       onSaved();
     } finally {
       setSaving(false);
@@ -320,11 +379,11 @@ export function HabitEditor({
           ))}
         </View>
         <View style={styles.colors}>
-          {habitColors.map((value) => (
+          {habitColors.map((value, index) => (
             <Text
               key={value}
               accessibilityRole="button"
-              accessibilityLabel={`Choose color ${value}`}
+              accessibilityLabel={`Choose ${colorNames[index]} color`}
               accessibilityState={{ selected: color === value }}
               onPress={() => setColor(value)}
               style={[
@@ -481,35 +540,77 @@ export function HabitEditor({
         />
         {reminderEnabled ? (
           <View style={styles.timePicker}>
-            <Muted>Preferred time: {preferredTime}</Muted>
-            <Button
-              label="Choose reminder time"
-              variant="secondary"
-              onPress={() => setShowTimePicker(true)}
-            />
-            {showTimePicker ? (
-              <DateTimePicker
-                value={preferredTimeDate()}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_event, selected) => {
-                  if (Platform.OS === 'android') setShowTimePicker(false);
-                  if (!selected) return;
-                  setPreferredTime(
-                    `${String(selected.getHours()).padStart(2, '0')}:${String(
-                      selected.getMinutes()
-                    ).padStart(2, '0')}`
-                  );
-                }}
-              />
-            ) : null}
-            {showTimePicker && Platform.OS === 'ios' ? (
+            <Muted>Choose a forgiving window or an exact local time.</Muted>
+            <View style={styles.choices}>
+              {(
+                [
+                  ['exact', 'Exact time'],
+                  ['morning', 'Morning'],
+                  ['afternoon', 'Afternoon'],
+                  ['evening', 'Evening']
+                ] as const
+              ).map(([value, label]) => (
+                <Chip
+                  key={value}
+                  label={label}
+                  selected={reminderWindow === value}
+                  onPress={() => setReminderWindow(value)}
+                />
+              ))}
+            </View>
+            {reminderWindow === 'exact' ? (
+              <>
+                <Muted>Preferred time: {preferredTime}</Muted>
+                <Button
+                  label="Choose reminder time"
+                  variant="secondary"
+                  onPress={() => setShowTimePicker(true)}
+                />
+                {showTimePicker ? (
+                  <DateTimePicker
+                    value={preferredTimeDate()}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(_event, selected) => {
+                      if (Platform.OS === 'android') setShowTimePicker(false);
+                      if (!selected) return;
+                      setPreferredTime(
+                        `${String(selected.getHours()).padStart(2, '0')}:${String(
+                          selected.getMinutes()
+                        ).padStart(2, '0')}`
+                      );
+                    }}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <Muted>
+                Spark will place the invitation gently within the {reminderWindow} window.
+              </Muted>
+            )}
+            {reminderWindow === 'exact' && showTimePicker && Platform.OS === 'ios' ? (
               <Button
                 label="Use this time"
                 variant="ghost"
                 onPress={() => setShowTimePicker(false)}
               />
             ) : null}
+            <Button
+              label="Preview this reminder"
+              variant="ghost"
+              onPress={() =>
+                Alert.alert(
+                  `${icon} A small Spark?`,
+                  `${tiny}\n\nTiming: ${
+                    reminderWindow === 'exact' ? preferredTime : reminderWindow
+                  }\nReminder feedback: silent sound, one gentle device vibration\nCompletion feedback: ${
+                    spark.settings.sensoryProfile
+                  }, ${
+                    spark.settings.hapticsEnabled ? 'haptic enabled' : 'haptic muted'
+                  }\nActions: Log tiny win · Later · Quiet today`
+                )
+              }
+            />
           </View>
         ) : null}
       </Card>
@@ -524,6 +625,14 @@ export function HabitEditor({
           </Muted>
         </Card>
       )}
+
+      {habit && onHistory ? (
+        <Card>
+          <SectionHeading>History and corrections</SectionHeading>
+          <Body>Review recent wins and pauses, add optional tags, or log something you forgot.</Body>
+          <Button label="Open habit history" variant="secondary" onPress={onHistory} />
+        </Card>
+      ) : null}
 
       {habit ? (
         <Card>

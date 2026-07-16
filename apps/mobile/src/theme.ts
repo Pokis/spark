@@ -28,7 +28,12 @@ export const palette = {
 
 export type Theme = ReturnType<typeof makeTheme>;
 
-export function makeTheme(dark: boolean, highContrast = false, supporter = false) {
+export function makeTheme(
+  dark: boolean,
+  highContrast = false,
+  supporter = false,
+  supporterTheme: 'aurora' | 'ocean' | 'forest' = 'aurora'
+) {
   if (highContrast) {
     return {
       dark,
@@ -47,6 +52,12 @@ export function makeTheme(dark: boolean, highContrast = false, supporter = false
       shadow: '#000000'
     };
   }
+  const supporterAccent =
+    supporterTheme === 'ocean'
+      ? '#247BA0'
+      : supporterTheme === 'forest'
+        ? '#2F855A'
+        : '#6546C3';
   return {
     dark,
     background: dark ? palette.navy950 : '#F8F7FC',
@@ -55,7 +66,7 @@ export function makeTheme(dark: boolean, highContrast = false, supporter = false
     border: dark ? palette.navy700 : '#E5E7EF',
     text: dark ? '#F7F8FC' : palette.ink,
     textMuted: dark ? '#A8B0C4' : palette.muted,
-    primary: supporter ? '#6546C3' : palette.coral,
+    primary: supporter ? supporterAccent : palette.coral,
     primaryText: palette.white,
     success: palette.teal,
     warning: palette.gold,
@@ -70,12 +81,17 @@ const ThemeContext = createContext<Theme | null>(null);
 export function SparkThemeProvider({
   children,
   highContrast,
-  supporter
-}: PropsWithChildren<{ highContrast: boolean; supporter: boolean }>) {
+  supporter,
+  supporterTheme
+}: PropsWithChildren<{
+  highContrast: boolean;
+  supporter: boolean;
+  supporterTheme: 'aurora' | 'ocean' | 'forest';
+}>) {
   const dark = useColorScheme() === 'dark';
   const theme = useMemo(
-    () => makeTheme(dark, highContrast, supporter),
-    [dark, highContrast, supporter]
+    () => makeTheme(dark, highContrast, supporter, supporterTheme),
+    [dark, highContrast, supporter, supporterTheme]
   );
   return createElement(ThemeContext.Provider, { value: theme }, children);
 }

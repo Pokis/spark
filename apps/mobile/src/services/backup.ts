@@ -7,6 +7,7 @@ import * as Sharing from 'expo-sharing';
 import { z } from 'zod';
 
 const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
+const MAX_RESTORE_SAFETY_COPIES = 3;
 
 const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoSchema = z.string().datetime({ offset: true });
@@ -53,6 +54,9 @@ const habitSchema = z.object({
   variants: z.array(variantSchema).min(1).max(10),
   schedule: scheduleSchema,
   preferredTime: z.string().max(5).optional(),
+  reminderWindow: z
+    .enum(['exact', 'morning', 'afternoon', 'evening'])
+    .default('exact'),
   reminderEnabled: z.boolean(),
   priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   contexts: z
@@ -77,6 +81,13 @@ const completionSchema = z.object({
   loggedAt: isoSchema,
   localDate: dateKeySchema,
   source: z.enum(['today', 'widget', 'notification', 'history', 'routine']),
+  context: z
+    .enum(['anywhere', 'home', 'work', 'outside', 'phone'])
+    .optional(),
+  tags: z
+    .array(z.enum(['timer_helped', 'made_it_tiny', 'body_double', 'good_cue']))
+    .max(4)
+    .default([]),
   note: z.string().max(2000).optional()
 });
 
@@ -112,7 +123,9 @@ const routineSchema = z.object({
         title: z.string().min(1).max(300),
         tinyTitle: z.string().max(300).optional(),
         estimateMinutes: z.number().int().min(1).max(1440),
-        sortOrder: z.number().int()
+        sortOrder: z.number().int(),
+        linkedHabitId: z.string().max(160).optional(),
+        focusMinutes: z.number().int().min(1).max(180).optional()
       })
     )
     .max(500),
@@ -124,7 +137,11 @@ const checkInSchema = z.object({
   localDate: dateKeySchema,
   capacity: z.enum(['empty', 'steady', 'ready']),
   availableMinutes: z.number().int().min(0).max(1440).nullable(),
-  mood: z.number().min(0).max(10).nullable()
+  mood: z.number().min(0).max(10).nullable(),
+  context: z
+    .enum(['anywhere', 'home', 'work', 'outside', 'phone'])
+    .nullable()
+    .optional()
 });
 
 const currentSettingsSchema = z.object({
@@ -135,17 +152,51 @@ const currentSettingsSchema = z.object({
   sensoryProfile: z.enum(['calm', 'balanced', 'celebratory']),
   highContrast: z.boolean(),
   minimumViableDay: z.boolean(),
+  rememberContextByTime: z.boolean().default(defaultSettings.rememberContextByTime),
+  contextByPeriod: z
+    .object({
+      morning: z.enum(['anywhere', 'home', 'work', 'outside', 'phone']).nullable(),
+      afternoon: z.enum(['anywhere', 'home', 'work', 'outside', 'phone']).nullable(),
+      evening: z.enum(['anywhere', 'home', 'work', 'outside', 'phone']).nullable()
+    })
+    .default(defaultSettings.contextByPeriod),
   launchCountdownEnabled: z.boolean().default(defaultSettings.launchCountdownEnabled),
   transitionNudgesEnabled: z
     .boolean()
     .default(defaultSettings.transitionNudgesEnabled),
   showRewards: z.boolean(),
   showRhythmPercentages: z.boolean(),
+  insightsEnabled: z.boolean().default(defaultSettings.insightsEnabled),
+  hiddenInsightIds: z.array(z.string().max(240)).max(100).default([]),
   supporterThemeEnabled: z.boolean(),
+  supporterTheme: z
+    .enum(['aurora', 'ocean', 'forest'])
+    .default(defaultSettings.supporterTheme),
+  supporterBadgeVisible: z.boolean().default(defaultSettings.supporterBadgeVisible),
+  companionStyle: z
+    .enum(['spark', 'owl', 'cloud'])
+    .default(defaultSettings.companionStyle),
+  celebrationStyle: z
+    .enum(['burst', 'ripple', 'confetti'])
+    .default(defaultSettings.celebrationStyle),
+  appIconStyle: z
+    .enum(['classic', 'calm', 'midnight'])
+    .default(defaultSettings.appIconStyle),
   notificationsEnabled: z.boolean(),
   autoQuietReminders: z.boolean().default(defaultSettings.autoQuietReminders),
   notificationCap: z.number().int().min(0).max(8),
+  reminderSnoozeMinutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(180)
+    .default(defaultSettings.reminderSnoozeMinutes),
   defaultFocusMinutes: z.number().int().min(1).max(180),
+  soundscapeEnabled: z.boolean().default(defaultSettings.soundscapeEnabled),
+  soundscapeKind: z
+    .enum(['brown', 'pink', 'soft'])
+    .default(defaultSettings.soundscapeKind),
+  soundscapeVolume: z.number().min(0).max(1).default(defaultSettings.soundscapeVolume),
   cloudSupportEnabled: z.boolean()
 });
 
@@ -168,13 +219,37 @@ const snapshotBody = {
   dailyCheckIns: z.array(checkInSchema).max(100_000)
 };
 
+const deferralSchema = z.object({
+  habitId: z.string().min(1).max(160),
+  until: isoSchema,
+  kind: z.enum(['not_now', 'later_today', 'tomorrow', 'quiet_today'])
+});
+
+const routineRunSchema = z.object({
+  routineId: z.string().min(1).max(160),
+  stepIndex: z.number().int().min(0).max(10_000),
+  tiny: z.boolean(),
+  paused: z.boolean(),
+  skippedStepIds: z.array(z.string().max(160)).max(500),
+  startedAt: isoSchema,
+  updatedAt: isoSchema
+});
+
 const currentSnapshotSchema = z.object({
+  schemaVersion: z.literal(3),
+  ...snapshotBody,
+  habitDeferrals: z.array(deferralSchema).max(10_000),
+  routineRuns: z.array(routineRunSchema).max(10_000),
+  settings: currentSettingsSchema
+});
+
+const versionTwoSnapshotSchema = z.object({
   schemaVersion: z.literal(2),
   ...snapshotBody,
   settings: currentSettingsSchema
 });
 
-const legacySnapshotSchema = z.object({
+const versionOneSnapshotSchema = z.object({
   schemaVersion: z.literal(1),
   ...snapshotBody,
   settings: legacySettingsSchema
@@ -231,6 +306,35 @@ function validateReferences(snapshot: AppSnapshot): void {
       variantOwners.set(variant.id, { habitId: habit.id, kind: variant.kind });
     }
   }
+  const routineIds = new Set(snapshot.routines.map((routine) => routine.id));
+  const routineStepIds = new Map(
+    snapshot.routines.map((routine) => [
+      routine.id,
+      new Set(routine.steps.map((step) => step.id))
+    ])
+  );
+  for (const step of snapshot.routines.flatMap((routine) => routine.steps)) {
+    if (step.linkedHabitId && !habitIds.has(step.linkedHabitId)) {
+      throw new Error('A routine step refers to a habit that is missing from the backup.');
+    }
+  }
+  for (const deferral of snapshot.habitDeferrals) {
+    if (!habitIds.has(deferral.habitId)) {
+      throw new Error('A deferral refers to a habit that is missing from the backup.');
+    }
+  }
+  for (const run of snapshot.routineRuns) {
+    if (!routineIds.has(run.routineId)) {
+      throw new Error('A saved routine position refers to a missing routine.');
+    }
+    const validSteps = routineStepIds.get(run.routineId);
+    if (!validSteps || run.stepIndex >= validSteps.size) {
+      throw new Error('A saved routine position is outside the routine steps.');
+    }
+    if (run.skippedStepIds.some((stepId) => !validSteps?.has(stepId))) {
+      throw new Error('A saved routine position refers to a missing step.');
+    }
+  }
   for (const completion of snapshot.completions) {
     if (!habitIds.has(completion.habitId)) {
       throw new Error('A completion refers to a habit that is missing from the backup.');
@@ -264,14 +368,26 @@ export function parseBackupText(raw: string): AppSnapshot {
       ? (value as { schemaVersion?: unknown }).schemaVersion
       : undefined;
   let snapshot: AppSnapshot;
-  if (version === 2) {
+  if (version === 3) {
     snapshot = currentSnapshotSchema.parse(value) as AppSnapshot;
+  } else if (version === 2) {
+    const legacy = versionTwoSnapshotSchema.parse(value);
+    snapshot = {
+      ...legacy,
+      schemaVersion: 3,
+      habitDeferrals: [],
+      routineRuns: [],
+      settings: {
+        ...defaultSettings,
+        ...legacy.settings
+      }
+    };
   } else if (version === 1) {
-    const legacy = legacySnapshotSchema.parse(value);
+    const legacy = versionOneSnapshotSchema.parse(value);
     const exportedDate = legacy.exportedAt.slice(0, 10);
     snapshot = {
       ...legacy,
-      schemaVersion: 2,
+      schemaVersion: 3,
       habits: legacy.habits.map((habit) => ({
         ...habit,
         pausedAt:
@@ -281,7 +397,9 @@ export function parseBackupText(raw: string): AppSnapshot {
       settings: {
         ...defaultSettings,
         ...legacy.settings
-      }
+      },
+      habitDeferrals: [],
+      routineRuns: []
     };
   } else {
     throw new Error('This Spark backup version is not supported.');
@@ -300,6 +418,34 @@ async function writeSnapshot(
     encoding: FileSystem.EncodingType.UTF8
   });
   return path;
+}
+
+export async function listRestoreSafetyCopies(): Promise<
+  { name: string; uri: string }[]
+> {
+  const directory = FileSystem.documentDirectory;
+  if (!directory) return [];
+  return (await FileSystem.readDirectoryAsync(directory))
+    .filter((name) => name.startsWith('spark-before-restore-') && name.endsWith('.json'))
+    .sort((a, b) => b.localeCompare(a))
+    .map((name) => ({ name, uri: `${directory}${name}` }));
+}
+
+async function pruneRestoreSafetyCopies(): Promise<void> {
+  const copies = await listRestoreSafetyCopies();
+  await Promise.all(
+    copies
+      .slice(MAX_RESTORE_SAFETY_COPIES)
+      .map((copy) => FileSystem.deleteAsync(copy.uri, { idempotent: true }))
+  );
+}
+
+export async function clearRestoreSafetyCopies(): Promise<void> {
+  await Promise.all(
+    (await listRestoreSafetyCopies()).map((copy) =>
+      FileSystem.deleteAsync(copy.uri, { idempotent: true })
+    )
+  );
 }
 
 export async function shareBackup(): Promise<void> {
@@ -335,6 +481,8 @@ export async function sharePortableCsv(): Promise<void> {
     'local_date',
     'occurred_at',
     'reward',
+    'context',
+    'tags',
     'note'
   ];
   const rows: unknown[][] = [
@@ -348,6 +496,8 @@ export async function sharePortableCsv(): Promise<void> {
       '',
       habit.createdAt,
       '',
+      '',
+      '',
       habit.reason ?? ''
     ]),
     ...snapshot.completions.map((completion) => [
@@ -359,6 +509,8 @@ export async function sharePortableCsv(): Promise<void> {
       completion.localDate,
       completion.occurredAt,
       completion.reward,
+      completion.context ?? '',
+      (completion.tags ?? []).join('|'),
       completion.note ?? ''
     ])
   ];
@@ -417,6 +569,7 @@ export async function restoreBackup(preview: BackupPreview): Promise<string | nu
         'spark-before-restore'
       )
     : null;
+  await pruneRestoreSafetyCopies();
   await importSnapshot(preview.snapshot);
   return safetyCopy;
 }

@@ -5,6 +5,7 @@ import {
   localDateKey,
   rewardSummary,
   rhythmForHabit,
+  supportiveInsights,
   type Completion,
   type Habit,
 } from '../src';
@@ -149,5 +150,42 @@ describe('domain behavior', () => {
       2,
     );
     expect(rewardSummary(completions).totalSparks).toBe(4);
+  });
+
+  it('derives supportive observations locally without grading blank days', () => {
+    const completions: Completion[] = ['2026-07-14', '2026-07-15', '2026-07-16'].map(
+      (date, index) => ({
+        id: `tiny-${index}`,
+        habitId: habit.id,
+        variantId: 'tiny',
+        variantKind: 'tiny',
+        reward: 1,
+        occurredAt: `${date}T10:00:00.000Z`,
+        loggedAt: `${date}T10:00:00.000Z`,
+        localDate: date,
+        source: 'today',
+        context: 'work',
+      }),
+    );
+    const insights = supportiveInsights({
+      habits: [habit],
+      completions,
+      focusSessions: [],
+      now: new Date('2026-07-16T12:00:00Z'),
+      timeZone: 'UTC',
+    });
+    expect(insights.map((item) => item.kind)).toEqual(
+      expect.arrayContaining(['habit-size', 'context']),
+    );
+    expect(insights.every((item) => !item.body.toLowerCase().includes('missed'))).toBe(true);
+  });
+
+  it('keeps logical dates stable across the spring DST transition', () => {
+    expect(localDateKey(new Date('2026-03-08T06:59:00Z'), 'America/New_York')).toBe(
+      '2026-03-08',
+    );
+    expect(localDateKey(new Date('2026-03-08T07:01:00Z'), 'America/New_York')).toBe(
+      '2026-03-08',
+    );
   });
 });

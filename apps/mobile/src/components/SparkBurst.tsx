@@ -1,3 +1,4 @@
+import type { CompletionTag } from '@spark/domain';
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { palette } from '../theme';
@@ -17,7 +18,10 @@ export function SparkBurst({
   reward,
   reducedMotion,
   sensoryProfile,
+  celebrationStyle = 'burst',
   showReward,
+  tags = [],
+  onToggleTag,
   onDismiss
 }: {
   visible: boolean;
@@ -25,7 +29,10 @@ export function SparkBurst({
   reward: number;
   reducedMotion: boolean;
   sensoryProfile: 'calm' | 'balanced' | 'celebratory';
+  celebrationStyle?: 'burst' | 'ripple' | 'confetti';
   showReward: boolean;
+  tags?: CompletionTag[];
+  onToggleTag?(tag: CompletionTag): void;
   onDismiss(): void;
 }) {
   const progress = useRef(new Animated.Value(0)).current;
@@ -48,19 +55,16 @@ export function SparkBurst({
       ? []
       : sensoryProfile === 'balanced'
         ? particles.slice(0, 4)
-        : particles;
+        : celebrationStyle === 'ripple'
+          ? particles.slice(0, 3)
+          : particles;
   const rewardLabel = showReward
     ? ` You earned ${reward} ${reward === 1 ? 'spark' : 'sparks'}.`
     : '';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${title} completed.${rewardLabel} Tap to continue.`}
-        onPress={onDismiss}
-        style={styles.backdrop}
-      >
+      <View style={styles.backdrop}>
         <View style={styles.stage}>
           {visibleParticles.map((particle, index) => (
             <Animated.View
@@ -98,6 +102,7 @@ export function SparkBurst({
             style={[
               styles.spark,
               {
+                borderRadius: celebrationStyle === 'ripple' ? 58 : 40,
                 transform: [
                   {
                     scale: progress.interpolate({
@@ -121,9 +126,44 @@ export function SparkBurst({
           <Text style={styles.reward}>
             {showReward ? `+${reward} sparks · it counts` : 'It counts'}
           </Text>
-          <Text style={styles.dismiss}>Tap anywhere</Text>
+          {onToggleTag ? (
+            <>
+              <Text style={styles.tagPrompt}>Anything help? Optional.</Text>
+              <View style={styles.tags}>
+                {(
+                  [
+                    ['timer_helped', 'Timer helped'],
+                    ['made_it_tiny', 'Made it tiny'],
+                    ['body_double', 'Body double'],
+                    ['good_cue', 'Good cue']
+                  ] as const
+                ).map(([tag, label]) => (
+                  <Pressable
+                    key={tag}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: tags.includes(tag) }}
+                    onPress={() => onToggleTag(tag)}
+                    style={[
+                      styles.tag,
+                      { backgroundColor: tags.includes(tag) ? '#6546C3' : '#202A45' }
+                    ]}
+                  >
+                    <Text style={styles.tagText}>{tags.includes(tag) ? '✓ ' : ''}{label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${title} completed.${rewardLabel} Continue.`}
+            onPress={onDismiss}
+            style={styles.continue}
+          >
+            <Text style={styles.continueText}>Continue</Text>
+          </Pressable>
         </View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
@@ -135,7 +175,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  stage: { width: 280, height: 340, alignItems: 'center', justifyContent: 'center' },
+  stage: { width: '92%', maxWidth: 360, alignItems: 'center', justifyContent: 'center' },
   particle: {
     position: 'absolute',
     width: 12,
@@ -165,5 +205,24 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   reward: { marginTop: 8, color: '#FFC857', fontSize: 16, fontWeight: '700' },
-  dismiss: { marginTop: 30, color: '#A8B0C4', fontSize: 13 }
+  tagPrompt: { marginTop: 18, color: '#D7DCEC', fontSize: 13 },
+  tags: {
+    marginTop: 9,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 7
+  },
+  tag: { minHeight: 38, borderRadius: 12, paddingHorizontal: 10, justifyContent: 'center' },
+  tagText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  continue: {
+    marginTop: 22,
+    minHeight: 48,
+    minWidth: 160,
+    borderRadius: 15,
+    backgroundColor: '#FF6B5F',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  continueText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' }
 });

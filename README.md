@@ -33,10 +33,9 @@ indexes, Terraform, and release documentation.
 Validation snapshot on **2026-07-16**:
 
 - workspace TypeScript checks passed;
-- 38 automated tests passed: 13 mobile, 8 domain, 16 API, and 1 admin;
+- 50 automated tests passed: 23 mobile, 10 domain, 16 API, and 1 admin;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
 - Expo Doctor passed 20/20 checks;
-- Expo Doctor passed after dependency alignment;
 - the release checker correctly blocks publication while privacy placeholders remain;
 - the production dependency audit has the known moderate transitive advisory described below;
 - a native Android/Gradle build and Maestro run were not performed because Java and `adb` are not
@@ -51,6 +50,10 @@ The detailed engineering and experience assessment is in
 - an Android internal or closed free beta should come before cloud monetization;
 - support, purchase ownership, RTDN reconciliation, and API kill switches are implemented;
 - the single device-level Maestro flow must still be run on actual Android hardware or an emulator.
+
+The authoritative, detailed inventory of every implemented product feature, ADHD-support strategy,
+local/cloud data boundary, monetization choice, and remaining native-QA caveat is
+[the Spark feature catalog](./docs/11-feature-catalog.md).
 
 ## Product principles
 
@@ -75,25 +78,35 @@ care for ADHD or any other condition.
 ### Offline mobile features
 
 - guided onboarding and starter data;
-- Today recommendations based on schedule, capacity, available time, and recent activity;
-- context-aware recommendations and a one-action Rescue my day mode;
+- Today recommendations based on schedule, capacity, available time, context, and recent activity;
+- compact remembered check-ins, Same as yesterday, time-of-day context memory, Pick for me,
+  a one-action Rescue my day mode, quiet return cards, and neutral deferrals;
 - tiny, default, and stretch habit variants;
 - daily, weekday, weekly-frequency, interval, and flexible schedules;
-- interval-aware habit pause history, archive, native reminder-time picker, and editing;
-- tactile completion celebration and deterministic Spark rewards;
+- interval-aware habit pause history, archive, detailed history/correction, completion tags,
+  exact or windowed reminder scheduling, preview, and editing;
+- guarded completion taps, accessible undo, tactile completion celebration, and deterministic
+  Spark rewards;
 - no-reset rhythms, recovery language, and comeback recognition;
-- quick brain-dump capture and conversion into a habit;
-- restart-safe focus/body-double timer with parked interruptions, optional launch countdown,
-  transition capture, and planned-versus-actual feedback;
-- reusable routines;
-- Journey summaries, weekly reflection, and materialized long-term progress views;
+- quick brain-dump capture with drafts, search, edit, delete/undo, release/restore, multi-select,
+  Android Share to Spark, a quick-capture widget, and habit/focus/routine conversion;
+- restart-safe focus/body-double timer with parked interruptions, prefilled two-minute launches,
+  optional launch countdown, local offline soundscapes, transition capture, companions, and
+  planned-versus-actual feedback;
+- editable/template-based routines with reorder, duplicate, archive/restore, skip, tiny mode,
+  pause/resume after restart, finish estimates, and habit/focus links;
+- Journey summaries, weekly reflection, per-habit calendars, locally derived/hideable supportive
+  observations, and materialized long-term progress views;
 - configurable theme, high contrast, text scale, reduced motion, and haptics;
-- occurrence-aware local notifications with optional ignored-reminder quieting;
+- occurrence-aware local notifications with windows, configurable snooze, Quiet today, preview,
+  caps, and optional ignored-reminder quieting;
 - encrypted local SQLite in native builds;
-- validated/versioned JSON backup, preview, safety copy, restore, and portable CSV export;
-- Android home-screen widget;
+- validated/versioned JSON backup, every-version migrations, bounded migration/restore safety
+  copies, integrity reporting, restore, and portable CSV export;
+- explicit-confirmation Android Today widget and a Quick Capture widget;
 - privacy policy and data-boundary screens;
-- premium supporter theme/badge plumbing.
+- premium supporter themes, badge control, companions, celebration styles, offline soundscapes,
+  and icon treatments.
 
 ### Optional cloud features
 
@@ -731,7 +744,8 @@ Official references:
 - [Health content and services policy](https://support.google.com/googleplay/android-developer/answer/16679511)
 
 At the time of this README update, new apps and updates must target Android 15/API 35 or higher.
-Always re-check the live requirement immediately before submission.
+Spark's Expo SDK 57 native template targets API 36, so it is above that minimum. Always re-check
+the live requirement immediately before submission.
 
 ### 3. Pass engineering gates
 
@@ -1003,7 +1017,8 @@ The actionable ordering and evidence are in [docs/quality-review.md](./docs/qual
 | --- | --- |
 | [START-HERE.md](./START-HERE.md) | shortest beginner path |
 | [00-product-plan.md](./docs/00-product-plan.md) | product goals and full feature plan |
-| [quality-review.md](./docs/quality-review.md) | prioritized product/engineering improvements |
+| [quality-review.md](./docs/quality-review.md) | implemented quality audit and remaining release gates |
+| [10-experience-roadmap.md](./docs/10-experience-roadmap.md) | next pleasant, low-friction product improvements |
 | [architecture.md](./docs/architecture.md) | components and privacy boundaries |
 | [01-windows-setup.md](./docs/01-windows-setup.md) | Node, Android Studio, Java, emulator, and `adb` |
 | [02-run-mobile.md](./docs/02-run-mobile.md) | Expo Go and native development builds |

@@ -34,10 +34,11 @@ npm installation without changing your machine's execution policy.
    - Android SDK Command-line Tools
 5. Open **Device Manager**, create a recent Pixel virtual device with Google Play, and start it.
 
-Expo SDK 57 supplies a current Android target through its native template. Google Play currently
-requires new apps and updates to target Android 15/API 35 or newer; always re-check the
+Expo SDK 57 currently compiles and targets Android API 36 through its native template. Google Play
+currently requires new apps and updates to target Android 15/API 35 or newer, so Spark is above
+the minimum. Always re-check the
 [live target API requirement](https://developer.android.com/google/play/requirements/target-sdk)
-before release.
+and [Expo SDK platform table](https://docs.expo.dev/versions/latest/) before release.
 
 ## 3. Add Android tools to the current PowerShell session
 
@@ -72,4 +73,3 @@ debugging enabled; accept the authorization prompt on the phone.
 You can write and test most shared code on Windows. A local iOS simulator and local iOS archive
 require macOS and Xcode. EAS Build can produce the iOS binary in the cloud after you join the
 Apple Developer Program and provide its credentials.
-

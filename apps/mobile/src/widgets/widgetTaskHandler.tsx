@@ -5,6 +5,7 @@ import {
   SparkTodayWidget,
   type SparkWidgetSnapshot
 } from './SparkTodayWidget';
+import { SparkCaptureWidget } from './SparkCaptureWidget';
 
 export const WIDGET_SNAPSHOT_KEY = 'spark.widget.snapshot.v1';
 
@@ -18,6 +19,16 @@ async function snapshot(): Promise<SparkWidgetSnapshot> {
 }
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
+  if (props.widgetInfo.widgetName === 'SparkCapture') {
+    if (
+      props.widgetAction === 'WIDGET_ADDED' ||
+      props.widgetAction === 'WIDGET_UPDATE' ||
+      props.widgetAction === 'WIDGET_RESIZED'
+    ) {
+      props.renderWidget(<SparkCaptureWidget />);
+    }
+    return;
+  }
   if (props.widgetInfo.widgetName !== 'SparkToday') return;
   if (
     props.widgetAction === 'WIDGET_ADDED' ||

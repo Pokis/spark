@@ -3,8 +3,11 @@
 Spark is configured for Android first. The current application ID is
 `com.sparkhabits.app`.
 
-The generated Expo SDK 57 Android project targets API 35, meeting the current Play requirement.
-Re-check the live requirement before every release because Google raises it over time.
+The generated Expo SDK 57 Android project targets API 36. Google Play currently requires new apps
+and updates to target API 35 or higher, so Spark is above the current minimum. Re-check both the
+[Play requirement](https://developer.android.com/google/play/requirements/target-sdk) and
+[Expo SDK platform table](https://docs.expo.dev/versions/latest/) before every release because
+both change over time.
 
 ## Important before the first Play upload
 
@@ -50,6 +53,11 @@ npx.cmd eas-cli@latest build --platform android --profile production
 Set-Location ..\..
 ```
 
+Spark defaults to the `calm` launcher treatment. To create an intentional supporter/store-art
+variant, set `SPARK_ICON_VARIANT` to `classic`, `calm`, or `midnight` in the EAS production
+environment before building. This is a build-time launcher choice; the in-app and widget icon
+treatment remains user-selectable for supporters.
+
 EAS can create and securely manage the Android upload key. Save an independent copy of any
 credentials EAS lets you download. Google Play App Signing should manage the final app-signing
 key.
@@ -74,18 +82,24 @@ Complete every Play Console **App content** form. At minimum:
 
 - privacy policy: deploy `apps/admin/public/privacy.html` and replace its email first
 - Data safety: local habit data stays on-device; support/purchase data is optional
+- permissions: the release manifest should contain notification/haptic boot rescheduling and
+  audio-output settings only; it must not contain microphone/recording, location, contacts,
+  storage, accessibility-service, or background-audio permissions
+- Android Share to Spark: disclose that user-selected shared text/URLs are stored locally in
+  Capture and are not uploaded
 - ads: Spark includes no ads
 - app access: explain admin sign-in only if Google reviews the separate dashboard
 - target audience
 - content rating
 - Health apps declaration
 
-All apps on closed, open, or production tracks must complete the Health apps declaration;
-internal-testing-only apps are currently exempt. Because Spark is explicitly positioned for
-ADHD-related executive functioning, obtain a policy decision before release about whether to
-declare **Stress Management, Relaxation, Mental Acuity** or another relevant health feature. Do
-not simply declare “no health features” without reviewing the current implementation and store
-wording.
+All apps on closed, open, or production tracks must complete the Health apps declaration. The
+official declaration page does not list internal-only testing among those published tracks, but
+you should confirm the form shown in your own Play Console rather than relying on an exemption.
+Because Spark is explicitly positioned for ADHD-related executive functioning, obtain a policy
+decision before release about whether to declare **Stress Management, Relaxation, Mental
+Acuity** or another relevant health feature. Do not simply declare “no health features” without
+reviewing the current implementation and store wording.
 
 Google's current health policy requires a public, non-geofenced HTML privacy policy and clear
 disclaimers. Spark includes both. It makes no diagnosis or treatment claim.

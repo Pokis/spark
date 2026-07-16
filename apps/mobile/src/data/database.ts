@@ -9,6 +9,7 @@ import type {
 } from '@spark/domain';
 import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import {
@@ -20,18 +21,24 @@ import {
   type CompletionDailySummary,
   type CompletionTotals,
   type DailyCheckIn,
-  type Entitlement
+  type Entitlement,
+  type HabitDeferral,
+  type RoutineRunState
 } from './models';
 import { starterHabits, starterRoutines } from './seed';
 
 const DATABASE_NAME = 'spark.db';
 const DATABASE_KEY_NAME = 'spark.database.key.v1';
-const CURRENT_DATABASE_SCHEMA_VERSION = 4;
+export const CURRENT_DATABASE_SCHEMA_VERSION = 5;
+export const DATABASE_MIGRATION_VERSIONS = [1, 2, 3, 4, 5] as const;
+const MAX_DATABASE_SAFETY_COPIES = 3;
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 let databaseSecurity = {
   encrypted: false,
   cipherVersion: null as string | null,
-  expoGoPreview: false
+  expoGoPreview: false,
+  integrity: 'not_checked' as 'ok' | 'not_checked' | 'failed',
+  integrityMessage: 'Integrity check has not run.'
 };
 
 function escapeSqlString(value: string): string {
@@ -49,6 +56,44 @@ async function databaseKey(): Promise<string> {
   return value;
 }
 
+function safetyDatabaseName(fromVersion: number, toVersion: number): string {
+  return `spark-safety-v${fromVersion}-to-v${toVersion}-${new Date()
+    .toISOString()
+    .replaceAll(':', '-')}.db`;
+}
+
+async function pruneDatabaseSafetyCopies(): Promise<void> {
+  const directory = SQLite.defaultDatabaseDirectory;
+  if (!directory) return;
+  const names = (await FileSystem.readDirectoryAsync(directory))
+    .filter((name) => name.startsWith('spark-safety-') && name.endsWith('.db'))
+    .sort((a, b) => b.localeCompare(a));
+  for (const name of names.slice(MAX_DATABASE_SAFETY_COPIES)) {
+    await SQLite.deleteDatabaseAsync(name, directory).catch(() => undefined);
+  }
+}
+
+async function createDatabaseSafetyCopy(
+  source: SQLite.SQLiteDatabase,
+  key: string,
+  fromVersion: number,
+  toVersion: number
+): Promise<void> {
+  if (Constants.appOwnership === 'expo') return;
+  const name = safetyDatabaseName(fromVersion, toVersion);
+  const destination = await SQLite.openDatabaseAsync(name);
+  try {
+    await destination.execAsync(`PRAGMA key = '${escapeSqlString(key)}';`);
+    await SQLite.backupDatabaseAsync({
+      sourceDatabase: source,
+      destDatabase: destination
+    });
+  } finally {
+    await destination.closeAsync();
+  }
+  await pruneDatabaseSafetyCopies();
+}
+
 async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
   const key = await databaseKey();
@@ -60,7 +105,9 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   databaseSecurity = {
     encrypted: Boolean(cipherVersion),
     cipherVersion,
-    expoGoPreview
+    expoGoPreview,
+    integrity: 'not_checked',
+    integrityMessage: 'Integrity check has not run.'
   };
   if (!cipherVersion && !expoGoPreview) {
     await db.closeAsync();
@@ -80,6 +127,14 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
     "SELECT value FROM meta WHERE key = 'schema_version'"
   );
   let version = Number(versionRow?.value ?? 0);
+  if (version > 0 && version < CURRENT_DATABASE_SCHEMA_VERSION) {
+    await createDatabaseSafetyCopy(
+      db,
+      key,
+      version,
+      CURRENT_DATABASE_SCHEMA_VERSION
+    );
+  }
 
   if (version < 1) {
     await db.execAsync(`
@@ -240,6 +295,66 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
     );
   }
 
+  if (version < 5) {
+    const habitColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(habits);'
+    );
+    if (!habitColumns.some((column) => column.name === 'reminder_window')) {
+      await db.execAsync(
+        "ALTER TABLE habits ADD COLUMN reminder_window TEXT NOT NULL DEFAULT 'exact';"
+      );
+    }
+    const completionColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(completions);'
+    );
+    if (!completionColumns.some((column) => column.name === 'context')) {
+      await db.execAsync('ALTER TABLE completions ADD COLUMN context TEXT;');
+    }
+    if (!completionColumns.some((column) => column.name === 'tags_json')) {
+      await db.execAsync(
+        "ALTER TABLE completions ADD COLUMN tags_json TEXT NOT NULL DEFAULT '[]';"
+      );
+    }
+    const routineStepColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(routine_steps);'
+    );
+    if (!routineStepColumns.some((column) => column.name === 'linked_habit_id')) {
+      await db.execAsync('ALTER TABLE routine_steps ADD COLUMN linked_habit_id TEXT;');
+    }
+    if (!routineStepColumns.some((column) => column.name === 'focus_minutes')) {
+      await db.execAsync('ALTER TABLE routine_steps ADD COLUMN focus_minutes INTEGER;');
+    }
+    const checkInColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(daily_checkins);'
+    );
+    if (!checkInColumns.some((column) => column.name === 'context')) {
+      await db.execAsync('ALTER TABLE daily_checkins ADD COLUMN context TEXT;');
+    }
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS habit_deferrals (
+        habit_id TEXT PRIMARY KEY NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+        until_at TEXT NOT NULL,
+        kind TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS habit_deferrals_until
+        ON habit_deferrals(until_at);
+      CREATE TABLE IF NOT EXISTS routine_runs (
+        routine_id TEXT PRIMARY KEY NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+        step_index INTEGER NOT NULL,
+        tiny INTEGER NOT NULL DEFAULT 0,
+        paused INTEGER NOT NULL DEFAULT 0,
+        skipped_step_ids_json TEXT NOT NULL DEFAULT '[]',
+        started_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+    version = 5;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
   if (version !== CURRENT_DATABASE_SCHEMA_VERSION) {
     throw new Error(`Unsupported local database schema version ${version}.`);
   }
@@ -264,6 +379,13 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
       await db.runAsync("INSERT INTO meta(key, value) VALUES ('seeded', '1')");
     });
   }
+  const quickCheck = await db.getFirstAsync<Record<string, string>>('PRAGMA quick_check;');
+  const integrityMessage = quickCheck ? String(Object.values(quickCheck)[0] ?? '') : '';
+  databaseSecurity = {
+    ...databaseSecurity,
+    integrity: integrityMessage.toLowerCase() === 'ok' ? 'ok' : 'failed',
+    integrityMessage: integrityMessage || 'SQLite returned no integrity result.'
+  };
   return db;
 }
 
@@ -276,9 +398,39 @@ export async function getDatabaseSecurityStatus(): Promise<{
   encrypted: boolean;
   cipherVersion: string | null;
   expoGoPreview: boolean;
+  integrity: 'ok' | 'not_checked' | 'failed';
+  integrityMessage: string;
 }> {
   await getDatabase();
   return databaseSecurity;
+}
+
+export async function listDatabaseSafetyCopies(): Promise<
+  { name: string; createdAt: string }[]
+> {
+  const directory = SQLite.defaultDatabaseDirectory;
+  if (!directory) return [];
+  return (await FileSystem.readDirectoryAsync(directory))
+    .filter((name) => name.startsWith('spark-safety-') && name.endsWith('.db'))
+    .sort((a, b) => b.localeCompare(a))
+    .map((name) => {
+      const stamp = name.match(/(\d{4}-\d{2}-\d{2}T.+)Z\.db$/)?.[1];
+      return {
+        name,
+        createdAt: stamp ? `${stamp.replaceAll('-', ':').replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3')}Z` : ''
+      };
+    });
+}
+
+export async function clearDatabaseSafetyCopies(): Promise<void> {
+  const directory = SQLite.defaultDatabaseDirectory;
+  if (!directory) return;
+  const copies = await listDatabaseSafetyCopies();
+  await Promise.all(
+    copies.map((copy) =>
+      SQLite.deleteDatabaseAsync(copy.name, directory).catch(() => undefined)
+    )
+  );
 }
 
 function mapHabit(
@@ -294,6 +446,8 @@ function mapHabit(
     icon: String(row.icon),
     schedule: JSON.parse(String(row.schedule_json)) as Habit['schedule'],
     preferredTime: row.preferred_time ? String(row.preferred_time) : undefined,
+    reminderWindow:
+      (row.reminder_window as Habit['reminderWindow']) ?? 'exact',
     reminderEnabled: Boolean(row.reminder_enabled),
     priority: Number(row.priority) as 1 | 2 | 3,
     contexts: JSON.parse(String(row.contexts_json)) as Habit['contexts'],
@@ -313,9 +467,9 @@ async function saveHabit(db: SQLite.SQLiteDatabase, habit: Habit): Promise<void>
   await db.runAsync(
     `INSERT OR REPLACE INTO habits(
       id, title, reason, cue, color, icon, schedule_json, preferred_time,
-      reminder_enabled, priority, contexts_json, created_at, paused_until,
-      paused_at, pause_history_json, archived_at, sort_order
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      reminder_window, reminder_enabled, priority, contexts_json, created_at,
+      paused_until, paused_at, pause_history_json, archived_at, sort_order
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     habit.id,
     habit.title,
     habit.reason ?? null,
@@ -324,6 +478,7 @@ async function saveHabit(db: SQLite.SQLiteDatabase, habit: Habit): Promise<void>
     habit.icon,
     JSON.stringify(habit.schedule),
     habit.preferredTime ?? null,
+    habit.reminderWindow ?? 'exact',
     habit.reminderEnabled ? 1 : 0,
     habit.priority,
     JSON.stringify(habit.contexts),
@@ -367,14 +522,17 @@ async function saveRoutine(db: SQLite.SQLiteDatabase, routine: Routine): Promise
   for (const step of routine.steps) {
     await db.runAsync(
       `INSERT INTO routine_steps(
-        id, routine_id, title, tiny_title, estimate_minutes, sort_order
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        id, routine_id, title, tiny_title, estimate_minutes, sort_order,
+        linked_habit_id, focus_minutes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       step.id,
       routine.id,
       step.title,
       step.tinyTitle ?? null,
       step.estimateMinutes,
-      step.sortOrder
+      step.sortOrder,
+      step.linkedHabitId ?? null,
+      step.focusMinutes ?? null
     );
   }
 }
@@ -389,6 +547,8 @@ interface CompletionRow {
   logged_at: string;
   local_date: string;
   source: Completion['source'];
+  context: Completion['context'] | null;
+  tags_json: string;
   note: string | null;
 }
 
@@ -403,6 +563,8 @@ function mapCompletion(row: CompletionRow): Completion {
     loggedAt: row.logged_at,
     localDate: row.local_date,
     source: row.source,
+    context: row.context ?? undefined,
+    tags: JSON.parse(row.tags_json || '[]') as Completion['tags'],
     note: row.note ?? undefined
   };
 }
@@ -489,7 +651,7 @@ export async function loadAppData(): Promise<AppData> {
        FROM completions
      )
      SELECT id, habit_id, variant_id, variant_kind, reward, occurred_at,
-       logged_at, local_date, source, note
+       logged_at, local_date, source, context, tags_json, note
      FROM ranked
      WHERE local_date >= ? OR habit_rank <= 2
      ORDER BY occurred_at DESC`,
@@ -513,7 +675,22 @@ export async function loadAppData(): Promise<AppData> {
     capacity: DailyCheckIn['capacity'];
     available_minutes: number | null;
     mood: number | null;
+    context: DailyCheckIn['context'] | null;
   }>('SELECT * FROM daily_checkins ORDER BY local_date DESC');
+  const deferrals = await db.getAllAsync<{
+    habit_id: string;
+    until_at: string;
+    kind: HabitDeferral['kind'];
+  }>('SELECT * FROM habit_deferrals ORDER BY until_at');
+  const routineRuns = await db.getAllAsync<{
+    routine_id: string;
+    step_index: number;
+    tiny: number;
+    paused: number;
+    skipped_step_ids_json: string;
+    started_at: string;
+    updated_at: string;
+  }>('SELECT * FROM routine_runs ORDER BY updated_at DESC');
   const settingsRows = await db.getAllAsync<{ key: string; value_json: string }>(
     'SELECT * FROM settings'
   );
@@ -563,7 +740,13 @@ export async function loadAppData(): Promise<AppData> {
             title: String(step.title),
             tinyTitle: step.tiny_title ? String(step.tiny_title) : undefined,
             estimateMinutes: Number(step.estimate_minutes),
-            sortOrder: Number(step.sort_order)
+            sortOrder: Number(step.sort_order),
+            linkedHabitId: step.linked_habit_id
+              ? String(step.linked_habit_id)
+              : undefined,
+            focusMinutes: step.focus_minutes
+              ? Number(step.focus_minutes)
+              : undefined
           })
         )
     })),
@@ -571,7 +754,22 @@ export async function loadAppData(): Promise<AppData> {
       localDate: row.local_date,
       capacity: row.capacity,
       availableMinutes: row.available_minutes,
-      mood: row.mood
+      mood: row.mood,
+      context: row.context ?? null
+    })),
+    habitDeferrals: deferrals.map((row) => ({
+      habitId: row.habit_id,
+      until: row.until_at,
+      kind: row.kind
+    })),
+    routineRuns: routineRuns.map((row) => ({
+      routineId: row.routine_id,
+      stepIndex: Number(row.step_index),
+      tiny: Boolean(row.tiny),
+      paused: Boolean(row.paused),
+      skippedStepIds: JSON.parse(row.skipped_step_ids_json) as string[],
+      startedAt: row.started_at,
+      updatedAt: row.updated_at
     })),
     settings: settings as unknown as AppSettings,
     entitlement: entitlementRow
@@ -621,8 +819,8 @@ async function saveCompletion(
   await db.runAsync(
     `INSERT INTO completions(
       id, habit_id, variant_id, variant_kind, reward, occurred_at, logged_at,
-      local_date, source, note
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      local_date, source, context, tags_json, note
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     completion.id,
     completion.habitId,
     completion.variantId,
@@ -632,6 +830,8 @@ async function saveCompletion(
     completion.loggedAt,
     completion.localDate,
     completion.source,
+    completion.context ?? null,
+    JSON.stringify(completion.tags ?? []),
     completion.note ?? null
   );
   if (updateSummary) await rebuildCompletionSummary(db, completion.localDate);
@@ -652,6 +852,34 @@ export async function deleteCompletion(id: string): Promise<void> {
     await db.runAsync('DELETE FROM completions WHERE id = ?', id);
     if (existing) await rebuildCompletionSummary(db, existing.local_date);
   });
+}
+
+export async function loadHabitCompletions(
+  habitId: string,
+  limit = 120
+): Promise<Completion[]> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<CompletionRow>(
+    `SELECT * FROM completions
+     WHERE habit_id = ?
+     ORDER BY occurred_at DESC
+     LIMIT ?`,
+    habitId,
+    limit
+  );
+  return rows.map(mapCompletion);
+}
+
+export async function updateCompletionTags(
+  id: string,
+  tags: NonNullable<Completion['tags']>
+): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'UPDATE completions SET tags_json = ? WHERE id = ?',
+    JSON.stringify(tags),
+    id
+  );
 }
 
 export async function insertFocusSession(session: FocusSession): Promise<void> {
@@ -687,17 +915,66 @@ export async function insertCaptureItem(item: CaptureItem): Promise<void> {
   );
 }
 
+export async function deleteCaptureItem(id: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM capture_items WHERE id = ?', id);
+}
+
 export async function saveCheckIn(checkIn: DailyCheckIn): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
     `INSERT OR REPLACE INTO daily_checkins(
-      local_date, capacity, available_minutes, mood
-    ) VALUES (?, ?, ?, ?)`,
+      local_date, capacity, available_minutes, mood, context
+    ) VALUES (?, ?, ?, ?, ?)`,
     checkIn.localDate,
     checkIn.capacity,
     checkIn.availableMinutes,
-    checkIn.mood
+    checkIn.mood,
+    checkIn.context ?? null
   );
+}
+
+export async function saveHabitDeferral(deferral: HabitDeferral): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO habit_deferrals(habit_id, until_at, kind)
+     VALUES (?, ?, ?)`,
+    deferral.habitId,
+    deferral.until,
+    deferral.kind
+  );
+}
+
+export async function deleteHabitDeferral(habitId: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM habit_deferrals WHERE habit_id = ?', habitId);
+}
+
+export async function purgeExpiredHabitDeferrals(now: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM habit_deferrals WHERE until_at <= ?', now);
+}
+
+export async function saveRoutineRun(run: RoutineRunState): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO routine_runs(
+      routine_id, step_index, tiny, paused, skipped_step_ids_json,
+      started_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    run.routineId,
+    run.stepIndex,
+    run.tiny ? 1 : 0,
+    run.paused ? 1 : 0,
+    JSON.stringify(run.skippedStepIds),
+    run.startedAt,
+    run.updatedAt
+  );
+}
+
+export async function deleteRoutineRun(routineId: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM routine_runs WHERE routine_id = ?', routineId);
 }
 
 export async function saveSetting<K extends keyof AppSettings>(
@@ -729,7 +1006,7 @@ export async function exportSnapshot(): Promise<AppSnapshot> {
   const data = await loadAppData();
   const db = await getDatabase();
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     exportedAt: new Date().toISOString(),
     habits: data.habits,
     completions: await loadAllCompletions(db),
@@ -737,12 +1014,14 @@ export async function exportSnapshot(): Promise<AppSnapshot> {
     captureItems: data.captureItems,
     routines: data.routines,
     dailyCheckIns: data.dailyCheckIns,
+    habitDeferrals: data.habitDeferrals,
+    routineRuns: data.routineRuns,
     settings: data.settings
   };
 }
 
 export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
-  if (snapshot.schemaVersion !== 2) throw new Error('This backup version is not supported.');
+  if (snapshot.schemaVersion !== 3) throw new Error('This backup version is not supported.');
   const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     await db.execAsync(`
@@ -755,6 +1034,8 @@ export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
       DELETE FROM routine_steps;
       DELETE FROM routines;
       DELETE FROM daily_checkins;
+      DELETE FROM habit_deferrals;
+      DELETE FROM routine_runs;
       DELETE FROM settings;
     `);
     for (const habit of snapshot.habits) await saveHabit(db, habit);
@@ -771,6 +1052,8 @@ export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
     for (const item of snapshot.captureItems) await insertCaptureItem(item);
     for (const routine of snapshot.routines) await saveRoutine(db, routine);
     for (const checkIn of snapshot.dailyCheckIns) await saveCheckIn(checkIn);
+    for (const deferral of snapshot.habitDeferrals) await saveHabitDeferral(deferral);
+    for (const run of snapshot.routineRuns) await saveRoutineRun(run);
     for (const [keyName, value] of Object.entries(snapshot.settings)) {
       await db.runAsync(
         'INSERT INTO settings(key, value_json) VALUES (?, ?)',

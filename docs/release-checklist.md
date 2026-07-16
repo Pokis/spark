@@ -19,6 +19,14 @@
 - [ ] Backup/restore tested on a clean install
 - [ ] Database encryption checked in a native build
 - [ ] Widget checked on three launchers
+- [ ] Widget tap behavior is explicit and cannot create a surprising completion
+- [ ] Quick Capture widget parks only after explicit submission
+- [ ] Android Share to Spark receives text/URLs locally
+- [ ] Rapid repeated taps do not create duplicate completions
+- [ ] Exact/window reminders, custom snooze, Log tiny, and Quiet today tested
+- [ ] Routine pause/step/tiny/skipped state survives force-stop and restart
+- [ ] Habit, routine, focus, and Capture drafts survive process death
+- [ ] Offline soundscapes stop outside active Focus and no microphone permission appears
 - [ ] Android target API re-checked
 - [ ] Version and versionCode updated
 

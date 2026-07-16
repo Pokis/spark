@@ -1,5 +1,10 @@
 import type { Completion, Habit } from '@spark/domain';
-import { nextReminderDates, parsePreferredTime } from './notifications';
+import {
+  nextReminderDates,
+  notificationActionKind,
+  parsePreferredTime,
+  planHabitNotifications
+} from './notifications';
 
 const habit: Habit = {
   id: 'habit',
@@ -75,5 +80,24 @@ describe('notification planning', () => {
         'UTC'
       )
     ).toEqual(['2026-07-16', '2026-07-18', '2026-07-20']);
+  });
+
+  it('places reminder windows locally without requiring an exact clock time', () => {
+    const planned = planHabitNotifications(
+      [{ ...habit, schedule: { type: 'daily' }, reminderWindow: 'evening' }],
+      [],
+      new Date('2026-07-16T08:00:00'),
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      1
+    );
+    expect(planned[0]?.date.getHours()).toBe(19);
+    expect(planned[0]?.date.getMinutes()).toBeGreaterThanOrEqual(0);
+  });
+
+  it('maps every gentle notification action without ambiguous side effects', () => {
+    expect(notificationActionKind('spark-tiny')).toBe('log_tiny');
+    expect(notificationActionKind('spark-snooze')).toBe('snooze');
+    expect(notificationActionKind('spark-quiet-today')).toBe('quiet_today');
+    expect(notificationActionKind('expo.modules.notifications.actions.DEFAULT')).toBe('open');
   });
 });

@@ -4,14 +4,16 @@
 
 The dependency audit was last reviewed on 2026-07-16.
 
-`npm audit --omit=dev` reports one moderate advisory repeated through transitive dependency paths:
+`npm audit --omit=dev` reports one moderate advisory repeated across 21 transitive dependency
+instances:
 `GHSA-w5hq-g745-h8pq` in `uuid` versions earlier than 11.1.1. The affected operation is the
 optional caller-supplied output buffer used by UUID v3, v5, and v6.
 
 Spark does not call those APIs. The affected copies currently arrive through:
 
-- Expo configuration tooling, via `xcode`; this code is build tooling and is not shipped as
-  executable JavaScript inside the Android app.
+- Expo configuration tooling, including the configuration paths used by Expo, Expo Sharing,
+  Splash Screen, and `xcode`; this is principally build/configuration tooling rather than Spark
+  application logic.
 - the latest compatible Firebase Admin / Google Cloud dependency chain used by the optional
   control plane.
 

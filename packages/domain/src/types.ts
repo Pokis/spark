@@ -2,6 +2,8 @@ export type Capacity = 'empty' | 'steady' | 'ready';
 export type HabitVariantKind = 'tiny' | 'standard' | 'stretch';
 export type HabitContext = 'anywhere' | 'home' | 'work' | 'outside' | 'phone';
 export type CompletionSource = 'today' | 'widget' | 'notification' | 'history' | 'routine';
+export type ReminderWindow = 'exact' | 'morning' | 'afternoon' | 'evening';
+export type CompletionTag = 'timer_helped' | 'made_it_tiny' | 'body_double' | 'good_cue';
 
 export interface HabitPauseInterval {
   startedOn: string;
@@ -33,6 +35,7 @@ export interface Habit {
   variants: HabitVariant[];
   schedule: ScheduleRule;
   preferredTime?: string;
+  reminderWindow?: ReminderWindow;
   reminderEnabled: boolean;
   priority: 1 | 2 | 3;
   contexts: HabitContext[];
@@ -54,6 +57,8 @@ export interface Completion {
   loggedAt: string;
   localDate: string;
   source: CompletionSource;
+  context?: HabitContext;
+  tags?: CompletionTag[];
   note?: string;
 }
 
@@ -83,6 +88,8 @@ export interface RoutineStep {
   tinyTitle?: string;
   estimateMinutes: number;
   sortOrder: number;
+  linkedHabitId?: string;
+  focusMinutes?: number;
 }
 
 export interface Routine {
@@ -115,4 +122,12 @@ export interface RewardSummary {
   level: number;
   levelProgress: number;
   nextLevelAt: number;
+}
+
+export interface SupportiveInsight {
+  id: string;
+  title: string;
+  body: string;
+  kind: 'habit-size' | 'context' | 'focus' | 'return';
+  habitId?: string;
 }

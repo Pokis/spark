@@ -38,6 +38,7 @@ export function Chip({
 const styles = StyleSheet.create({
   chip: {
     minHeight: 42,
+    maxWidth: '100%',
     paddingHorizontal: 14,
     borderRadius: 99,
     alignItems: 'center',
@@ -46,6 +47,8 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    fontWeight: '700'
+    fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'center'
   }
 });

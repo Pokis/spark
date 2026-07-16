@@ -2,7 +2,8 @@ import {
   localDateKey,
   recentDateKeys,
   rewardSummaryFromTotal,
-  rhythmForHabit
+  rhythmForHabit,
+  supportiveInsights
 } from '@spark/domain';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
@@ -31,6 +32,15 @@ export default function JourneyScreen() {
     lastSevenDays.has(completion.localDate)
   );
   const tinyWins = recentWins.filter((completion) => completion.variantKind === 'tiny').length;
+  const insights = supportiveInsights({
+    habits: spark.habits,
+    completions: spark.completions,
+    focusSessions: spark.focusSessions,
+    now: new Date(),
+    timeZone: spark.timeZone
+  }).filter((insight) => !spark.settings.hiddenInsightIds.includes(insight.id));
+  const activeRoutines = spark.routines.filter((routine) => !routine.archivedAt);
+  const archivedRoutines = spark.routines.filter((routine) => routine.archivedAt);
 
   return (
     <Screen testID="journey-screen">
@@ -116,6 +126,37 @@ export default function JourneyScreen() {
         </Body>
       </Card>
 
+      {spark.settings.insightsEnabled && insights.length ? (
+        <View style={styles.insights}>
+          <View>
+            <SectionHeading>Things Spark noticed locally</SectionHeading>
+            <Muted>Observations, not grades. Nothing leaves this device.</Muted>
+          </View>
+          {insights.map((insight) => (
+            <Card key={insight.id}>
+              <View style={styles.insightHeading}>
+                <View style={styles.rhythmText}>
+                  <SectionHeading>{insight.title}</SectionHeading>
+                  <Body>{insight.body}</Body>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Hide observation ${insight.title}`}
+                  onPress={() =>
+                    void spark.updateSetting('hiddenInsightIds', [
+                      ...spark.settings.hiddenInsightIds,
+                      insight.id
+                    ])
+                  }
+                >
+                  <Ionicons name="close" size={22} color={theme.textMuted} />
+                </Pressable>
+              </View>
+            </Card>
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.sectionHeading}>
         <View>
           <SectionHeading>Rhythms</SectionHeading>
@@ -185,26 +226,55 @@ export default function JourneyScreen() {
           <Ionicons name="add-circle" size={34} color={theme.primary} />
         </Pressable>
       </View>
-      {spark.routines.map((routine) => (
-        <Pressable
-          key={routine.id}
-          accessibilityRole="button"
-          accessibilityLabel={`Start ${routine.title} routine`}
-          onPress={() => router.push(`/routine/${routine.id}`)}
-        >
-          <Card style={styles.routine}>
-            <Text style={styles.routineIcon}>{routine.icon}</Text>
-            <View style={styles.rhythmText}>
-              <Text style={[styles.rhythmTitle, { color: theme.text }]}>{routine.title}</Text>
-              <Muted>
-                {routine.steps.length} steps ·{' '}
-                {routine.steps.reduce((sum, step) => sum + step.estimateMinutes, 0)} min
-              </Muted>
+      {activeRoutines.map((routine) => {
+        const run = spark.routineRuns.find((item) => item.routineId === routine.id);
+        return (
+          <Pressable
+            key={routine.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${run ? 'Resume' : 'Start'} ${routine.title} routine`}
+            onPress={() => router.push(`/routine/${routine.id}`)}
+          >
+            <Card style={styles.routine}>
+              <Text style={styles.routineIcon}>{routine.icon}</Text>
+              <View style={styles.rhythmText}>
+                <Text style={[styles.rhythmTitle, { color: theme.text }]}>{routine.title}</Text>
+                <Muted>
+                  {routine.steps.length} steps ·{' '}
+                  {routine.steps.reduce((sum, step) => sum + step.estimateMinutes, 0)} min
+                  {run ? ` · saved at step ${run.stepIndex + 1}` : ''}
+                </Muted>
+              </View>
+              <Ionicons name="play-circle" size={32} color={routine.color} />
+            </Card>
+          </Pressable>
+        );
+      })}
+      {archivedRoutines.length ? (
+        <Card>
+          <SectionHeading>Archived routines</SectionHeading>
+          <Muted>Stored locally and ready to restore.</Muted>
+          {archivedRoutines.map((routine) => (
+            <View key={routine.id} style={styles.archivedRow}>
+              <Text style={[styles.rhythmTitle, { color: theme.text }]}>
+                {routine.icon} {routine.title}
+              </Text>
+              <View style={styles.archiveActions}>
+                <Button
+                  label="Restore"
+                  variant="secondary"
+                  onPress={() => void spark.restoreRoutine(routine)}
+                />
+                <Button
+                  label="Edit"
+                  variant="ghost"
+                  onPress={() => router.push(`/routine/${routine.id}/edit`)}
+                />
+              </View>
             </View>
-            <Ionicons name="play-circle" size={32} color={routine.color} />
-          </Card>
-        </Pressable>
-      ))}
+          ))}
+        </Card>
+      ) : null}
 
       <Card style={{ borderColor: theme.success }}>
         <Eyebrow>What Spark does not do</Eyebrow>
@@ -259,5 +329,9 @@ const styles = StyleSheet.create({
   rhythmTitle: { fontSize: 16, fontWeight: '700' },
   percentage: { fontSize: 17, fontWeight: '800' },
   routine: { flexDirection: 'row', alignItems: 'center', padding: 13 },
-  routineIcon: { fontSize: 30 }
+  routineIcon: { fontSize: 30 },
+  insights: { gap: 10 },
+  insightHeading: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  archivedRow: { gap: 8, paddingVertical: 7 },
+  archiveActions: { flexDirection: 'row', gap: 8 }
 });

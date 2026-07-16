@@ -6,6 +6,7 @@ import { SparkThemeProvider, useTheme } from '../src/theme';
 
 function Navigation() {
   const theme = useTheme();
+  const spark = useSpark();
   return (
     <>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
@@ -15,7 +16,8 @@ function Navigation() {
           headerTintColor: theme.text,
           headerShadowVisible: false,
           contentStyle: { backgroundColor: theme.background },
-          headerBackTitle: 'Back'
+          headerBackTitle: 'Back',
+          animation: spark.settings.reducedMotion ? 'none' : 'slide_from_right'
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -23,7 +25,9 @@ function Navigation() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/new" options={{ title: 'New habit', presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ title: 'Edit habit' }} />
+        <Stack.Screen name="habit/[id]/history" options={{ title: 'Habit history' }} />
         <Stack.Screen name="routine/[id]" options={{ title: 'Routine' }} />
+        <Stack.Screen name="routine/[id]/edit" options={{ title: 'Edit routine' }} />
         <Stack.Screen name="routine/new" options={{ title: 'New routine', presentation: 'modal' }} />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         <Stack.Screen name="support" options={{ title: 'Private support' }} />
@@ -31,6 +35,7 @@ function Navigation() {
         <Stack.Screen name="paywall" options={{ title: 'Spark premium', presentation: 'modal' }} />
         <Stack.Screen name="privacy" options={{ title: 'Privacy' }} />
         <Stack.Screen name="widget-action" options={{ headerShown: false }} />
+        <Stack.Screen name="quick-capture" options={{ headerShown: false }} />
       </Stack>
     </>
   );
@@ -42,6 +47,7 @@ function ThemedNavigation() {
     <SparkThemeProvider
       highContrast={spark.settings.highContrast}
       supporter={spark.entitlement.premium && spark.settings.supporterThemeEnabled}
+      supporterTheme={spark.settings.supporterTheme}
     >
       <Navigation />
     </SparkThemeProvider>

@@ -44,8 +44,10 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       disabled={disabled || loading}
       onPress={onPress}
+      android_ripple={{ color: `${theme.text}18`, borderless: false }}
       testID={testID}
       style={({ pressed }) => [
         styles.button,
@@ -57,7 +59,10 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={color} />
+        <View accessibilityLiveRegion="polite" style={styles.content}>
+          <ActivityIndicator color={color} />
+          <Text style={[styles.label, { color }]}>Saving…</Text>
+        </View>
       ) : (
         <View style={styles.content}>
           {icon}
@@ -79,12 +84,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8
   },
   label: {
     fontSize: 16,
-    fontWeight: '700'
+    fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'center'
   }
 });

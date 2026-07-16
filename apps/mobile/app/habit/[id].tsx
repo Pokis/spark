@@ -23,6 +23,7 @@ export default function EditHabitScreen() {
       habit={habit}
       onSaved={() => router.back()}
       onArchive={() => void spark.archiveHabit(habit).then(() => router.back())}
+      onHistory={() => router.push(`/habit/${habit.id}/history`)}
     />
   );
 }

@@ -2,6 +2,8 @@ import type { FocusSession } from '@spark/domain';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
+import { useAudioPlayer } from 'expo-audio';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -19,12 +21,22 @@ import { Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typogra
 import { friendlyTime, secondsLabel } from '../../src/lib/date';
 import { createId } from '../../src/lib/id';
 import { reportError } from '../../src/services/diagnostics';
+import { ensureSoundscape } from '../../src/services/soundscapes';
+import { useLocalDraft } from '../../src/hooks/useLocalDraft';
 import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
 
 type TimerPhase = 'idle' | 'running' | 'paused' | 'finished';
 
-function Companion({ active, reducedMotion }: { active: boolean; reducedMotion: boolean }) {
+function Companion({
+  active,
+  reducedMotion,
+  style
+}: {
+  active: boolean;
+  reducedMotion: boolean;
+  style: 'spark' | 'owl' | 'cloud';
+}) {
   const theme = useTheme();
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -53,7 +65,9 @@ function Companion({ active, reducedMotion }: { active: boolean; reducedMotion: 
           { backgroundColor: theme.purple, transform: [{ scale: pulse }] }
         ]}
       >
-        <Text style={styles.companionFace}>{active ? '• ᴗ •' : '• – •'}</Text>
+        <Text style={styles.companionFace}>
+          {style === 'owl' ? (active ? '◉ ᴗ ◉' : '◉ – ◉') : style === 'cloud' ? '☁' : active ? '• ᴗ •' : '• – •'}
+        </Text>
         <View style={[styles.companionLaptop, { backgroundColor: theme.surfaceAlt }]} />
       </Animated.View>
       <Muted>{active ? 'I’m staying with you.' : 'Pick one small target.'}</Muted>
@@ -122,11 +136,13 @@ async function scheduleFocusNotification(
 export default function FocusScreen() {
   const spark = useSpark();
   const theme = useTheme();
+  const params = useLocalSearchParams<{ title?: string; minutes?: string }>();
   const durationOptions = spark.remoteConfig.defaults.focusMinutes.length
     ? spark.remoteConfig.defaults.focusMinutes
     : [5, 10, 25, 50];
-  const [minutes, setMinutes] = useState(spark.settings.defaultFocusMinutes);
-  const [title, setTitle] = useState('');
+  const initialMinutes = Math.max(1, Number(params.minutes) || spark.settings.defaultFocusMinutes);
+  const [minutes, setMinutes] = useState(initialMinutes);
+  const [title, setTitle] = useState(params.title ?? '');
   const [phase, setPhase] = useState<TimerPhase>('idle');
   const [session, setSession] = useState<FocusSession | null>(null);
   const [remaining, setRemaining] = useState(minutes * 60);
@@ -135,6 +151,53 @@ export default function FocusScreen() {
   const [nextMove, setNextMove] = useState('');
   const restored = useRef(false);
   const finishing = useRef(false);
+  const soundPlayer = useAudioPlayer(null);
+  const clearDraft = useLocalDraft(
+    'focus-idle',
+    { title, minutes, interruptionText, nextMove },
+    (draft) => {
+      if (params.title || params.minutes) return;
+      setTitle(draft.title);
+      setMinutes(draft.minutes);
+      setInterruptionText(draft.interruptionText);
+      setNextMove(draft.nextMove);
+    },
+    phase === 'idle'
+  );
+
+  useEffect(() => {
+    soundPlayer.loop = true;
+    soundPlayer.volume = spark.settings.soundscapeVolume;
+    if (
+      phase !== 'running' ||
+      !spark.entitlement.premium ||
+      !spark.settings.soundscapeEnabled
+    ) {
+      soundPlayer.pause();
+      return;
+    }
+    let active = true;
+    void ensureSoundscape(spark.settings.soundscapeKind)
+      .then((uri) => {
+        if (!active) return;
+        soundPlayer.replace({ uri });
+        soundPlayer.loop = true;
+        soundPlayer.volume = spark.settings.soundscapeVolume;
+        soundPlayer.play();
+      })
+      .catch((reason: unknown) => reportError('focus.soundscape', reason));
+    return () => {
+      active = false;
+      soundPlayer.pause();
+    };
+  }, [
+    phase,
+    soundPlayer,
+    spark.entitlement.premium,
+    spark.settings.soundscapeEnabled,
+    spark.settings.soundscapeKind,
+    spark.settings.soundscapeVolume
+  ]);
 
   useEffect(() => {
     if (spark.loading || restored.current) return;
@@ -223,12 +286,13 @@ export default function FocusScreen() {
     setRemaining(started.plannedSeconds);
     setPhase('running');
     try {
+      await clearDraft();
       await spark.saveFocus(started);
       await scheduleFocusNotification(started, started.plannedSeconds);
     } catch (reason) {
       await reportError('focus.start', reason);
     }
-  }, [minutes, spark, title]);
+  }, [clearDraft, minutes, spark, title]);
 
   function start() {
     if (spark.settings.launchCountdownEnabled) {
@@ -359,6 +423,7 @@ export default function FocusScreen() {
         <Companion
           active={phase === 'running'}
           reducedMotion={spark.settings.reducedMotion}
+          style={spark.entitlement.premium ? spark.settings.companionStyle : 'spark'}
         />
         <Text
           accessibilityRole="timer"
@@ -418,7 +483,16 @@ export default function FocusScreen() {
                   onPress={() => setMinutes(value)}
                 />
               ))}
+              {!durationOptions.includes(2) ? (
+                <Chip label="2 min launch" selected={minutes === 2} onPress={() => setMinutes(2)} />
+              ) : null}
             </View>
+            {spark.entitlement.premium && spark.settings.soundscapeEnabled ? (
+              <Muted>
+                Offline {spark.settings.soundscapeKind} soundscape · volume{' '}
+                {Math.round(spark.settings.soundscapeVolume * 100)}%
+              </Muted>
+            ) : null}
             <Button label="Start together" onPress={start} testID="start-focus" />
             </>
           )

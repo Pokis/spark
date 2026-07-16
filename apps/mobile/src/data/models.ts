@@ -4,6 +4,7 @@ import type {
   Completion,
   FocusSession,
   Habit,
+  HabitContext,
   Routine
 } from '@spark/domain';
 
@@ -12,6 +13,7 @@ export interface DailyCheckIn {
   capacity: Capacity;
   availableMinutes: number | null;
   mood: number | null;
+  context?: HabitContext | null;
 }
 
 export interface AppSettings {
@@ -22,15 +24,32 @@ export interface AppSettings {
   sensoryProfile: 'calm' | 'balanced' | 'celebratory';
   highContrast: boolean;
   minimumViableDay: boolean;
+  rememberContextByTime: boolean;
+  contextByPeriod: {
+    morning: HabitContext | null;
+    afternoon: HabitContext | null;
+    evening: HabitContext | null;
+  };
   launchCountdownEnabled: boolean;
   transitionNudgesEnabled: boolean;
   showRewards: boolean;
   showRhythmPercentages: boolean;
+  insightsEnabled: boolean;
+  hiddenInsightIds: string[];
   supporterThemeEnabled: boolean;
+  supporterTheme: 'aurora' | 'ocean' | 'forest';
+  supporterBadgeVisible: boolean;
+  companionStyle: 'spark' | 'owl' | 'cloud';
+  celebrationStyle: 'burst' | 'ripple' | 'confetti';
+  appIconStyle: 'classic' | 'calm' | 'midnight';
   notificationsEnabled: boolean;
   autoQuietReminders: boolean;
   notificationCap: number;
+  reminderSnoozeMinutes: number;
   defaultFocusMinutes: number;
+  soundscapeEnabled: boolean;
+  soundscapeKind: 'brown' | 'pink' | 'soft';
+  soundscapeVolume: number;
   cloudSupportEnabled: boolean;
 }
 
@@ -53,8 +72,24 @@ export interface CompletionDailySummary {
   activeHabits: number;
 }
 
+export interface HabitDeferral {
+  habitId: string;
+  until: string;
+  kind: 'not_now' | 'later_today' | 'tomorrow' | 'quiet_today';
+}
+
+export interface RoutineRunState {
+  routineId: string;
+  stepIndex: number;
+  tiny: boolean;
+  paused: boolean;
+  skippedStepIds: string[];
+  startedAt: string;
+  updatedAt: string;
+}
+
 export interface AppSnapshot {
-  schemaVersion: 2;
+  schemaVersion: 3;
   exportedAt: string;
   habits: Habit[];
   completions: Completion[];
@@ -62,6 +97,8 @@ export interface AppSnapshot {
   captureItems: CaptureItem[];
   routines: Routine[];
   dailyCheckIns: DailyCheckIn[];
+  habitDeferrals: HabitDeferral[];
+  routineRuns: RoutineRunState[];
   settings: AppSettings;
 }
 
@@ -74,6 +111,8 @@ export interface AppData {
   captureItems: CaptureItem[];
   routines: Routine[];
   dailyCheckIns: DailyCheckIn[];
+  habitDeferrals: HabitDeferral[];
+  routineRuns: RoutineRunState[];
   settings: AppSettings;
   entitlement: Entitlement;
 }
@@ -86,15 +125,32 @@ export const defaultSettings: AppSettings = {
   sensoryProfile: 'balanced',
   highContrast: false,
   minimumViableDay: false,
+  rememberContextByTime: true,
+  contextByPeriod: {
+    morning: null,
+    afternoon: null,
+    evening: null
+  },
   launchCountdownEnabled: false,
   transitionNudgesEnabled: true,
   showRewards: true,
   showRhythmPercentages: true,
+  insightsEnabled: true,
+  hiddenInsightIds: [],
   supporterThemeEnabled: false,
+  supporterTheme: 'aurora',
+  supporterBadgeVisible: true,
+  companionStyle: 'spark',
+  celebrationStyle: 'burst',
+  appIconStyle: 'classic',
   notificationsEnabled: false,
   autoQuietReminders: false,
   notificationCap: 4,
+  reminderSnoozeMinutes: 15,
   defaultFocusMinutes: 10,
+  soundscapeEnabled: false,
+  soundscapeKind: 'brown',
+  soundscapeVolume: 0.25,
   cloudSupportEnabled: false
 };
 

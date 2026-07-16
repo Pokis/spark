@@ -45,4 +45,7 @@ Continue with:
 The app requires no server for habits, reminders, focus sessions, routines, widgets, or
 backups. Before a public release, also read the
 [privacy and Play policy guide](./docs/09-data-privacy-and-play-policy.md) and run the
-[release checklist](./docs/release-checklist.md).
+[release checklist](./docs/release-checklist.md). For a detailed explanation of every implemented
+feature, ADHD-support strategy, data boundary, and caveat, read the
+[feature catalog](./docs/11-feature-catalog.md). The original polish rationale is retained in the
+[completed experience roadmap](./docs/10-experience-roadmap.md).

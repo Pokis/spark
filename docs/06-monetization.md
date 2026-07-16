@@ -19,15 +19,18 @@ Recommended:
 Validate willingness to pay before finalizing the price. Google Play handles regional tax and
 price conversion.
 
-The initial release contains:
+The implemented supporter catalog contains:
 
-- an Aurora purple accent theme
-- a visible supporter badge
+- Aurora, Ocean, and Forest accent themes
+- supporter badge visibility control
+- Spark, owl, and cloud body-double companions
+- alternate burst, ripple, and confetti celebrations
+- locally generated offline soundscapes with independent volume/mute
+- in-app/widget icon treatments and build-time launcher variants
 - entitlement restoration on another device
-- future supporter cosmetics when they are actually released
 
-Do not advertise advanced insights, soundscapes, companion packs, or voting tools until they
-exist in a released build.
+Basic on-device observations remain free. Do not advertise voting tools, cloud synchronization,
+AI coaching, or any future feature until it exists in the exact released build.
 
 Avoid advertisements, data brokerage, recurring “streak insurance,” loot boxes, paid reminders,
 and fake urgency.
@@ -86,14 +89,20 @@ App Store transaction identifiers, but expose one platform-neutral entitlement t
 
 ## Refunds and revocation
 
-Google Play can refund or revoke a purchase after initial verification. Before a larger release,
-add Real-time Developer Notifications or a periodic owner reconciliation job. The initial service
-checks on restore and can revoke manually; this is adequate for a small internal test, not a
-large paid launch.
+Google Play can refund, cancel, or revoke a purchase after initial verification. Spark now
+implements the required lifecycle path:
 
-Real-time notifications are intentionally deferred because Pub/Sub and lifecycle handling add
-operational surface. Make them a production-purchase launch requirement in the release
-checklist.
+- Terraform creates the Pub/Sub topic and authenticated push subscription.
+- Play one-time-product RTDN messages are deduplicated and re-verified with
+  `purchases.productsv2.getproductpurchasev2`.
+- Pending and cancelled purchases do not grant premium.
+- Voided purchase notifications revoke the bound entitlement.
+- A transient processing failure releases the deduplication claim so Pub/Sub can retry.
+
+The remaining work is operational: connect Terraform's topic in Play Console, grant the Cloud Run
+identity least-privilege purchase lookup/acknowledgement access, and run real internal-track
+purchase, pending, restore, refund, cancellation, and revocation tests before enabling paid
+access.
 
 ## Accounting
 

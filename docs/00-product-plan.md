@@ -55,8 +55,8 @@ optional cosmetic themes—not casino mechanics.
 - unstructured brain dump
 - captured thought to habit handoff
 - one-step-at-a-time transition routines
-- capped, quiet local reminders with Tiny and Later actions
-- Android home-screen widget with a visible next action
+- capped, quiet local reminders with Log tiny, Later, and Quiet today actions
+- Android Today and Quick Capture widgets with explicit confirmation before a completion
 - sensory settings, screen-reader labels, large touch targets, and dark mode
 
 ### Phase 4 — ethical monetization
@@ -83,7 +83,7 @@ optional cosmetic themes—not casino mechanics.
 ### Phase 6 — quality and release
 
 - domain, mobile-component, API, and dashboard tests
-- Maestro Android end-to-end flows
+- one authoritative Maestro Android end-to-end flow
 - CI, manual EAS build, and manual cloud-deploy workflows
 - beginner setup, cost, policy, testing, release, and troubleshooting documentation
 
@@ -99,15 +99,25 @@ These should be evaluated with real users instead of being enabled speculatively
 - location-triggered reminders; they add permission and battery burden
 - randomized rewards, loss aversion, streak repair purchases, ads, and attention-selling analytics
 
-## Sensible validation backlog
+## Completed experience and reliability pass
 
-1. Test the Android widget across Pixel, Samsung, and Xiaomi launchers.
-2. Add a small bundled offline soundscape pack after licensing and sensory testing.
-3. Add a visual routine editor after observing how people structure transitions.
-4. Test larger fonts, TalkBack, switch access, reduced motion, and color-blind palettes.
-5. Conduct a threat-model and privacy review before cloud production.
-6. Measure only opt-in aggregate product events, if measurement becomes necessary.
-7. Build the iOS binary and iOS widget only when an Apple Developer membership is available.
+The 2026-07-16 implementation added explicit widget confirmation, rapid-tap protection,
+remembered check-ins, neutral deferrals, focus launches, habit history/correction, fully editable
+and restart-safe routines, Capture cleanup/share/search/conversions, reminder windows, local
+observations, generated offline soundscapes, supporter cosmetics, bounded safety copies, integrity
+reporting, and unfinished-form drafts.
+
+The remaining work is manual validation or deliberately deferred scope:
+
+1. Test both Android widgets across Pixel, Samsung, and Xiaomi launchers.
+2. Test larger fonts, TalkBack, switch access, reduced motion, notification actions, share
+   receiving, sound output, and color-blind use on real devices.
+3. Conduct the final threat-model and privacy review before cloud production.
+4. Add only opt-in aggregate product events if real product decisions eventually require them.
+5. Build the iOS binary and iOS widget when Apple release work begins.
+
+The original rationale is in [10-experience-roadmap.md](10-experience-roadmap.md); the complete
+current inventory is [11-feature-catalog.md](11-feature-catalog.md).
 
 ## Success measures
 
@@ -120,4 +130,3 @@ Avoid daily-active-user and notification-click goals that reward compulsive open
 - support reports mentioning shame, pressure, confusion, or sensory discomfort
 - backup/restore success
 - accessibility task completion
-
