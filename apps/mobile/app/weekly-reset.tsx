@@ -1,5 +1,4 @@
 import type { HabitContext } from '@spark/domain';
-import { localDateKey } from '@spark/domain';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
@@ -10,6 +9,7 @@ import { FormField } from '../src/components/FormField';
 import { Screen } from '../src/components/Screen';
 import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
 import { createId } from '../src/lib/id';
+import { mondayKey } from '../src/lib/weeklyPlanning';
 import { useSpark } from '../src/state/SparkProvider';
 
 const contexts: { value: HabitContext; label: string }[] = [
@@ -19,13 +19,6 @@ const contexts: { value: HabitContext; label: string }[] = [
   { value: 'phone', label: 'Phone' },
   { value: 'anywhere', label: 'Anywhere' }
 ];
-
-function mondayKey(now: Date, timeZone: string): string {
-  const local = new Date(`${localDateKey(now, timeZone)}T12:00:00`);
-  const offset = (local.getDay() + 6) % 7;
-  local.setDate(local.getDate() - offset);
-  return localDateKey(local, timeZone);
-}
 
 export default function WeeklyResetScreen() {
   const spark = useSpark();

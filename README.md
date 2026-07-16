@@ -34,7 +34,9 @@ indexes, Terraform, and release documentation.
 Validation snapshot on **2026-07-16**:
 
 - workspace TypeScript checks passed;
-- 63 automated tests passed: 34 mobile, 10 domain, 18 API, and 1 admin;
+- 203 automated tests passed: 146 mobile, 16 domain, 25 API, and 16 admin;
+- coverage gates passed across mobile `app/` and `src/`, the domain package, core API application,
+  and admin source;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
 - Expo Doctor passed 20/20 checks;
 - the release checker correctly blocks publication while privacy placeholders remain;
@@ -524,6 +526,7 @@ Before every merge:
 ```powershell
 npm.cmd run typecheck
 npm.cmd run test:ci
+npm.cmd run test:coverage
 npm.cmd run build
 ```
 
@@ -534,9 +537,14 @@ npm.cmd run doctor
 npm.cmd run release:check
 ```
 
-The suites cover domain scheduling/progress, notification occurrence planning, backup migration
-and validation, accessible controls, API privacy/roles, feature shutdowns, purchase
-idempotency/conflicts/transfers, authenticated RTDN revocation, and admin components.
+The suites cover domain scheduling/progress, provider state transitions, notification occurrence
+planning, database migrations and encryption checks, backup migration/validation/file operations,
+calendar and widget boundaries, accessible controls, API privacy/roles, feature shutdowns,
+purchase idempotency/conflicts/transfers, authenticated RTDN revocation, and complete admin
+operation flows. `npm.cmd run test:coverage` instruments untested mobile routes too, so the mobile
+percentage remains an honest broad-app number rather than only measuring already imported files.
+The current scope-specific figures and thresholds are documented in
+[testing.md](./docs/testing.md).
 
 ### Android end-to-end testing
 

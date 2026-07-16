@@ -9,6 +9,11 @@ import { FormField } from '../src/components/FormField';
 import { Screen } from '../src/components/Screen';
 import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
 import { createId } from '../src/lib/id';
+import {
+  departureCalendarEvent,
+  departureStartAt,
+  routineEstimateMinutes
+} from '../src/lib/departure';
 import { openCalendarExport } from '../src/services/calendarBridge';
 import { useSpark } from '../src/state/SparkProvider';
 
@@ -24,13 +29,8 @@ export default function DepartureScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const routine = spark.routines.find((item) => item.id === routineId);
-  const routineMinutes = useMemo(
-    () => routine?.steps.reduce((total, step) => total + step.estimateMinutes, 0) ?? 0,
-    [routine]
-  );
-  const startAt = new Date(
-    targetAt.getTime() - (buffer + routineMinutes) * 60_000
-  );
+  const routineMinutes = useMemo(() => routineEstimateMinutes(routine), [routine]);
+  const startAt = departureStartAt(targetAt, buffer, routineMinutes);
 
   async function save(status: 'planned' | 'active' = 'planned') {
     const id = savedId ?? createId('departure');
@@ -51,22 +51,14 @@ export default function DepartureScreen() {
   async function exportCalendar() {
     try {
       await save();
-      await openCalendarExport({
-        title: `Spark: ${title.trim() || 'Departure'}`,
-        startAt,
-        endAt: targetAt,
-        notes: [
-          `Start winding up at ${startAt.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
-          })}.`,
-          routine ? `Routine: ${routine.title}.` : '',
-          `${buffer}-minute buffer included.`,
-          'Created explicitly from Spark. Spark did not read your calendar.'
-        ]
-          .filter(Boolean)
-          .join('\n')
-      });
+      await openCalendarExport(
+        departureCalendarEvent({
+          title,
+          targetAt,
+          bufferMinutes: buffer,
+          routine
+        })
+      );
     } catch (error) {
       Alert.alert(
         'Could not open calendar',
@@ -190,4 +182,3 @@ export default function DepartureScreen() {
 const styles = StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
 });
-

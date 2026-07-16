@@ -212,4 +212,144 @@ describe('backup validation', () => {
       )
     ).toThrow('habit that is missing');
   });
+
+  it('rejects duplicate entity IDs and missing variant references', () => {
+    const habit = {
+      id: 'habit',
+      title: 'Read',
+      color: '#fff',
+      icon: '📚',
+      variants: [
+        {
+          id: 'tiny',
+          kind: 'tiny',
+          label: 'One line',
+          targetMinutes: 1,
+          reward: 1
+        }
+      ],
+      schedule: { type: 'daily' },
+      reminderEnabled: false,
+      priority: 1,
+      contexts: ['anywhere'],
+      createdAt: '2026-07-01T00:00:00.000Z',
+      sortOrder: 0
+    };
+    expect(() =>
+      parseBackupText(JSON.stringify({ ...base, habits: [habit, habit] }))
+    ).toThrow('duplicate habit ID');
+    expect(() =>
+      parseBackupText(
+        JSON.stringify({
+          ...base,
+          habits: [habit],
+          completions: [
+            {
+              id: 'completion',
+              habitId: 'habit',
+              variantId: 'missing',
+              variantKind: 'tiny',
+              reward: 1,
+              occurredAt: '2026-07-16T12:00:00.000Z',
+              loggedAt: '2026-07-16T12:00:00.000Z',
+              localDate: '2026-07-16',
+              source: 'today'
+            }
+          ]
+        })
+      )
+    ).toThrow('habit version that is missing');
+  });
+
+  it('rejects invalid weekly, departure, experiment, and routine references', () => {
+    const cases = [
+      {
+        weeklyPlans: [
+          {
+            id: 'week',
+            weekStart: '2026-07-13',
+            selectedHabitIds: ['missing'],
+            reflection: '',
+            tomorrowContext: null,
+            tomorrowTinyHabitId: null,
+            createdAt: '2026-07-16T12:00:00.000Z'
+          }
+        ],
+        message: 'weekly plan'
+      },
+      {
+        departurePlans: [
+          {
+            id: 'departure',
+            title: 'Leave',
+            targetAt: '2026-07-16T13:00:00.000Z',
+            bufferMinutes: 10,
+            routineId: 'missing',
+            status: 'planned',
+            createdAt: '2026-07-16T12:00:00.000Z',
+            completedAt: null
+          }
+        ],
+        message: 'departure plan'
+      },
+      {
+        personalExperiments: [
+          {
+            id: 'experiment',
+            kind: 'tiny_week',
+            habitId: 'missing',
+            startedAt: '2026-07-16T12:00:00.000Z',
+            endsAt: '2026-07-23T12:00:00.000Z',
+            status: 'active',
+            baselineStart: '2026-07-09',
+            baselineEnd: '2026-07-15',
+            note: ''
+          }
+        ],
+        message: 'personal experiment'
+      },
+      {
+        routineRuns: [
+          {
+            routineId: 'missing',
+            stepIndex: 0,
+            tiny: false,
+            paused: false,
+            skippedStepIds: [],
+            startedAt: '2026-07-16T12:00:00.000Z',
+            updatedAt: '2026-07-16T12:00:00.000Z'
+          }
+        ],
+        message: 'routine'
+      }
+    ];
+    for (const item of cases) {
+      const { message, ...override } = item;
+      expect(() =>
+        parseBackupText(JSON.stringify({ ...base, ...override }))
+      ).toThrow(message);
+    }
+  });
+
+  it('rejects reversed plan and experiment dates', () => {
+    expect(() =>
+      parseBackupText(
+        JSON.stringify({
+          ...base,
+          departurePlans: [
+            {
+              id: 'departure',
+              title: 'Leave',
+              targetAt: '2026-07-16T13:00:00.000Z',
+              bufferMinutes: 10,
+              routineId: null,
+              status: 'complete',
+              createdAt: '2026-07-16T12:00:00.000Z',
+              completedAt: '2026-07-16T11:00:00.000Z'
+            }
+          ]
+        })
+      )
+    ).toThrow('reversed completion dates');
+  });
 });

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --watch",
     "test:ci": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
     "build": "expo export --platform android"
   },
   "dependencies": {

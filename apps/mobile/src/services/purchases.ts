@@ -21,9 +21,11 @@ async function iap(): Promise<IapModule> {
   }
 }
 
-export async function premiumDisplayPrice(): Promise<string | null> {
+export async function premiumDisplayPrice(
+  loadStore: () => Promise<IapModule> = iap
+): Promise<string | null> {
   if (!purchasesSupportedOnPlatform()) return null;
-  const store = await iap();
+  const store = await loadStore();
   await store.initConnection();
   try {
     const products = await store.fetchProducts({
@@ -36,13 +38,15 @@ export async function premiumDisplayPrice(): Promise<string | null> {
   }
 }
 
-export async function purchasePremium(): Promise<void> {
+export async function purchasePremium(
+  loadStore: () => Promise<IapModule> = iap
+): Promise<void> {
   if (!purchasesSupportedOnPlatform()) {
     throw new Error(
       'iPhone purchases are disabled until App Store server verification is implemented.'
     );
   }
-  const store = await iap();
+  const store = await loadStore();
   await store.initConnection();
   try {
     const accountId = await cloudUserId();
@@ -85,13 +89,15 @@ export async function purchasePremium(): Promise<void> {
   }
 }
 
-export async function restorePurchases(): Promise<void> {
+export async function restorePurchases(
+  loadStore: () => Promise<IapModule> = iap
+): Promise<void> {
   if (!purchasesSupportedOnPlatform()) {
     throw new Error(
       'iPhone purchase restore is disabled until App Store server verification is implemented.'
     );
   }
-  const store = await iap();
+  const store = await loadStore();
   await store.initConnection();
   try {
     const purchases = await store.getAvailablePurchases();

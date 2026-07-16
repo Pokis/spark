@@ -1,5 +1,9 @@
 import type { Completion, Habit } from '@spark/domain';
-import { compareExperiment, habitsWithExperimentReminders } from './experiments';
+import {
+  activeExperimentForHabit,
+  compareExperiment,
+  habitsWithExperimentReminders
+} from './experiments';
 import type { PersonalExperiment } from '../data/models';
 
 const habit: Habit = {
@@ -41,6 +45,43 @@ describe('personal experiments', () => {
     expect(habit.reminderEnabled).toBe(false);
   });
 
+  it('ignores stopped, future, ended, wrong-kind, and wrong-habit experiments', () => {
+    const now = new Date('2026-07-10T12:00:00.000Z');
+    expect(activeExperimentForHabit([experiment], 'habit', undefined, now)).toBe(
+      experiment
+    );
+    expect(
+      activeExperimentForHabit([experiment], 'other', undefined, now)
+    ).toBeUndefined();
+    expect(
+      activeExperimentForHabit([experiment], 'habit', 'tiny_week', now)
+    ).toBeUndefined();
+    expect(
+      activeExperimentForHabit(
+        [{ ...experiment, status: 'stopped' }],
+        'habit',
+        undefined,
+        now
+      )
+    ).toBeUndefined();
+    expect(
+      activeExperimentForHabit(
+        [{ ...experiment, startedAt: '2026-07-11T00:00:00.000Z' }],
+        'habit',
+        undefined,
+        now
+      )
+    ).toBeUndefined();
+    expect(
+      activeExperimentForHabit(
+        [{ ...experiment, endsAt: '2026-07-10T12:00:00.000Z' }],
+        'habit',
+        undefined,
+        now
+      )
+    ).toBeUndefined();
+  });
+
   it('produces a neutral local comparison', () => {
     const completions: Completion[] = [
       {
@@ -74,5 +115,36 @@ describe('personal experiments', () => {
     expect(result.baselineDays).toBe(1);
     expect(result.summary).toContain('No clear difference');
   });
-});
 
+  it('describes both higher and lower local comparisons without claiming causation', () => {
+    const tinyExperiment = {
+      ...experiment,
+      kind: 'tiny_week' as const,
+      status: 'complete' as const
+    };
+    const during: Completion = {
+      id: 'during-tiny',
+      habitId: 'habit',
+      variantId: 'tiny',
+      variantKind: 'tiny',
+      reward: 1,
+      occurredAt: '2026-07-10T14:00:00.000Z',
+      loggedAt: '2026-07-10T14:00:00.000Z',
+      localDate: '2026-07-10',
+      source: 'today'
+    };
+    expect(compareExperiment(tinyExperiment, [during], 'UTC').summary).toContain(
+      'may have fit better'
+    );
+    const before = {
+      ...during,
+      id: 'before-tiny',
+      occurredAt: '2026-07-04T14:00:00.000Z',
+      loggedAt: '2026-07-04T14:00:00.000Z',
+      localDate: '2026-07-04'
+    };
+    expect(compareExperiment(tinyExperiment, [before], 'UTC').summary).toContain(
+      'may not have helped'
+    );
+  });
+});

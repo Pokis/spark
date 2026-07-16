@@ -25,6 +25,10 @@ import { friendlyDate } from '../../src/lib/date';
 import { useSpark } from '../../src/state/SparkProvider';
 import { isQuietNow } from '../../src/lib/sensory';
 import { activeExperimentForHabit } from '../../src/lib/experiments';
+import {
+  currentWeeklyPlan,
+  weeklyPlanAppliesTomorrow
+} from '../../src/lib/weeklyPlanning';
 import { useTheme } from '../../src/theme';
 
 const timeOptions = [2, 5, 10, 20];
@@ -47,17 +51,14 @@ export default function TodayScreen() {
   const yesterday = addCalendarDays(today, -1);
   const checkIn = spark.dailyCheckIns.find((item) => item.localDate === today);
   const yesterdayCheckIn = spark.dailyCheckIns.find((item) => item.localDate === yesterday);
-  const weeklyPlan = spark.weeklyPlans.find(
-    (plan) => plan.weekStart <= today && addCalendarDays(plan.weekStart, 6) >= today
+  const weeklyPlan = currentWeeklyPlan(spark.weeklyPlans, today);
+  const weeklyPlanIsForToday = weeklyPlanAppliesTomorrow(
+    weeklyPlan,
+    today,
+    spark.timeZone
   );
-  const weeklyPlanIsForToday =
-    weeklyPlan &&
-    addCalendarDays(
-      localDateKey(new Date(weeklyPlan.createdAt), spark.timeZone),
-      1
-    ) === today;
   const rememberedContext = spark.settings.rememberContextByTime
-    ? (weeklyPlanIsForToday ? weeklyPlan.tomorrowContext : null) ??
+    ? (weeklyPlanIsForToday ? weeklyPlan?.tomorrowContext : null) ??
       spark.settings.contextByPeriod[currentPeriod()]
     : null;
   const [capacity, setCapacity] = useState<Capacity | null>(checkIn?.capacity ?? null);

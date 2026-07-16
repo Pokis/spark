@@ -24,16 +24,39 @@ function errorMessage(reason: unknown): string {
   const message = reason instanceof Error ? reason.message : String(reason);
   return message
     .replace(/“[^”]{1,300}”/g, '“[redacted]”')
+    .replace(/‘[^’]{1,300}’/g, '‘[redacted]’')
     .replace(/"[^"]{1,300}"/g, '"[redacted]"')
     .replace(/[A-Z]:\\[^\s]+/gi, '[local path]')
     .replace(/content:\/\/[^\s]+/gi, '[content URI]')
     .slice(0, 500);
 }
 
+function parsedEntries(raw: string | null): DiagnosticEntry[] {
+  if (!raw) return [];
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (!Array.isArray(value)) return [];
+    return value
+      .filter(
+        (entry): entry is DiagnosticEntry =>
+          Boolean(
+            entry &&
+              typeof entry === 'object' &&
+              typeof (entry as DiagnosticEntry).at === 'string' &&
+              typeof (entry as DiagnosticEntry).context === 'string' &&
+              typeof (entry as DiagnosticEntry).message === 'string'
+          )
+      )
+      .slice(-MAX_ENTRIES);
+  } catch {
+    return [];
+  }
+}
+
 export async function reportError(context: string, reason: unknown): Promise<void> {
   try {
     const raw = await AsyncStorage.getItem(DIAGNOSTICS_KEY);
-    const current = raw ? (JSON.parse(raw) as DiagnosticEntry[]) : [];
+    const current = parsedEntries(raw);
     const next = [
       ...current,
       {
@@ -103,12 +126,10 @@ export interface DiagnosticsReport {
 
 export async function buildDiagnosticsReport(): Promise<DiagnosticsReport> {
   const raw = await AsyncStorage.getItem(DIAGNOSTICS_KEY);
-  const entries = raw
-    ? (JSON.parse(raw) as DiagnosticEntry[]).map((entry) => ({
+  const entries = parsedEntries(raw).map((entry) => ({
         ...entry,
         message: errorMessage(entry.message)
-      }))
-    : [];
+      }));
   const [data, storage, notificationPermission, safetyCopies, authHardware, authEnrolled] =
     await Promise.all([
       loadAppData(),

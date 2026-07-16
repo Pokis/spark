@@ -131,7 +131,10 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **63 tests passed**: 34 mobile, 10 domain, 18 API, 1 admin.
+- `npm.cmd run test:ci` — **203 tests passed**: 146 mobile, 16 domain, 25 API, 16 admin.
+- `npm.cmd run test:coverage` — passed the checked-in workspace gates. Measured statement
+  coverage: mobile 44.98% across every route/source file, domain 99.42%, API application 88.53%,
+  and admin source 73.76%.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.
 - Expo Doctor — passed after aligning `@types/jest` to the Expo SDK recommendation.

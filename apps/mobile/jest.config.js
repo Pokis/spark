@@ -9,5 +9,18 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/e2e/'],
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|expo-.*|@expo(nent)?/.*|expo-router|@spark/.*|@noble/.*)/)'
-  ]
+  ],
+  collectCoverageFrom: [
+    'app/**/*.{ts,tsx}',
+    'src/**/*.{ts,tsx}',
+    '!**/*.test.{ts,tsx}'
+  ],
+  coverageThreshold: {
+    global: {
+      statements: 44,
+      branches: 33,
+      functions: 35,
+      lines: 45
+    }
+  }
 };

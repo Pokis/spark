@@ -310,7 +310,7 @@ class TestPurchases implements PurchaseVerifier {
   calls = 0;
   failuresRemaining = 0;
   obfuscatedAccountId?: string;
-  async verifyProduct() {
+  async verifyProduct(): ReturnType<PurchaseVerifier['verifyProduct']> {
     this.calls += 1;
     if (this.failuresRemaining > 0) {
       this.failuresRemaining -= 1;
@@ -713,5 +713,229 @@ describe('Spark control plane', () => {
       .set('Authorization', 'Bearer user')
       .expect(204);
     expect(store.users.has('user-1')).toBe(false);
+  });
+
+  it('reports liveness/readiness and bounded auth/not-found failures', async () => {
+    const { app, store } = setup();
+    await request(app)
+      .get('/healthz')
+      .expect(200, { ok: true, service: 'spark-control-plane' });
+    await request(app)
+      .get('/readyz')
+      .expect(200, { ok: true, dependencies: { firestore: 'ready' } });
+    await request(app).get('/v1/me/entitlement').expect(401);
+    await request(app)
+      .get('/v1/me/entitlement')
+      .set('Authorization', 'Bearer invalid')
+      .expect(401);
+    await request(app)
+      .get('/missing')
+      .expect(404, { error: 'not_found', message: 'Endpoint not found.' });
+    store.healthCheck = async () => {
+      throw new Error('Firestore unavailable');
+    };
+    await request(app).get('/readyz').expect(500);
+  });
+
+  it('rejects unknown, pending, and canceled Play states without entitlement', async () => {
+    const unknown = setup();
+    await request(unknown.app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send({
+        productId: 'another_product',
+        purchaseToken: 'a-valid-looking-purchase-token'
+      })
+      .expect(400);
+    expect(
+      unknown.store.audits.some(
+        (audit) => audit.action === 'purchase.rejected_unknown_product'
+      )
+    ).toBe(true);
+
+    const pending = setup();
+    pending.purchases.verifyProduct = async () => ({
+      state: 'pending',
+      acknowledged: false
+    });
+    await request(pending.app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send({
+        productId: 'spark_premium_lifetime',
+        purchaseToken: 'a-pending-purchase-token'
+      })
+      .expect(409);
+    expect(pending.store.entitlements.get('user-1')).toBeUndefined();
+
+    const canceled = setup();
+    canceled.purchases.verifyProduct = async () => ({
+      state: 'canceled',
+      acknowledged: false
+    });
+    await request(canceled.app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send({
+        productId: 'spark_premium_lifetime',
+        purchaseToken: 'a-canceled-purchase-token'
+      })
+      .expect(402);
+    expect(
+      canceled.store.audits.some(
+        (audit) => audit.action === 'purchase.rejected'
+      )
+    ).toBe(true);
+  });
+
+  it('returns only currently active entitlement state', async () => {
+    const { app, store } = setup();
+    store.entitlements.set('user-1', {
+      premium: true,
+      source: 'admin',
+      expiresAt: '2026-07-15T12:00:00.000Z',
+      updatedAt: '2026-07-01T12:00:00.000Z'
+    });
+    const expired = await request(app)
+      .get('/v1/me/entitlement')
+      .set('Authorization', 'Bearer user')
+      .expect(200);
+    expect(expired.body).toEqual({
+      premium: false,
+      source: 'admin',
+      expiresAt: '2026-07-15T12:00:00.000Z'
+    });
+    store.entitlements.set('user-1', {
+      premium: true,
+      source: 'admin',
+      expiresAt: null,
+      updatedAt: '2026-07-01T12:00:00.000Z'
+    });
+    const active = await request(app)
+      .get('/v1/me/entitlement')
+      .set('Authorization', 'Bearer user')
+      .expect(200);
+    expect(active.body.premium).toBe(true);
+  });
+
+  it('supports the complete private user/admin conversation lifecycle', async () => {
+    const { app, store } = setup();
+    const created = await request(app)
+      .post('/v1/support/threads')
+      .set('Authorization', 'Bearer user')
+      .send({
+        subject: 'Need help',
+        message: 'First message',
+        appVersion: '0.1.0',
+        platform: 'android'
+      })
+      .expect(201);
+    await request(app)
+      .get('/v1/support/threads')
+      .set('Authorization', 'Bearer user')
+      .expect(200);
+    await request(app)
+      .post(`/v1/support/threads/${created.body.id}/messages`)
+      .set('Authorization', 'Bearer user')
+      .send({ text: 'More detail' })
+      .expect(201);
+    await request(app)
+      .get('/v1/admin/support?status=open&limit=10')
+      .set('Authorization', 'Bearer support')
+      .expect(200);
+    await request(app)
+      .get(`/v1/admin/support/${created.body.id}/messages`)
+      .set('Authorization', 'Bearer support')
+      .expect(200);
+    await request(app)
+      .post(`/v1/admin/support/${created.body.id}/messages`)
+      .set('Authorization', 'Bearer support')
+      .send({ text: 'Admin reply' })
+      .expect(201);
+    expect(store.threads.get(created.body.id)?.status).toBe('waiting_on_user');
+    await request(app)
+      .patch(`/v1/admin/support/${created.body.id}/status`)
+      .set('Authorization', 'Bearer support')
+      .send({ status: 'resolved' })
+      .expect(204);
+    expect(store.threads.get(created.body.id)?.status).toBe('resolved');
+    expect(store.audits.map((audit) => audit.action)).toEqual(
+      expect.arrayContaining(['support.replied', 'support.status_changed'])
+    );
+  });
+
+  it('returns bounded admin views and rejects costly or unauthorized audit filters', async () => {
+    const { app, store } = setup();
+    await store.touchUser('user-1', {
+      email: 'person@example.com',
+      at: '2026-07-16T12:00:00.000Z'
+    });
+    await request(app)
+      .get('/v1/admin/overview')
+      .set('Authorization', 'Bearer owner')
+      .expect(200);
+    const users = await request(app)
+      .get('/v1/admin/users?limit=10&search=person%40example.com')
+      .set('Authorization', 'Bearer support')
+      .expect(200);
+    expect(users.body.items[0].uid).toBe('user-1');
+    await request(app)
+      .get('/v1/admin/promo-codes?limit=10')
+      .set('Authorization', 'Bearer support')
+      .expect(200);
+    await request(app)
+      .get('/v1/admin/audits?limit=10&action=a&target=b')
+      .set('Authorization', 'Bearer owner')
+      .expect(400);
+    await request(app)
+      .get('/v1/admin/audits?limit=10&target=user-1')
+      .set('Authorization', 'Bearer support')
+      .expect(403);
+  });
+
+  it('handles empty promo inventory and owner role changes with audits', async () => {
+    const { app, store } = setup();
+    await request(app)
+      .post('/v1/admin/promo-codes/assign')
+      .set('Authorization', 'Bearer support')
+      .send({ userId: 'user-1' })
+      .expect(409);
+    await request(app)
+      .post('/v1/admin/roles')
+      .set('Authorization', 'Bearer owner')
+      .send({ email: 'new-admin@example.com', role: 'content' })
+      .expect(200);
+    expect(store.audits[0]).toMatchObject({
+      action: 'admin.role_changed',
+      reason: 'Role set to content'
+    });
+  });
+
+  it('runs authenticated maintenance and ignores invalid RTDN payloads safely', async () => {
+    const { app, store } = setup();
+    store.audits.push({
+      id: 'expired',
+      actorId: 'owner',
+      action: 'old',
+      target: 'target',
+      at: '2025-01-01T00:00:00.000Z',
+      deleteAfter: '2026-01-01T00:00:00.000Z'
+    });
+    await request(app).post('/v1/internal/maintenance').expect(401);
+    const maintenance = await request(app)
+      .post('/v1/internal/maintenance')
+      .set('Authorization', 'Bearer internal')
+      .expect(200);
+    expect(maintenance.body.purged.audits).toBe(1);
+    await request(app)
+      .post('/v1/internal/google-play/rtdn')
+      .set('Authorization', 'Bearer internal')
+      .send({
+        message: {
+          messageId: 'invalid-payload',
+          data: Buffer.from('not-json').toString('base64')
+        }
+      })
+      .expect(204);
   });
 });

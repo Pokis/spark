@@ -6,6 +6,48 @@
 npm.cmd run test:ci
 ```
 
+This runs **203 automated tests**: 146 mobile, 16 domain, 25 control-plane API, and 16 admin
+dashboard tests.
+
+The suites cover:
+
+- pure domain scheduling, rhythm, recommendation, and comeback behavior;
+- mobile state, components, database/backup, notifications, widgets, calendar, privacy, and
+  accessibility;
+- control-plane privacy, roles, kill switches, purchases, RTDN, support, and retention;
+- dashboard setup, configuration, users/grants, support, promo, audit, and role workflows.
+
+## Coverage gate
+
+Run the repository-wide coverage command before merging or preparing a release candidate:
+
+```powershell
+npm.cmd run test:coverage
+```
+
+It rebuilds shared packages first, executes every workspace coverage suite, prints per-file
+reports, and fails if any workspace falls below its checked-in threshold. Generated reports are
+written under ignored `coverage/` folders.
+
+Measured on **2026-07-16**:
+
+| Scope | Statements | Branches | Functions | Lines | Enforced minimum |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Mobile: every `app/` and `src/` TypeScript/TSX file | 44.98% | 34.13% | 36.21% | 46.08% | 44 / 33 / 35 / 45 |
+| Shared domain package | 99.42% | 91.59% | 100% | 99.42% | 98 / 90 / 100 / 98 |
+| Control-plane HTTP application (`src/app.ts`) | 88.53% | 78.52% | 97.91% | 88.66% | 85 / 75 / 95 / 85 |
+| Admin source, excluding test/bootstrap files | 73.76% | 49.35% | 67.18% | 75.32% | 70 / 45 / 60 / 70 |
+
+The mobile scope deliberately includes every route and large editor, including files that unit
+tests do not import. That makes the remaining screen-level gap visible. Core mobile services are
+materially higher: local helpers are fully statement-covered, services are 88.88%, backup is
+86.73%, notifications are 93.02%, diagnostics are 94.73%, and `SparkProvider` is 72.72%.
+
+Coverage is evidence, not a release substitute. Firebase browser sign-in, Android/iOS system
+dialogs, SQLCipher in the shipped native binary, launchers/widgets, notification delivery,
+biometrics, sound/haptics, Play Billing, process death, and accessibility still require the
+manual/device matrices below.
+
 ## Device-level end-to-end test
 
 The Maestro flow covers onboarding, habit creation, a tiny completion and reward, brain-dump
@@ -33,13 +75,6 @@ npm.cmd run android
 
 The end-to-end test deliberately runs without Firebase or the Spark API. It verifies the
 zero-cloud-cost path.
-
-This runs:
-
-- pure domain scheduling, rhythm, recommendation, and comeback tests
-- mobile component, backup, notification-planning, and accessibility tests
-- control-plane API privacy, role, kill-switch, purchase, RTDN, and retention tests
-- dashboard component tests
 
 Run static checks:
 
@@ -197,7 +232,10 @@ Check:
 - language changes, Lithuanian copy, and RTL device layout
 
 Automated assertions also cover rapid-tap guarding, direct tiny/focus/deferral actions, backup
-migration from every released schema, routine recovery data, reminder windows, timezone/DST
-behavior, supportive observations, personal-experiment comparison, focus-widget timestamp math,
-Lithuanian localization/fallback, labelled completion actions, settings, and non-judgmental
-capacity language. They supplement rather than replace TalkBack and large-text device testing.
+migration from every released schema, encrypted backup round trips, automatic-backup retention,
+portable CSV injection protection, restore safety copies, database migrations/integrity,
+provider state transitions, routine recovery data, reminder windows, timezone/DST behavior,
+supportive observations, personal-experiment comparison, calendar handoff, focus-widget timestamp
+math/actions, Lithuanian localization/fallback, app error recovery, themes, labelled completion
+actions, settings, private support/grant/promo/audit/admin flows, and non-judgmental capacity
+language. They supplement rather than replace TalkBack and large-text device testing.

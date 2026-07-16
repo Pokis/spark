@@ -362,7 +362,18 @@ companions live in Focus where they do not pressure home-screen engagement.
 
 ## Automated coverage
 
-The repository includes focused checks for:
+The repository includes **203 automated tests** and a root coverage gate:
+
+```powershell
+npm.cmd run test:coverage
+```
+
+Current measured coverage is 44.98% statements across every mobile route/source file, 99.42% in
+the domain package, 88.53% in the control-plane HTTP application, and 73.76% across admin source.
+The mobile figure intentionally counts large screen/editor files that are still primarily covered
+by device QA; service and local-helper coverage is substantially higher.
+
+Focused checks cover:
 
 - schedule, interval, pause, comeback, reward, timezone, and DST behavior;
 - Today recommendation sizing;
@@ -370,18 +381,28 @@ The repository includes focused checks for:
 - preferred reminder times, reminder windows, pause exclusions, and weekly spreading;
 - rapid duplicate-completion guarding;
 - disabled completion controls and direct tiny/focus/deferral actions;
-- current and legacy backup schemas, reference validation, context, and routine recovery state;
+- current and legacy backup schemas, encryption, file selection, sharing availability, size
+  limits, retention, restore safety copies, CSV injection protection, reference validation,
+  context, and routine recovery state;
 - schema-4 plans/experiments/friction migration and reference validation;
-- contiguous database migration versions;
+- contiguous database migration versions, native SQLCipher refusal, and integrity reporting;
+- central provider persistence for completions, capture, focus, routines, plans, settings,
+  entitlement, deferrals, notification actions, widget synchronization, and automatic backup;
 - personal-experiment application and neutral comparison;
+- departure calculations, calendar handoff, deliberate progress sharing, and Quiet now;
 - Lithuanian localization plus English fallback behavior;
-- timestamp-derived focus-widget state;
+- timestamp-derived focus-widget state and pause/resume route actions;
+- diagnostics redaction, corrupt diagnostic recovery, error boundary fallback, and themes;
 - capacity and settings accessibility components;
-- optional API/admin behavior in their respective workspaces.
+- control-plane health/readiness/auth, privacy, support lifecycle, purchase states, entitlement
+  expiry, bounded admin lists, roles, grants, promo inventory, audit filters, and RTDN;
+- admin shell setup/session behavior plus configuration, user grants, private support, official
+  promo imports, bounded audit filtering, and role changes.
 
 Native Android QA is still required for widgets, share receiving, notification actions, haptics,
 audio output, SQLCipher verification, Play Billing, large-text rendering on representative devices,
-and routine recovery after the operating system kills the process.
+calendar/document system UI, browser Firebase sign-in, and routine recovery after the operating
+system kills the process.
 
 ## Source map
 

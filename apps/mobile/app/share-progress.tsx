@@ -6,6 +6,11 @@ import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
 import { Screen } from '../src/components/Screen';
 import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
+import {
+  progressShareText,
+  progressWinLabel,
+  toggleSharedWin
+} from '../src/lib/progressSharing';
 import { useSpark } from '../src/state/SparkProvider';
 import { useTheme } from '../src/theme';
 
@@ -21,29 +26,21 @@ export default function ShareProgressScreen() {
 
   function labelFor(completionId: string): string {
     const completion = spark.completions.find((item) => item.id === completionId);
-    const habit = spark.habits.find((item) => item.id === completion?.habitId);
-    const variant = habit?.variants.find((item) => item.id === completion?.variantId);
-    return `${habit?.icon ?? '✦'} ${variant?.label ?? habit?.title ?? 'A private win'}`;
+    return progressWinLabel(completion, spark.habits);
   }
 
   function toggle(id: string) {
     setSelected((current) => {
-      if (current.includes(id)) return current.filter((item) => item !== id);
-      if (current.length >= 5) {
+      const result = toggleSharedWin(current, id);
+      if (result.atLimit) {
         Alert.alert('Choose a few', 'Select up to five wins so the card stays calm and readable.');
-        return current;
       }
-      return [...current, id];
+      return result.selected;
     });
   }
 
   function shareText() {
-    const message = [
-      'A few wins I chose to share:',
-      ...selected.map((id) => `• ${labelFor(id)}`),
-      '',
-      'Shared deliberately from Spark — no automatic reporting.'
-    ].join('\n');
+    const message = progressShareText(selected, spark.completions, spark.habits);
     void Share.share({ title: 'Selected Spark wins', message });
   }
 
@@ -175,4 +172,3 @@ const styles = StyleSheet.create({
   cardEmpty: { color: '#A8B0C4', fontSize: 15 },
   cardFooter: { color: '#A8B0C4', fontSize: 12, marginTop: 4 }
 });
-

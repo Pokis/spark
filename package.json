@@ -24,6 +24,8 @@
     "test": "npm run test --workspaces --if-present",
     "pretest:ci": "npm run build:packages",
     "test:ci": "npm run test:ci --workspaces --if-present",
+    "pretest:coverage": "npm run build:packages",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
     "e2e:android": "maestro test apps/mobile/e2e/maestro",
     "build:packages": "npm run build --workspace @spark/cloud-contracts && npm run build --workspace @spark/domain",
     "build": "npm run build:packages && npm run build --workspace @spark/admin && npm run build --workspace @spark/mobile && npm run build --workspace @spark/control-plane",
