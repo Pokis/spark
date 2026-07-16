@@ -1,0 +1,102 @@
+# Monetization strategy
+
+## Principle
+
+Do not charge for the executive-function support that makes Spark useful. Charging to repair a
+streak, avoid shame, add basic habits, or receive reminders would exploit the problem the product
+claims to help.
+
+## Initial offer
+
+Recommended:
+
+- free app download
+- unlimited habits, flexible variants, focus, capture, routines, local reminders, widget,
+  insights, backup, and accessibility
+- one-time **Spark Premium Supporter** purchase
+- illustrative launch price: USD 9.99 or a locally appropriate equivalent
+
+Validate willingness to pay before finalizing the price. Google Play handles regional tax and
+price conversion.
+
+The initial release contains:
+
+- an Aurora purple accent theme
+- a visible supporter badge
+- entitlement restoration on another device
+- future supporter cosmetics when they are actually released
+
+Do not advertise advanced insights, soundscapes, companion packs, or voting tools until they
+exist in a released build.
+
+Avoid advertisements, data brokerage, recurring “streak insurance,” loot boxes, paid reminders,
+and fake urgency.
+
+## Why lifetime first
+
+A subscription adds recurring billing expectations, restore complexity, churn pressure, and a
+reason to withhold ongoing functionality. Spark's initial cloud cost is near zero and its core
+value is local, so a lifetime supporter purchase is the honest first model.
+
+If real future costs arise from an optional service such as encrypted cross-device backup or AI,
+offer that service separately and explain its operating cost. Do not retroactively move local
+features behind a subscription.
+
+## Technical flow
+
+1. The native store returns a purchase token.
+2. Mobile sends the token and product ID to authenticated Cloud Run.
+3. Cloud Run asks Google Play for the purchase state.
+4. If valid, Cloud Run stores the entitlement and acknowledges the purchase.
+5. Only then does mobile finish the transaction and cache premium locally.
+
+The control plane accepts only `spark_premium_lifetime`.
+
+## Free grants
+
+There are two safe mechanisms.
+
+### Official Play promo code
+
+Best for public giveaways and testers:
+
+1. Generate the code in Play Console.
+2. Import it in the dashboard.
+3. Assign and privately send it.
+4. The person redeems it through Google Play.
+
+Google remains the entitlement authority.
+
+### Audited admin grant
+
+Best for a specific support case, contributor, reviewer, or accessibility tester:
+
+1. The person creates a cloud identity by checking access or contacting support.
+2. An owner locates the UID.
+3. The owner records a reason and grants access.
+4. The person refreshes entitlement.
+
+Only owners can perform manual grants. Support staff cannot.
+
+## iOS later
+
+Create an App Store non-consumable product with the same conceptual benefit. App Store purchases
+must be verified using Apple's supported server API before enabling iOS premium. Keep Play and
+App Store transaction identifiers, but expose one platform-neutral entitlement to the app.
+
+## Refunds and revocation
+
+Google Play can refund or revoke a purchase after initial verification. Before a larger release,
+add Real-time Developer Notifications or a periodic owner reconciliation job. The initial service
+checks on restore and can revoke manually; this is adequate for a small internal test, not a
+large paid launch.
+
+Real-time notifications are intentionally deferred because Pub/Sub and lifecycle handling add
+operational surface. Make them a production-purchase launch requirement in the release
+checklist.
+
+## Accounting
+
+Google Play fees and taxes are separate from cloud runtime cost. Play sale proceeds do not become
+Google Cloud credits. Export financial reports from Play Console and keep admin entitlement
+audits for support, not accounting.

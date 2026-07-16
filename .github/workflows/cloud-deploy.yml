@@ -1,0 +1,56 @@
+name: Deploy optional cloud services
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_api:
+        description: Deploy Cloud Run API
+        type: boolean
+        default: true
+      deploy_admin:
+        description: Deploy Firebase Hosting dashboard
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: npm ci
+      - name: Build and deploy API
+        if: ${{ inputs.deploy_api }}
+        run: |
+          gcloud builds submit --config cloudbuild.yaml --substitutions "_IMAGE=${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/spark/control-plane:${GITHUB_SHA}" .
+          gcloud run deploy spark-control-plane --image "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/spark/control-plane:${GITHUB_SHA}" --region "${GCP_REGION}" --quiet
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+      - name: Build dashboard
+        if: ${{ inputs.deploy_admin }}
+        run: npm run build --workspace @spark/admin
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_SPARK_API_URL: ${{ secrets.VITE_SPARK_API_URL }}
+      - name: Deploy dashboard and rules
+        if: ${{ inputs.deploy_admin }}
+        run: npx firebase-tools deploy --project "${GCP_PROJECT_ID}" --only hosting,firestore:rules,firestore:indexes --non-interactive
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

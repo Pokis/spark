@@ -1,0 +1,76 @@
+appId: com.sparkhabits.app
+name: Spark full offline journey
+---
+- launchApp:
+    clearState: true
+
+# Onboarding and privacy promises
+- assertVisible:
+    id: onboarding-continue
+- assertVisible: "Progress without the shame spiral."
+- tapOn:
+    id: onboarding-continue
+- assertVisible: "Choose the size that fits today."
+- tapOn:
+    id: onboarding-continue
+- assertVisible: "Your real life stays on this device."
+- tapOn:
+    id: onboarding-continue
+- assertVisible:
+    id: today-screen
+
+# Create a flexible three-size habit
+- tapOn: "Add a habit"
+- tapOn:
+    id: habit-title
+- inputText: "Drink water"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: save-habit
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: save-habit
+- assertVisible: "Drink water"
+
+# Complete the recommended version and receive an immediate reward
+- tapOn: "Complete Drink water: Touch the first step, 1 minutes"
+- assertVisible: "Drink water completed. You earned 1 sparks. Tap to continue."
+- tapOn: "Drink water completed. You earned 1 sparks. Tap to continue."
+- assertVisible: "Logged. Tiny still counts."
+
+# Capture an interruption without organizing it
+- tapOn: "Capture"
+- assertVisible:
+    id: capture-screen
+- tapOn:
+    id: capture-input
+- inputText: "Email the dentist"
+- hideKeyboard
+- tapOn:
+    id: capture-submit
+- assertVisible: "Email the dentist"
+
+# Start a body-double focus block and close it intentionally
+- tapOn: "Focus"
+- assertVisible:
+    id: focus-screen
+- tapOn: "One target"
+- inputText: "Write one paragraph"
+- hideKeyboard
+- tapOn:
+    id: start-focus
+- assertVisible: "Write one paragraph"
+- tapOn: "Finish early"
+- assertVisible: "That was a real focus block"
+- tapOn: "Done"
+
+# Verify that the local SQLCipher-backed state survives a process restart
+- stopApp
+- launchApp
+- assertVisible:
+    id: today-screen
+- assertVisible: "Drink water"
+- tapOn: "Capture"
+- assertVisible: "Email the dentist"

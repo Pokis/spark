@@ -1,0 +1,30 @@
+{
+  "name": "spark",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Spark — an offline-first, no-guilt ADHD habit and focus tracker.",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "doctor": "node scripts/doctor.mjs",
+    "start": "npm run start --workspace @spark/mobile",
+    "android": "npm run android --workspace @spark/mobile",
+    "ios": "npm run ios --workspace @spark/mobile",
+    "admin": "npm run dev --workspace @spark/admin",
+    "api": "npm run dev --workspace @spark/control-plane",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:ci": "npm run test:ci --workspaces --if-present",
+    "e2e:android": "maestro test apps/mobile/e2e/maestro",
+    "build": "npm run build --workspaces --if-present",
+    "release:check": "node scripts/release-check.mjs",
+    "clean": "node scripts/clean.mjs"
+  },
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "packageManager": "npm@11.12.1"
+}

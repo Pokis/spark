@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      expo:
+        patterns:
+          - expo
+          - expo-*
+          - "@expo/*"
+      firebase:
+        patterns:
+          - firebase
+          - firebase-admin
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

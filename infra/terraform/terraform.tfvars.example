@@ -1,0 +1,11 @@
+project_id              = "your-firebase-project-id"
+region                  = "europe-central2"
+firestore_location      = "europe-central2"
+container_image         = ""
+admin_email_allowlist   = "you@example.com"
+allowed_origins         = "http://localhost:5173,https://your-project.web.app"
+google_play_package_name = "com.sparkhabits.app"
+
+# Optional. Alerts do not cap spending.
+billing_account_id = ""
+monthly_budget_usd = 5

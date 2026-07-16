@@ -1,0 +1,19 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - services/control-plane/Dockerfile
+      - --tag
+      - ${_IMAGE}
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_IMAGE}
+images:
+  - ${_IMAGE}
+substitutions:
+  _IMAGE: europe-central2-docker.pkg.dev/example/spark/control-plane:manual
+options:
+  logging: CLOUD_LOGGING_ONLY

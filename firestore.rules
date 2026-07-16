@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Spark mobile and admin clients never access Firestore directly.
+    // The Cloud Run service uses IAM/Admin SDK and is not governed by these rules.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

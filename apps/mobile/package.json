@@ -1,0 +1,51 @@
+{
+  "name": "@spark/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --watch",
+    "test:ci": "jest --runInBand",
+    "build": "expo export --platform android"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "*",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@spark/cloud-contracts": "0.1.0",
+    "@spark/domain": "0.1.0",
+    "expo": "~57.0.6",
+    "expo-constants": "*",
+    "expo-crypto": "*",
+    "expo-dev-client": "*",
+    "expo-document-picker": "*",
+    "expo-file-system": "*",
+    "expo-haptics": "*",
+    "expo-linking": "*",
+    "expo-notifications": "~57.0.3",
+    "expo-router": "~57.0.6",
+    "expo-secure-store": "*",
+    "expo-sharing": "*",
+    "expo-splash-screen": "*",
+    "expo-sqlite": "~57.0.0",
+    "expo-status-bar": "*",
+    "expo-system-ui": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-android-widget": "*",
+    "react-native-iap": "^14.7.9",
+    "react-native-nitro-modules": "*",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "*",
+    "@types/react": "*",
+    "jest": "*",
+    "jest-expo": "~57.0.2",
+    "typescript": "~6.0.3"
+  }
+}

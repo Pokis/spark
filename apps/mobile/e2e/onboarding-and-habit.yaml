@@ -1,0 +1,19 @@
+appId: com.sparkhabits.app
+name: Onboard and complete a tiny habit
+---
+- clearState
+- launchApp
+- assertVisible: "Progress without the shame spiral."
+- tapOn:
+    id: "onboarding-continue"
+- tapOn:
+    id: "onboarding-continue"
+- tapOn:
+    id: "onboarding-continue"
+- assertVisible:
+    id: "today-screen"
+- tapOn: "Running low"
+- tapOn: "One sip"
+- assertVisible: "Drink some water"
+- tapOn: "Tap anywhere"
+- assertVisible: "wins today"

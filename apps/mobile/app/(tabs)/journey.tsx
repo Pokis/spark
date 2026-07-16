@@ -1,0 +1,227 @@
+import {
+  localDateKey,
+  recentDateKeys,
+  rewardSummary,
+  rhythmForHabit
+} from '@spark/domain';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Button } from '../../src/components/Button';
+import { Card } from '../../src/components/Card';
+import { Screen } from '../../src/components/Screen';
+import { Body, Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
+import { useSpark } from '../../src/state/SparkProvider';
+import { useTheme } from '../../src/theme';
+
+export default function JourneyScreen() {
+  const spark = useSpark();
+  const theme = useTheme();
+  const summary = rewardSummary(spark.completions);
+  const days = recentDateKeys(new Date(), spark.timeZone, 14);
+  const winsByDay = days.map(
+    (day) => spark.completions.filter((completion) => completion.localDate === day).length
+  );
+  const maxWins = Math.max(1, ...winsByDay);
+  const today = localDateKey(new Date(), spark.timeZone);
+  const activeHabits = spark.habits.filter((habit) => !habit.archivedAt);
+
+  return (
+    <Screen testID="journey-screen">
+      <View>
+        <Eyebrow>No-guilt progress</Eyebrow>
+        <H1>Your path, not a streak.</H1>
+        <Muted>Blank days are blank. They do not erase any win you already made.</Muted>
+      </View>
+
+      <Card style={[styles.levelCard, { backgroundColor: theme.surfaceAlt }]}>
+        <View style={[styles.levelOrb, { backgroundColor: theme.primary }]}>
+          <Text style={styles.levelNumber}>{summary.level}</Text>
+        </View>
+        <View style={styles.levelText}>
+          <SectionHeading>Level {summary.level} Spark</SectionHeading>
+          <Muted>
+            {summary.totalSparks} total · {summary.nextLevelAt - summary.totalSparks} until the
+            next glow
+          </Muted>
+          <View style={[styles.track, { backgroundColor: theme.border }]}>
+            <View
+              style={[
+                styles.progress,
+                {
+                  backgroundColor: theme.primary,
+                  width: `${Math.max(4, Math.min(100, summary.levelProgress * 100))}%`
+                }
+              ]}
+            />
+          </View>
+        </View>
+      </Card>
+
+      <Card>
+        <SectionHeading>Last 14 days</SectionHeading>
+        <View
+          accessible
+          accessibilityLabel={`Fourteen day activity: ${winsByDay.reduce((a, b) => a + b, 0)} total wins`}
+          style={styles.chart}
+        >
+          {days.map((day, index) => (
+            <View key={day} style={styles.barColumn}>
+              <View
+                style={[
+                  styles.bar,
+                  {
+                    height: Math.max(5, (winsByDay[index]! / maxWins) * 76),
+                    backgroundColor: day === today ? theme.primary : `${theme.purple}88`
+                  }
+                ]}
+              />
+              <Text style={[styles.dayLabel, { color: theme.textMuted }]}>
+                {new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
+                  weekday: 'narrow'
+                })}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <Muted>
+          {winsByDay.filter(Boolean).length} active days ·{' '}
+          {winsByDay.reduce((sum, value) => sum + value, 0)} completed actions
+        </Muted>
+      </Card>
+
+      <View style={styles.sectionHeading}>
+        <View>
+          <SectionHeading>Rhythms</SectionHeading>
+          <Muted>A rolling 14-day view, never a reset.</Muted>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a habit"
+          onPress={() => router.push('/habit/new')}
+        >
+          <Ionicons name="add-circle" size={34} color={theme.primary} />
+        </Pressable>
+      </View>
+      {activeHabits.map((habit) => {
+        const rhythm = rhythmForHabit(
+          habit,
+          spark.completions,
+          new Date(),
+          spark.timeZone
+        );
+        return (
+          <Pressable
+            key={habit.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${habit.title}`}
+            onPress={() => router.push(`/habit/${habit.id}`)}
+          >
+            <Card style={styles.rhythmCard}>
+              <View style={[styles.habitIcon, { backgroundColor: `${habit.color}22` }]}>
+                <Text style={styles.habitEmoji}>{habit.icon}</Text>
+              </View>
+              <View style={styles.rhythmText}>
+                <Text style={[styles.rhythmTitle, { color: theme.text }]}>{habit.title}</Text>
+                <Muted>
+                  {rhythm.activeDays} active days · {rhythm.wins} wins
+                  {rhythm.comeback ? ' · comeback!' : ''}
+                </Muted>
+              </View>
+              <Text style={[styles.percentage, { color: habit.color }]}>
+                {rhythm.percentage}%
+              </Text>
+            </Card>
+          </Pressable>
+        );
+      })}
+
+      <View style={styles.sectionHeading}>
+        <View>
+          <SectionHeading>Launch routines</SectionHeading>
+          <Muted>One visible step at a time.</Muted>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a routine"
+          onPress={() => router.push('/routine/new')}
+        >
+          <Ionicons name="add-circle" size={34} color={theme.primary} />
+        </Pressable>
+      </View>
+      {spark.routines.map((routine) => (
+        <Pressable
+          key={routine.id}
+          accessibilityRole="button"
+          accessibilityLabel={`Start ${routine.title} routine`}
+          onPress={() => router.push(`/routine/${routine.id}`)}
+        >
+          <Card style={styles.routine}>
+            <Text style={styles.routineIcon}>{routine.icon}</Text>
+            <View style={styles.rhythmText}>
+              <Text style={[styles.rhythmTitle, { color: theme.text }]}>{routine.title}</Text>
+              <Muted>
+                {routine.steps.length} steps ·{' '}
+                {routine.steps.reduce((sum, step) => sum + step.estimateMinutes, 0)} min
+              </Muted>
+            </View>
+            <Ionicons name="play-circle" size={32} color={routine.color} />
+          </Card>
+        </Pressable>
+      ))}
+
+      <Card style={{ borderColor: theme.success }}>
+        <Eyebrow>What Spark does not do</Eyebrow>
+        <Body>
+          It does not punish missed days, sell your habit history, or use random rewards to keep
+          you compulsively checking. Dopamine here celebrates a choice you already made.
+        </Body>
+      </Card>
+      <Button label="Manage settings" variant="ghost" onPress={() => router.push('/settings')} />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  levelCard: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+  levelOrb: {
+    width: 64,
+    height: 64,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  levelNumber: { color: '#FFFFFF', fontSize: 28, fontWeight: '800' },
+  levelText: { flex: 1, gap: 5 },
+  track: { height: 8, borderRadius: 99, overflow: 'hidden' },
+  progress: { height: 8, borderRadius: 99 },
+  chart: {
+    height: 102,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 4
+  },
+  barColumn: { flex: 1, alignItems: 'center', gap: 5 },
+  bar: { width: '72%', borderRadius: 5, minHeight: 5 },
+  dayLabel: { fontSize: 10 },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  rhythmCard: { flexDirection: 'row', alignItems: 'center', padding: 13 },
+  habitIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  habitEmoji: { fontSize: 23 },
+  rhythmText: { flex: 1 },
+  rhythmTitle: { fontSize: 16, fontWeight: '700' },
+  percentage: { fontSize: 17, fontWeight: '800' },
+  routine: { flexDirection: 'row', alignItems: 'center', padding: 13 },
+  routineIcon: { fontSize: 30 }
+});
