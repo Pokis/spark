@@ -8,14 +8,25 @@ export function UsersPage() {
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [reason, setReason] = useState('');
   const [assignedCode, setAssignedCode] = useState('');
+  const [search, setSearch] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  async function load(reset = true, searchValue = search) {
+    setLoading(true);
     setError(null);
     try {
-      setUsers(await adminApi.users());
+      const result = await adminApi.users(
+        reset ? undefined : nextCursor ?? undefined,
+        searchValue.trim() || undefined
+      );
+      setUsers((current) => (reset ? result.items : [...current, ...result.items]));
+      setNextCursor(result.nextCursor);
     } catch (reasonValue) {
       setError(reasonValue instanceof Error ? reasonValue.message : 'Could not load users.');
+    } finally {
+      setLoading(false);
     }
   }
   useEffect(() => {
@@ -24,10 +35,14 @@ export function UsersPage() {
 
   async function grant(premium: boolean) {
     if (!selected || reason.trim().length < 3) return;
+    const confirmed = window.confirm(
+      `${premium ? 'Grant' : 'Revoke'} premium for ${selected.email ?? selected.uid}?\n\nReason: ${reason.trim()}`
+    );
+    if (!confirmed) return;
     try {
       await adminApi.grant(selected.uid, premium, reason);
       setReason('');
-      await load();
+      await load(true);
       setSelected((current) =>
         current
           ? {
@@ -43,6 +58,13 @@ export function UsersPage() {
 
   async function assignPromo() {
     if (!selected) return;
+    if (
+      !window.confirm(
+        `Assign the next available official Play code to ${selected.email ?? selected.uid}?`
+      )
+    ) {
+      return;
+    }
     try {
       const result = await adminApi.assignPromo(selected.uid);
       setAssignedCode(result.code);
@@ -57,9 +79,33 @@ export function UsersPage() {
         eyebrow="Cloud-feature identities only"
         title="Users"
         description="There is no habit-data review screen because the server never receives habit data."
-        action={<button onClick={() => void load()}>Refresh</button>}
+        action={<button onClick={() => void load(true)}>Refresh</button>}
       />
       <ErrorBanner error={error} />
+      <Panel title="Find a cloud identity">
+        <div className="search-row">
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Exact Firebase UID or email"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') void load(true);
+            }}
+          />
+          <button onClick={() => void load(true)}>Search</button>
+          {search ? (
+            <button
+              className="secondary"
+              onClick={() => {
+                setSearch('');
+                void load(true, '');
+              }}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+      </Panel>
       <div className="two-column">
         <Panel title={`Users (${users.length})`}>
           <div className="table-wrap">
@@ -96,6 +142,15 @@ export function UsersPage() {
               </tbody>
             </table>
           </div>
+          {nextCursor ? (
+            <button
+              className="secondary load-more"
+              disabled={loading}
+              onClick={() => void load(false)}
+            >
+              {loading ? 'Loading…' : 'Load more'}
+            </button>
+          ) : null}
         </Panel>
         <Panel title="Access actions">
           {selected ? (

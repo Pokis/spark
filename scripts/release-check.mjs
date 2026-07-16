@@ -32,6 +32,34 @@ if (!mobilePackage.dependencies?.['expo-system-ui']) {
   failed = true;
 }
 
+const privacyFiles = [
+  'docs/privacy-policy.md',
+  'apps/admin/public/privacy.html',
+];
+for (const path of privacyFiles) {
+  const content = readFileSync(join(root, path), 'utf8');
+  if (content.includes('REPLACE_ME')) {
+    console.error(`✗ Replace operator placeholders in ${path}.`);
+    failed = true;
+  }
+}
+
+const appConfig = readFileSync(join(root, 'apps/mobile/app.config.ts'), 'utf8');
+if (appConfig.includes("const packageName = 'com.sparkhabits.app'")) {
+  console.warn(
+    '⚠ Confirm com.sparkhabits.app is the final permanent Play package name before the first upload.',
+  );
+}
+
+const maestroDirectory = join(root, 'apps', 'mobile', 'e2e', 'maestro');
+const maestroFlows = existsSync(maestroDirectory)
+  ? readFileSync(join(maestroDirectory, 'full-offline-flow.yaml'), 'utf8')
+  : '';
+if (!maestroFlows.includes('That was a real focus block')) {
+  console.error('✗ The release Maestro flow does not assert the focus closure state.');
+  failed = true;
+}
+
 console.log(
   '\nManual release requirements: privacy-policy URL, store screenshots, Health Apps declaration, content rating, and active Google Play product configuration.',
 );

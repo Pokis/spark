@@ -4,6 +4,7 @@ import { apiConfigured } from './api';
 import { Layout } from './components/Layout';
 import { firebaseConfigured, signIn, watchUser } from './firebase';
 import { AdminsPage } from './pages/AdminsPage';
+import { AuditsPage } from './pages/AuditsPage';
 import { ConfigPage } from './pages/ConfigPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { PromosPage } from './pages/PromosPage';
@@ -55,8 +56,11 @@ VITE_SPARK_API_URL=`}
         <div className="login-card">
           <span className="brand-mark large">✦</span>
           <h1>Spark admin</h1>
-          <p>Sign in with an allowlisted Google account or an assigned admin role.</p>
-          <button onClick={() => void signIn()}>Continue with Google</button>
+          <p>
+            Sign in with an allowlisted Google account, an assigned admin role, or the
+            deterministic local emulator account.
+          </p>
+          <button onClick={() => void signIn()}>Continue to Spark admin</button>
         </div>
       </div>
     );
@@ -69,6 +73,7 @@ VITE_SPARK_API_URL=`}
       {page === 'users' ? <UsersPage /> : null}
       {page === 'config' ? <ConfigPage /> : null}
       {page === 'promos' ? <PromosPage /> : null}
+      {page === 'audits' ? <AuditsPage /> : null}
       {page === 'admins' ? <AdminsPage /> : null}
     </Layout>
   );

@@ -7,28 +7,48 @@ export function SupportPage() {
   const [threads, setThreads] = useState<SupportThread[]>([]);
   const [selected, setSelected] = useState<SupportThread | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [messageCursor, setMessageCursor] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [status, setStatus] = useState('all');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadThreads() {
+  async function loadThreads(reset = true) {
+    setLoading(true);
     setError(null);
     try {
-      setThreads(await adminApi.support(status));
+      const result = await adminApi.support(
+        status,
+        reset ? undefined : nextCursor ?? undefined
+      );
+      setThreads((current) => (reset ? result.items : [...current, ...result.items]));
+      setNextCursor(result.nextCursor);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not load support.');
+    } finally {
+      setLoading(false);
     }
   }
-  async function open(thread: SupportThread) {
+  async function open(thread: SupportThread, older = false) {
     setSelected(thread);
     try {
-      setMessages(await adminApi.messages(thread.id));
+      const result = await adminApi.messages(
+        thread.id,
+        older ? messageCursor ?? undefined : undefined
+      );
+      setMessages((current) =>
+        [...(older ? current : []), ...result.items].sort((a, b) =>
+          a.createdAt.localeCompare(b.createdAt)
+        )
+      );
+      setMessageCursor(result.nextCursor);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not load messages.');
     }
   }
   useEffect(() => {
-    void loadThreads();
+    void loadThreads(true);
   }, [status]);
 
   async function send() {
@@ -37,7 +57,7 @@ export function SupportPage() {
       await adminApi.reply(selected.id, reply);
       setReply('');
       await open(selected);
-      await loadThreads();
+      await loadThreads(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not send reply.');
     }
@@ -45,9 +65,14 @@ export function SupportPage() {
 
   async function resolve() {
     if (!selected) return;
-    await adminApi.supportStatus(selected.id, 'resolved');
-    setSelected(null);
-    await loadThreads();
+    if (!window.confirm(`Resolve “${selected.subject}”?`)) return;
+    try {
+      await adminApi.supportStatus(selected.id, 'resolved');
+      setSelected(null);
+      await loadThreads(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not resolve thread.');
+    }
   }
 
   return (
@@ -56,7 +81,7 @@ export function SupportPage() {
         eyebrow="Private async inbox"
         title="Support"
         description="No user-to-user chat, no presence service, and no real-time listener costs."
-        action={<button onClick={() => void loadThreads()}>Refresh</button>}
+        action={<button onClick={() => void loadThreads(true)}>Refresh</button>}
       />
       <ErrorBanner error={error} />
       <div className="support-layout">
@@ -88,6 +113,15 @@ export function SupportPage() {
           ) : (
             <Empty>No conversations in this view.</Empty>
           )}
+          {nextCursor ? (
+            <button
+              className="secondary load-more"
+              disabled={loading}
+              onClick={() => void loadThreads(false)}
+            >
+              {loading ? 'Loading…' : 'Load more'}
+            </button>
+          ) : null}
         </Panel>
         <Panel className="conversation">
           {selected ? (
@@ -102,6 +136,11 @@ export function SupportPage() {
                 </button>
               </div>
               <div className="messages">
+                {messageCursor ? (
+                  <button className="secondary" onClick={() => void open(selected, true)}>
+                    Load older messages
+                  </button>
+                ) : null}
                 {messages.map((message) => (
                   <article
                     key={message.id}

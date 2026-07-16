@@ -7,6 +7,7 @@ import type {
   Routine,
   RoutineStep
 } from '@spark/domain';
+import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
@@ -16,6 +17,8 @@ import {
   type AppData,
   type AppSettings,
   type AppSnapshot,
+  type CompletionDailySummary,
+  type CompletionTotals,
   type DailyCheckIn,
   type Entitlement
 } from './models';
@@ -23,7 +26,13 @@ import { starterHabits, starterRoutines } from './seed';
 
 const DATABASE_NAME = 'spark.db';
 const DATABASE_KEY_NAME = 'spark.database.key.v1';
+const CURRENT_DATABASE_SCHEMA_VERSION = 4;
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
+let databaseSecurity = {
+  encrypted: false,
+  cipherVersion: null as string | null,
+  expoGoPreview: false
+};
 
 function escapeSqlString(value: string): string {
   return value.replaceAll("'", "''");
@@ -45,11 +54,35 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   const key = await databaseKey();
   await db.execAsync(`PRAGMA key = '${escapeSqlString(key)}';`);
   await db.execAsync('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
+  const cipher = await db.getFirstAsync<Record<string, string>>('PRAGMA cipher_version;');
+  const cipherVersion = cipher ? Object.values(cipher)[0] ?? null : null;
+  const expoGoPreview = Constants.appOwnership === 'expo';
+  databaseSecurity = {
+    encrypted: Boolean(cipherVersion),
+    cipherVersion,
+    expoGoPreview
+  };
+  if (!cipherVersion && !expoGoPreview) {
+    await db.closeAsync();
+    throw new Error(
+      'Spark could not verify encrypted local storage. Reinstall a native Spark build; do not enter private data until SQLCipher is available.'
+    );
+  }
+
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
     );
+  `);
+
+  const versionRow = await db.getFirstAsync<{ value: string }>(
+    "SELECT value FROM meta WHERE key = 'schema_version'"
+  );
+  let version = Number(versionRow?.value ?? 0);
+
+  if (version < 1) {
+    await db.execAsync(`
     CREATE TABLE IF NOT EXISTS habits (
       id TEXT PRIMARY KEY NOT NULL,
       title TEXT NOT NULL,
@@ -141,7 +174,75 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
       expires_at TEXT,
       checked_at TEXT
     );
-  `);
+    `);
+    version = 1;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
+  if (version < 2) {
+    const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(habits);');
+    const names = new Set(columns.map((column) => column.name));
+    if (!names.has('paused_at')) {
+      await db.execAsync('ALTER TABLE habits ADD COLUMN paused_at TEXT;');
+    }
+    if (!names.has('pause_history_json')) {
+      await db.execAsync(
+        "ALTER TABLE habits ADD COLUMN pause_history_json TEXT NOT NULL DEFAULT '[]';"
+      );
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    await db.runAsync(
+      'UPDATE habits SET paused_at = ? WHERE paused_until IS NOT NULL AND paused_at IS NULL',
+      today
+    );
+    version = 2;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
+  if (version < 3) {
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS completions_local_date
+        ON completions(local_date DESC);
+      CREATE INDEX IF NOT EXISTS focus_sessions_active
+        ON focus_sessions(ended_at, started_at DESC);
+    `);
+    version = 3;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
+  if (version < 4) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS completion_daily_summaries (
+        local_date TEXT PRIMARY KEY NOT NULL,
+        wins INTEGER NOT NULL,
+        sparks INTEGER NOT NULL,
+        active_habits INTEGER NOT NULL
+      );
+      DELETE FROM completion_daily_summaries;
+      INSERT INTO completion_daily_summaries(local_date, wins, sparks, active_habits)
+      SELECT local_date, COUNT(*), COALESCE(SUM(reward), 0), COUNT(DISTINCT habit_id)
+      FROM completions
+      GROUP BY local_date;
+    `);
+    version = 4;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
+  if (version !== CURRENT_DATABASE_SCHEMA_VERSION) {
+    throw new Error(`Unsupported local database schema version ${version}.`);
+  }
 
   const seeded = await db.getFirstAsync<{ value: string }>(
     "SELECT value FROM meta WHERE key = 'seeded'"
@@ -171,6 +272,15 @@ export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   return databasePromise;
 }
 
+export async function getDatabaseSecurityStatus(): Promise<{
+  encrypted: boolean;
+  cipherVersion: string | null;
+  expoGoPreview: boolean;
+}> {
+  await getDatabase();
+  return databaseSecurity;
+}
+
 function mapHabit(
   row: Record<string, string | number | null>,
   variants: HabitVariant[]
@@ -188,7 +298,11 @@ function mapHabit(
     priority: Number(row.priority) as 1 | 2 | 3,
     contexts: JSON.parse(String(row.contexts_json)) as Habit['contexts'],
     createdAt: String(row.created_at),
+    pausedAt: row.paused_at ? String(row.paused_at) : null,
     pausedUntil: row.paused_until ? String(row.paused_until) : null,
+    pauseHistory: row.pause_history_json
+      ? (JSON.parse(String(row.pause_history_json)) as NonNullable<Habit['pauseHistory']>)
+      : [],
     archivedAt: row.archived_at ? String(row.archived_at) : null,
     sortOrder: Number(row.sort_order),
     variants
@@ -200,8 +314,8 @@ async function saveHabit(db: SQLite.SQLiteDatabase, habit: Habit): Promise<void>
     `INSERT OR REPLACE INTO habits(
       id, title, reason, cue, color, icon, schedule_json, preferred_time,
       reminder_enabled, priority, contexts_json, created_at, paused_until,
-      archived_at, sort_order
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      paused_at, pause_history_json, archived_at, sort_order
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     habit.id,
     habit.title,
     habit.reason ?? null,
@@ -215,6 +329,8 @@ async function saveHabit(db: SQLite.SQLiteDatabase, habit: Habit): Promise<void>
     JSON.stringify(habit.contexts),
     habit.createdAt,
     habit.pausedUntil ?? null,
+    habit.pausedAt ?? null,
+    JSON.stringify(habit.pauseHistory ?? []),
     habit.archivedAt ?? null,
     habit.sortOrder
   );
@@ -263,6 +379,82 @@ async function saveRoutine(db: SQLite.SQLiteDatabase, routine: Routine): Promise
   }
 }
 
+interface CompletionRow {
+  id: string;
+  habit_id: string;
+  variant_id: string;
+  variant_kind: Completion['variantKind'];
+  reward: number;
+  occurred_at: string;
+  logged_at: string;
+  local_date: string;
+  source: Completion['source'];
+  note: string | null;
+}
+
+function mapCompletion(row: CompletionRow): Completion {
+  return {
+    id: row.id,
+    habitId: row.habit_id,
+    variantId: row.variant_id,
+    variantKind: row.variant_kind,
+    reward: row.reward,
+    occurredAt: row.occurred_at,
+    loggedAt: row.logged_at,
+    localDate: row.local_date,
+    source: row.source,
+    note: row.note ?? undefined
+  };
+}
+
+function recentCompletionCutoff(days = 400): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
+
+export async function loadCompletionInsights(): Promise<{
+  completionTotals: CompletionTotals;
+  completionDailySummaries: CompletionDailySummary[];
+}> {
+  const db = await getDatabase();
+  const totals = await db.getFirstAsync<{
+    total_wins: number;
+    total_sparks: number;
+  }>(
+    `SELECT COUNT(*) AS total_wins, COALESCE(SUM(reward), 0) AS total_sparks
+     FROM completions`
+  );
+  const summaries = await db.getAllAsync<{
+    local_date: string;
+    wins: number;
+    sparks: number;
+    active_habits: number;
+  }>(
+    `SELECT * FROM completion_daily_summaries
+     WHERE local_date >= ?
+     ORDER BY local_date DESC`,
+    recentCompletionCutoff()
+  );
+  return {
+    completionTotals: {
+      totalWins: Number(totals?.total_wins ?? 0),
+      totalSparks: Number(totals?.total_sparks ?? 0)
+    },
+    completionDailySummaries: summaries.map((row) => ({
+      localDate: row.local_date,
+      wins: Number(row.wins),
+      sparks: Number(row.sparks),
+      activeHabits: Number(row.active_habits)
+    }))
+  };
+}
+
+async function loadAllCompletions(db: SQLite.SQLiteDatabase): Promise<Completion[]> {
+  const rows = await db.getAllAsync<CompletionRow>(
+    'SELECT * FROM completions ORDER BY occurred_at DESC'
+  );
+  return rows.map(mapCompletion);
+}
+
 export async function loadAppData(): Promise<AppData> {
   const db = await getDatabase();
   const habitRows = await db.getAllAsync<Record<string, string | number | null>>(
@@ -285,18 +477,25 @@ export async function loadAppData(): Promise<AppData> {
         }))
     )
   );
-  const completions = await db.getAllAsync<{
-    id: string;
-    habit_id: string;
-    variant_id: string;
-    variant_kind: Completion['variantKind'];
-    reward: number;
-    occurred_at: string;
-    logged_at: string;
-    local_date: string;
-    source: Completion['source'];
-    note: string | null;
-  }>('SELECT * FROM completions ORDER BY occurred_at DESC');
+  // Keep recent history plus the two latest records per habit in memory.
+  // Lifetime totals and charts come from compact materialized summaries.
+  const completions = await db.getAllAsync<CompletionRow>(
+    `WITH ranked AS (
+       SELECT completions.*,
+         ROW_NUMBER() OVER (
+           PARTITION BY habit_id
+           ORDER BY local_date DESC, occurred_at DESC
+         ) AS habit_rank
+       FROM completions
+     )
+     SELECT id, habit_id, variant_id, variant_kind, reward, occurred_at,
+       logged_at, local_date, source, note
+     FROM ranked
+     WHERE local_date >= ? OR habit_rank <= 2
+     ORDER BY occurred_at DESC`,
+    recentCompletionCutoff()
+  );
+  const completionInsights = await loadCompletionInsights();
   const sessions = await db.getAllAsync<Record<string, string | number | null>>(
     'SELECT * FROM focus_sessions ORDER BY started_at DESC'
   );
@@ -329,18 +528,8 @@ export async function loadAppData(): Promise<AppData> {
 
   return {
     habits,
-    completions: completions.map((row) => ({
-      id: row.id,
-      habitId: row.habit_id,
-      variantId: row.variant_id,
-      variantKind: row.variant_kind,
-      reward: row.reward,
-      occurredAt: row.occurred_at,
-      loggedAt: row.logged_at,
-      localDate: row.local_date,
-      source: row.source,
-      note: row.note ?? undefined
-    })),
+    completions: completions.map(mapCompletion),
+    ...completionInsights,
     focusSessions: sessions.map((row) => ({
       id: String(row.id),
       title: String(row.title),
@@ -406,8 +595,29 @@ export async function upsertRoutine(routine: Routine): Promise<void> {
   await db.withTransactionAsync(() => saveRoutine(db, routine));
 }
 
-export async function insertCompletion(completion: Completion): Promise<void> {
-  const db = await getDatabase();
+async function rebuildCompletionSummary(
+  db: SQLite.SQLiteDatabase,
+  localDate: string
+): Promise<void> {
+  await db.runAsync(
+    'DELETE FROM completion_daily_summaries WHERE local_date = ?',
+    localDate
+  );
+  await db.runAsync(
+    `INSERT INTO completion_daily_summaries(local_date, wins, sparks, active_habits)
+     SELECT local_date, COUNT(*), COALESCE(SUM(reward), 0), COUNT(DISTINCT habit_id)
+     FROM completions
+     WHERE local_date = ?
+     GROUP BY local_date`,
+    localDate
+  );
+}
+
+async function saveCompletion(
+  db: SQLite.SQLiteDatabase,
+  completion: Completion,
+  updateSummary = true
+): Promise<void> {
   await db.runAsync(
     `INSERT INTO completions(
       id, habit_id, variant_id, variant_kind, reward, occurred_at, logged_at,
@@ -424,11 +634,24 @@ export async function insertCompletion(completion: Completion): Promise<void> {
     completion.source,
     completion.note ?? null
   );
+  if (updateSummary) await rebuildCompletionSummary(db, completion.localDate);
+}
+
+export async function insertCompletion(completion: Completion): Promise<void> {
+  const db = await getDatabase();
+  await db.withTransactionAsync(() => saveCompletion(db, completion));
 }
 
 export async function deleteCompletion(id: string): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM completions WHERE id = ?', id);
+  await db.withTransactionAsync(async () => {
+    const existing = await db.getFirstAsync<{ local_date: string }>(
+      'SELECT local_date FROM completions WHERE id = ?',
+      id
+    );
+    await db.runAsync('DELETE FROM completions WHERE id = ?', id);
+    if (existing) await rebuildCompletionSummary(db, existing.local_date);
+  });
 }
 
 export async function insertFocusSession(session: FocusSession): Promise<void> {
@@ -504,11 +727,12 @@ export async function saveEntitlement(entitlement: Entitlement): Promise<void> {
 
 export async function exportSnapshot(): Promise<AppSnapshot> {
   const data = await loadAppData();
+  const db = await getDatabase();
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: new Date().toISOString(),
     habits: data.habits,
-    completions: data.completions,
+    completions: await loadAllCompletions(db),
     focusSessions: data.focusSessions,
     captureItems: data.captureItems,
     routines: data.routines,
@@ -518,11 +742,12 @@ export async function exportSnapshot(): Promise<AppSnapshot> {
 }
 
 export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
-  if (snapshot.schemaVersion !== 1) throw new Error('This backup version is not supported.');
+  if (snapshot.schemaVersion !== 2) throw new Error('This backup version is not supported.');
   const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     await db.execAsync(`
       DELETE FROM completions;
+      DELETE FROM completion_daily_summaries;
       DELETE FROM habit_variants;
       DELETE FROM habits;
       DELETE FROM focus_sessions;
@@ -533,7 +758,15 @@ export async function importSnapshot(snapshot: AppSnapshot): Promise<void> {
       DELETE FROM settings;
     `);
     for (const habit of snapshot.habits) await saveHabit(db, habit);
-    for (const completion of snapshot.completions) await insertCompletion(completion);
+    for (const completion of snapshot.completions) {
+      await saveCompletion(db, completion, false);
+    }
+    await db.execAsync(`
+      INSERT INTO completion_daily_summaries(local_date, wins, sparks, active_habits)
+      SELECT local_date, COUNT(*), COALESCE(SUM(reward), 0), COUNT(DISTINCT habit_id)
+      FROM completions
+      GROUP BY local_date;
+    `);
     for (const session of snapshot.focusSessions) await insertFocusSession(session);
     for (const item of snapshot.captureItems) await insertCaptureItem(item);
     for (const routine of snapshot.routines) await saveRoutine(db, routine);

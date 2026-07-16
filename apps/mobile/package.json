@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "*",
+    "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@spark/cloud-contracts": "0.1.0",
     "@spark/domain": "0.1.0",
@@ -39,10 +40,12 @@
     "react-native-iap": "^14.7.9",
     "react-native-nitro-modules": "*",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "4.25.2"
+    "react-native-screens": "4.25.2",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@testing-library/react-native": "*",
+    "@types/jest": "29.5.14",
     "@types/react": "*",
     "jest": "*",
     "jest-expo": "~57.0.2",

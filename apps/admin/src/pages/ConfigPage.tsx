@@ -20,6 +20,18 @@ export function ConfigPage() {
   }, []);
 
   async function save() {
+    if (
+      !window.confirm(
+        [
+          'Publish this global configuration?',
+          `Support: ${config.defaults.supportEnabled ? 'enabled' : 'disabled'}`,
+          `Purchases: ${config.defaults.purchasesEnabled ? 'enabled' : 'disabled'}`,
+          `Notification cap: ${config.defaults.maxDailyHabitNotifications}`
+        ].join('\n')
+      )
+    ) {
+      return;
+    }
     setError(null);
     setSaved('');
     try {

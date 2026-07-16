@@ -16,38 +16,53 @@ export function SparkBurst({
   title,
   reward,
   reducedMotion,
+  sensoryProfile,
+  showReward,
   onDismiss
 }: {
   visible: boolean;
   title: string;
   reward: number;
   reducedMotion: boolean;
+  sensoryProfile: 'calm' | 'balanced' | 'celebratory';
+  showReward: boolean;
   onDismiss(): void;
 }) {
   const progress = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!visible) return;
-    progress.setValue(reducedMotion ? 1 : 0);
-    if (!reducedMotion) {
+    const calm = sensoryProfile === 'calm';
+    progress.setValue(reducedMotion || calm ? 1 : 0);
+    if (!reducedMotion && !calm) {
       Animated.spring(progress, {
         toValue: 1,
         useNativeDriver: true,
-        friction: 5,
-        tension: 70
+        friction: sensoryProfile === 'celebratory' ? 4 : 5,
+        tension: sensoryProfile === 'celebratory' ? 85 : 70
       }).start();
     }
-  }, [progress, reducedMotion, visible]);
+  }, [progress, reducedMotion, sensoryProfile, visible]);
+
+  const visibleParticles =
+    sensoryProfile === 'calm'
+      ? []
+      : sensoryProfile === 'balanced'
+        ? particles.slice(0, 4)
+        : particles;
+  const rewardLabel = showReward
+    ? ` You earned ${reward} ${reward === 1 ? 'spark' : 'sparks'}.`
+    : '';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${title} completed. You earned ${reward} sparks. Tap to continue.`}
+        accessibilityLabel={`${title} completed.${rewardLabel} Tap to continue.`}
         onPress={onDismiss}
         style={styles.backdrop}
       >
         <View style={styles.stage}>
-          {particles.map((particle, index) => (
+          {visibleParticles.map((particle, index) => (
             <Animated.View
               key={index}
               style={[
@@ -103,7 +118,9 @@ export function SparkBurst({
             <Text style={styles.sparkIcon}>✦</Text>
           </Animated.View>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.reward}>+{reward} sparks · it counts</Text>
+          <Text style={styles.reward}>
+            {showReward ? `+${reward} sparks · it counts` : 'It counts'}
+          </Text>
           <Text style={styles.dismiss}>Tap anywhere</Text>
         </View>
       </Pressable>

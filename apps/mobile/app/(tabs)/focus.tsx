@@ -2,11 +2,10 @@ import type { FocusSession } from '@spark/domain';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   AppState,
-  Pressable,
   StyleSheet,
   Text,
   View
@@ -19,10 +18,11 @@ import { Screen } from '../../src/components/Screen';
 import { Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
 import { friendlyTime, secondsLabel } from '../../src/lib/date';
 import { createId } from '../../src/lib/id';
+import { reportError } from '../../src/services/diagnostics';
 import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
 
-type TimerState = 'idle' | 'running' | 'paused' | 'finished';
+type TimerPhase = 'idle' | 'running' | 'paused' | 'finished';
 
 function Companion({ active, reducedMotion }: { active: boolean; reducedMotion: boolean }) {
   const theme = useTheme();
@@ -61,6 +61,64 @@ function Companion({ active, reducedMotion }: { active: boolean; reducedMotion: 
   );
 }
 
+function remainingSeconds(session: FocusSession, now = Date.now()): number {
+  const effectiveNow = session.pausedAt ? Date.parse(session.pausedAt) : now;
+  const elapsed =
+    effectiveNow -
+    Date.parse(session.startedAt) -
+    session.pausedSeconds * 1000;
+  return Math.max(0, Math.ceil((session.plannedSeconds * 1000 - elapsed) / 1000));
+}
+
+async function cancelFocusNotification(sessionId?: string): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter(
+          (notification) =>
+            notification.content.data?.sparkNotificationType === 'focus' &&
+            (!sessionId ||
+              notification.content.data?.focusSessionId === sessionId)
+        )
+        .map((notification) =>
+          Notifications.cancelScheduledNotificationAsync(notification.identifier)
+        )
+    );
+  } catch (reason) {
+    await reportError('focus.notification_cancel', reason);
+  }
+}
+
+async function scheduleFocusNotification(
+  session: FocusSession,
+  seconds: number,
+  resumed = false
+): Promise<void> {
+  try {
+    await cancelFocusNotification(session.id);
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Focus session complete ✦',
+        body: resumed
+          ? 'You came back to the task.'
+          : 'Take a breath before choosing what is next.',
+        data: {
+          sparkNotificationType: 'focus',
+          focusSessionId: session.id
+        },
+        sound: false
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: Math.max(1, seconds)
+      }
+    });
+  } catch (reason) {
+    await reportError('focus.notification_schedule', reason);
+  }
+}
+
 export default function FocusScreen() {
   const spark = useSpark();
   const theme = useTheme();
@@ -69,52 +127,75 @@ export default function FocusScreen() {
     : [5, 10, 25, 50];
   const [minutes, setMinutes] = useState(spark.settings.defaultFocusMinutes);
   const [title, setTitle] = useState('');
-  const [state, setState] = useState<TimerState>('idle');
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [pausedAt, setPausedAt] = useState<number | null>(null);
-  const [pausedMs, setPausedMs] = useState(0);
+  const [phase, setPhase] = useState<TimerPhase>('idle');
+  const [session, setSession] = useState<FocusSession | null>(null);
   const [remaining, setRemaining] = useState(minutes * 60);
-  const [interruptions, setInterruptions] = useState(0);
   const [interruptionText, setInterruptionText] = useState('');
-  const notificationId = useRef<string | null>(null);
-  const saved = useRef(false);
-
-  function calculateRemaining(): number {
-    if (!startedAt) return minutes * 60;
-    const now = pausedAt ?? Date.now();
-    return Math.max(0, Math.ceil((minutes * 60_000 - (now - startedAt - pausedMs)) / 1000));
-  }
-
-  async function persist(completed: boolean) {
-    if (!startedAt || saved.current) return;
-    saved.current = true;
-    const endedAt = new Date().toISOString();
-    const session: FocusSession = {
-      id: createId('focus'),
-      title: title.trim() || 'Open focus',
-      plannedSeconds: minutes * 60,
-      startedAt: new Date(startedAt).toISOString(),
-      endedAt,
-      pausedAt: null,
-      pausedSeconds: Math.round(pausedMs / 1000),
-      completed,
-      interruptionCount: interruptions
-    };
-    await spark.saveFocus(session);
-  }
+  const [launchCountdown, setLaunchCountdown] = useState<number | null>(null);
+  const [nextMove, setNextMove] = useState('');
+  const restored = useRef(false);
+  const finishing = useRef(false);
 
   useEffect(() => {
-    if (state !== 'running') return;
-    const update = () => {
-      const value = calculateRemaining();
-      setRemaining(value);
-      if (value === 0) {
-        setState('finished');
-        void persist(true);
+    if (spark.loading || restored.current) return;
+    restored.current = true;
+    const active = spark.focusSessions.find((candidate) => !candidate.endedAt);
+    if (!active) return;
+    setSession(active);
+    setTitle(active.title === 'Open focus' ? '' : active.title);
+    setMinutes(Math.max(1, Math.round(active.plannedSeconds / 60)));
+    const value = remainingSeconds(active);
+    setRemaining(value);
+    setPhase(active.pausedAt ? 'paused' : 'running');
+    if (!active.pausedAt && value > 0) {
+      void scheduleFocusNotification(active, value, true);
+    }
+  }, [spark.focusSessions, spark.loading]);
+
+  useEffect(() => {
+    if (phase === 'idle') setRemaining(minutes * 60);
+  }, [minutes, phase]);
+
+  const finish = useCallback(
+    async (completed: boolean) => {
+      if (!session || finishing.current) return;
+      finishing.current = true;
+      await cancelFocusNotification(session.id);
+      const now = new Date();
+      const pausedSeconds =
+        session.pausedSeconds +
+        (session.pausedAt
+          ? Math.max(0, Math.round((now.getTime() - Date.parse(session.pausedAt)) / 1000))
+          : 0);
+      const ended: FocusSession = {
+        ...session,
+        endedAt: now.toISOString(),
+        pausedAt: null,
+        pausedSeconds,
+        completed
+      };
+      try {
+        await spark.saveFocus(ended);
+        setSession(ended);
+        setPhase('finished');
         if (spark.settings.hapticsEnabled) {
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
+      } catch (reason) {
+        await reportError('focus.finish', reason);
+      } finally {
+        finishing.current = false;
       }
+    },
+    [session, spark]
+  );
+
+  useEffect(() => {
+    if (phase !== 'running' || !session) return;
+    const update = () => {
+      const value = remainingSeconds(session);
+      setRemaining(value);
+      if (value === 0) void finish(true);
     };
     update();
     const interval = setInterval(update, 250);
@@ -123,102 +204,160 @@ export default function FocusScreen() {
       clearInterval(interval);
       appState.remove();
     };
-  });
+  }, [finish, phase, session]);
 
-  useEffect(() => {
-    if (state === 'idle') setRemaining(minutes * 60);
-  }, [minutes, state]);
+  const beginSession = useCallback(async () => {
+    const startTime = new Date();
+    const started: FocusSession = {
+      id: createId('focus'),
+      title: title.trim() || 'Open focus',
+      plannedSeconds: minutes * 60,
+      startedAt: startTime.toISOString(),
+      endedAt: null,
+      pausedAt: null,
+      pausedSeconds: 0,
+      completed: false,
+      interruptionCount: 0
+    };
+    setSession(started);
+    setRemaining(started.plannedSeconds);
+    setPhase('running');
+    try {
+      await spark.saveFocus(started);
+      await scheduleFocusNotification(started, started.plannedSeconds);
+    } catch (reason) {
+      await reportError('focus.start', reason);
+    }
+  }, [minutes, spark, title]);
 
-  async function start() {
-    saved.current = false;
-    const startTime = Date.now();
-    setStartedAt(startTime);
-    setPausedAt(null);
-    setPausedMs(0);
-    setRemaining(minutes * 60);
-    setInterruptions(0);
-    setState('running');
-    notificationId.current = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Focus session complete ✦',
-        body: 'Take a breath before choosing what is next.',
-        sound: false
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: minutes * 60
-      }
-    });
+  function start() {
+    if (spark.settings.launchCountdownEnabled) {
+      setLaunchCountdown(5);
+      return;
+    }
+    void beginSession();
   }
 
+  useEffect(() => {
+    if (launchCountdown == null) return;
+    if (launchCountdown <= 0) {
+      setLaunchCountdown(null);
+      void beginSession();
+      return;
+    }
+    const timeout = setTimeout(
+      () => setLaunchCountdown((value) => (value == null ? null : value - 1)),
+      1000
+    );
+    return () => clearTimeout(timeout);
+  }, [beginSession, launchCountdown]);
+
   async function pause() {
-    setRemaining(calculateRemaining());
-    setPausedAt(Date.now());
-    setState('paused');
-    if (notificationId.current) {
-      await Notifications.cancelScheduledNotificationAsync(notificationId.current);
-      notificationId.current = null;
+    if (!session) return;
+    const paused: FocusSession = {
+      ...session,
+      pausedAt: new Date().toISOString()
+    };
+    setRemaining(remainingSeconds(paused));
+    setSession(paused);
+    setPhase('paused');
+    await cancelFocusNotification(session.id);
+    try {
+      await spark.saveFocus(paused);
+    } catch (reason) {
+      await reportError('focus.pause', reason);
     }
   }
 
   async function resume() {
+    if (!session?.pausedAt) return;
     const now = Date.now();
-    if (pausedAt) setPausedMs((value) => value + now - pausedAt);
-    setPausedAt(null);
-    setState('running');
-    notificationId.current = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Focus session complete ✦',
-        body: 'You came back to the task.',
-        sound: false
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: Math.max(1, remaining)
-      }
-    });
-  }
-
-  async function stop() {
-    if (notificationId.current) {
-      await Notifications.cancelScheduledNotificationAsync(notificationId.current);
-      notificationId.current = null;
+    const resumed: FocusSession = {
+      ...session,
+      pausedSeconds:
+        session.pausedSeconds +
+        Math.max(0, Math.round((now - Date.parse(session.pausedAt)) / 1000)),
+      pausedAt: null
+    };
+    setSession(resumed);
+    setRemaining(remainingSeconds(resumed, now));
+    setPhase('running');
+    try {
+      await spark.saveFocus(resumed);
+      await scheduleFocusNotification(resumed, remainingSeconds(resumed, now), true);
+    } catch (reason) {
+      await reportError('focus.resume', reason);
     }
-    await persist(false);
-    reset();
   }
 
   function reset() {
-    setState('idle');
-    setStartedAt(null);
-    setPausedAt(null);
-    setPausedMs(0);
+    setPhase('idle');
+    setSession(null);
     setRemaining(minutes * 60);
     setInterruptionText('');
-    saved.current = false;
+    setNextMove('');
+    finishing.current = false;
   }
 
   async function parkInterruption() {
     if (!interruptionText.trim()) return;
-    await spark.addCapture(interruptionText);
-    setInterruptionText('');
-    setInterruptions((value) => value + 1);
-    if (spark.settings.hapticsEnabled) {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await spark.addCapture(interruptionText);
+      setInterruptionText('');
+      if (session) {
+        const updated = {
+          ...session,
+          interruptionCount: session.interruptionCount + 1
+        };
+        setSession(updated);
+        await spark.saveFocus(updated);
+      }
+      if (spark.settings.hapticsEnabled) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (reason) {
+      await reportError('focus.park_interruption', reason);
     }
   }
+
+  async function parkNextMove() {
+    if (!nextMove.trim()) return;
+    try {
+      await spark.addCapture(nextMove);
+      setNextMove('');
+    } catch (reason) {
+      await reportError('focus.park_next_move', reason);
+    }
+  }
+
+  function actualMinutes(item: FocusSession): number {
+    if (!item.endedAt) return 0;
+    const seconds = Math.max(
+      0,
+      Math.round(
+        (Date.parse(item.endedAt) - Date.parse(item.startedAt)) / 1000 -
+          item.pausedSeconds
+      )
+    );
+    return Math.max(1, Math.round(seconds / 60));
+  }
+
+  const history = spark.focusSessions.filter((candidate) => candidate.endedAt);
 
   return (
     <Screen testID="focus-screen">
       <View>
         <Eyebrow>Body double</Eyebrow>
         <H1>Focus, with company.</H1>
-        <Muted>The timer uses real timestamps, so locking your phone cannot lose the session.</Muted>
+        <Muted>
+          The active session is saved immediately, so locking or restarting your phone cannot
+          erase it.
+        </Muted>
       </View>
 
       <Card style={styles.timerCard}>
         <Companion
-          active={state === 'running'}
+          active={phase === 'running'}
           reducedMotion={spark.settings.reducedMotion}
         />
         <Text
@@ -229,16 +368,40 @@ export default function FocusScreen() {
           {secondsLabel(remaining)}
         </Text>
         <Text style={[styles.state, { color: theme.textMuted }]}>
-          {state === 'idle'
+          {phase === 'idle'
             ? 'Ready when you are'
-            : state === 'paused'
+            : phase === 'paused'
               ? 'Paused without penalty'
-              : state === 'finished'
+              : phase === 'finished'
                 ? 'That was a real focus block'
-                : title.trim() || 'Open focus'}
+                : session?.title || title.trim() || 'Open focus'}
         </Text>
-        {state === 'idle' ? (
-          <>
+        {phase === 'idle' ? (
+          launchCountdown != null ? (
+            <View style={styles.finished}>
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[styles.launchCount, { color: theme.primary }]}
+              >
+                {launchCountdown}
+              </Text>
+              <SectionHeading>Beginning is the only job.</SectionHeading>
+              <Muted>You can start now or choose Not yet. There is no penalty.</Muted>
+              <Button
+                label="Start now"
+                onPress={() => {
+                  setLaunchCountdown(null);
+                  void beginSession();
+                }}
+              />
+              <Button
+                label="Not yet"
+                variant="ghost"
+                onPress={() => setLaunchCountdown(null)}
+              />
+            </View>
+          ) : (
+            <>
             <FormField
               label="One target"
               placeholder="e.g. Open the document"
@@ -256,34 +419,52 @@ export default function FocusScreen() {
                 />
               ))}
             </View>
-            <Button label="Start together" onPress={() => void start()} testID="start-focus" />
-          </>
-        ) : state === 'finished' ? (
+            <Button label="Start together" onPress={start} testID="start-focus" />
+            </>
+          )
+        ) : phase === 'finished' ? (
           <View style={styles.finished}>
             <Text style={styles.finishedEmoji}>✦</Text>
             <SectionHeading>Close the loop gently.</SectionHeading>
             <Muted>Stand, sip water, or look away from the screen before the next choice.</Muted>
+            {spark.settings.transitionNudgesEnabled ? (
+              <View style={styles.nextMove}>
+                <FormField
+                  label="When you are ready, what is the next tiny move?"
+                  placeholder="Optional"
+                  value={nextMove}
+                  onChangeText={setNextMove}
+                  maxLength={160}
+                />
+                <Button
+                  label="Park next move in Capture"
+                  variant="secondary"
+                  disabled={!nextMove.trim()}
+                  onPress={() => void parkNextMove()}
+                />
+              </View>
+            ) : null}
             <Button label="Done" onPress={reset} />
           </View>
         ) : (
           <View style={styles.timerActions}>
             <Button
-              label={state === 'paused' ? 'Resume' : 'Pause'}
-              onPress={() => void (state === 'paused' ? resume() : pause())}
+              label={phase === 'paused' ? 'Resume' : 'Pause'}
+              onPress={() => void (phase === 'paused' ? resume() : pause())}
               icon={
                 <Ionicons
-                  name={state === 'paused' ? 'play' : 'pause'}
+                  name={phase === 'paused' ? 'play' : 'pause'}
                   size={19}
                   color={theme.primaryText}
                 />
               }
             />
-            <Button label="Finish early" variant="ghost" onPress={() => void stop()} />
+            <Button label="Finish early" variant="ghost" onPress={() => void finish(false)} />
           </View>
         )}
       </Card>
 
-      {state === 'running' || state === 'paused' ? (
+      {phase === 'running' || phase === 'paused' ? (
         <Card>
           <SectionHeading>Thought tried to steal the wheel?</SectionHeading>
           <Muted>Park it here. Spark will keep it in Capture so your brain can let go.</Muted>
@@ -301,31 +482,32 @@ export default function FocusScreen() {
             disabled={!interruptionText.trim()}
             onPress={() => void parkInterruption()}
           />
-          <Muted>{interruptions} parked during this session</Muted>
+          <Muted>{session?.interruptionCount ?? 0} parked during this session</Muted>
         </Card>
       ) : null}
 
-      {spark.focusSessions.length ? (
+      {history.length ? (
         <View style={styles.history}>
           <SectionHeading>Recent company</SectionHeading>
-          {spark.focusSessions.slice(0, 4).map((session) => (
-            <View key={session.id} style={styles.historyRow}>
+          {history.slice(0, 4).map((item) => (
+            <View key={item.id} style={styles.historyRow}>
               <View
                 style={[
                   styles.historyIcon,
-                  { backgroundColor: session.completed ? `${theme.success}22` : theme.surfaceAlt }
+                  { backgroundColor: item.completed ? `${theme.success}22` : theme.surfaceAlt }
                 ]}
               >
                 <Ionicons
-                  name={session.completed ? 'checkmark' : 'stop-outline'}
+                  name={item.completed ? 'checkmark' : 'stop-outline'}
                   size={18}
-                  color={session.completed ? theme.success : theme.textMuted}
+                  color={item.completed ? theme.success : theme.textMuted}
                 />
               </View>
               <View style={styles.historyText}>
-                <Text style={[styles.historyTitle, { color: theme.text }]}>{session.title}</Text>
+                <Text style={[styles.historyTitle, { color: theme.text }]}>{item.title}</Text>
                 <Muted>
-                  {Math.round(session.plannedSeconds / 60)} min · {friendlyTime(session.startedAt)}
+                  planned {Math.round(item.plannedSeconds / 60)} min · actual{' '}
+                  {actualMinutes(item)} min · {friendlyTime(item.startedAt)}
                 </Muted>
               </View>
             </View>
@@ -368,6 +550,8 @@ const styles = StyleSheet.create({
   timerActions: { gap: 9 },
   finished: { alignItems: 'center', gap: 9 },
   finishedEmoji: { fontSize: 46, color: '#FFC857' },
+  launchCount: { fontSize: 64, fontWeight: '900' },
+  nextMove: { width: '100%', gap: 8 },
   history: { gap: 11 },
   historyRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   historyIcon: {

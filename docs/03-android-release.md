@@ -13,6 +13,9 @@ changing it to a reverse-domain ID you control before the first upload. Update:
 
 - `apps/mobile/app.config.ts`
 - `.env.example`
+- `apps/mobile/.env.example`
+- `services/control-plane/.env.example`
+- `infra/terraform/terraform.tfvars.example`
 - `infra/terraform/terraform.tfvars`
 - the Google Play package name used by the control plane
 
@@ -30,7 +33,9 @@ Test a native release-like build because Expo Go does not contain SQLCipher, the
 Billing:
 
 ```powershell
+Set-Location apps/mobile
 npx.cmd expo run:android --variant release
+Set-Location ..\..
 ```
 
 ## 2. Build an Android App Bundle
@@ -38,9 +43,11 @@ npx.cmd expo run:android --variant release
 The simplest path for a mobile-development beginner is EAS Build:
 
 ```powershell
-npx.cmd eas-cli login
-npx.cmd eas-cli init
-npx.cmd eas-cli build --platform android --profile production
+Set-Location apps/mobile
+npx.cmd eas-cli@latest login
+npx.cmd eas-cli@latest init
+npx.cmd eas-cli@latest build --platform android --profile production
+Set-Location ..\..
 ```
 
 EAS can create and securely manage the Android upload key. Save an independent copy of any
@@ -73,11 +80,12 @@ Complete every Play Console **App content** form. At minimum:
 - content rating
 - Health apps declaration
 
-All published apps must complete the Health apps declaration, including testing tracks. Because
-Spark is explicitly positioned for ADHD-related executive functioning, obtain a policy decision
-before release about whether to declare **Stress Management, Relaxation, Mental Acuity** or
-another relevant health feature. Do not simply declare “no health features” without reviewing
-the current implementation and store wording.
+All apps on closed, open, or production tracks must complete the Health apps declaration;
+internal-testing-only apps are currently exempt. Because Spark is explicitly positioned for
+ADHD-related executive functioning, obtain a policy decision before release about whether to
+declare **Stress Management, Relaxation, Mental Acuity** or another relevant health feature. Do
+not simply declare “no health features” without reviewing the current implementation and store
+wording.
 
 Google's current health policy requires a public, non-geofenced HTML privacy policy and clear
 disclaimers. Spark includes both. It makes no diagnosis or treatment claim.
@@ -125,7 +133,9 @@ Recommended tracks:
 1. Internal testing: owner and devices you control.
 2. Closed testing: accessibility and ADHD-experience testers.
 3. Open testing only if support capacity is ready.
-4. Production with staged rollout: 5%, 20%, 50%, 100%.
+4. First production release after test-track sign-off. Google Play staged rollouts are for updates,
+   not the initial production release.
+5. Later production updates with staged rollout: 5%, 20%, 50%, 100%.
 
 Watch crashes, policy notices, support volume, notification complaints, backup behavior, and Play
 purchase acknowledgement before each increase.

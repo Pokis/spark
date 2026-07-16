@@ -1,9 +1,10 @@
 import {
   buildTodayPlan,
   localDateKey,
-  rewardSummary,
+  rewardSummaryFromTotal,
   type Capacity,
   type Completion,
+  type HabitContext,
   type HabitVariant
 } from '@spark/domain';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -33,13 +34,14 @@ export default function TodayScreen() {
   const [minutes, setMinutes] = useState<number | undefined>(
     checkIn?.availableMinutes ?? undefined
   );
+  const [context, setContext] = useState<HabitContext | undefined>();
   const [celebration, setCelebration] = useState<{
     title: string;
     reward: number;
     completion: Completion;
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const rewards = rewardSummary(spark.completions);
+  const rewards = rewardSummaryFromTotal(spark.completionTotals.totalSparks);
 
   const plan = useMemo(
     () =>
@@ -48,11 +50,20 @@ export default function TodayScreen() {
         completions: spark.completions,
         now: new Date(),
         timeZone: spark.timeZone,
-        capacity: capacity ?? 'steady',
+        capacity: spark.settings.minimumViableDay ? 'empty' : capacity ?? 'steady',
         availableMinutes: minutes,
-        limit: 5
+        context,
+        limit: spark.settings.minimumViableDay ? 1 : 3
       }),
-    [capacity, minutes, spark.completions, spark.habits, spark.timeZone]
+    [
+      capacity,
+      context,
+      minutes,
+      spark.completions,
+      spark.habits,
+      spark.settings.minimumViableDay,
+      spark.timeZone
+    ]
   );
   const winsToday = spark.completions.filter((item) => item.localDate === today);
 
@@ -114,16 +125,30 @@ export default function TodayScreen() {
           </Pressable>
         </View>
 
-        <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
-          <View>
-            <Text style={[styles.score, { color: theme.text }]}>{rewards.totalSparks}</Text>
-            <Muted>total sparks · level {rewards.level}</Muted>
-          </View>
-          <View style={styles.todayScore}>
-            <Text style={[styles.todayWins, { color: theme.primary }]}>{winsToday.length}</Text>
-            <Muted>wins today</Muted>
-          </View>
-        </Card>
+        {spark.settings.showRewards ? (
+          <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
+            <View>
+              <Text style={[styles.score, { color: theme.text }]}>{rewards.totalSparks}</Text>
+              <Muted>total sparks · level {rewards.level}</Muted>
+            </View>
+            <View style={styles.todayScore}>
+              <Text style={[styles.todayWins, { color: theme.primary }]}>{winsToday.length}</Text>
+              <Muted>wins today</Muted>
+            </View>
+          </Card>
+        ) : winsToday.length ? (
+          <Muted>
+            {winsToday.length} gentle {winsToday.length === 1 ? 'win' : 'wins'} today
+          </Muted>
+        ) : null}
+
+        {spark.settings.minimumViableDay ? (
+          <Card style={{ borderColor: theme.success }}>
+            <Eyebrow>Minimum viable day</Eyebrow>
+            <SectionHeading>One small thing is the whole plan.</SectionHeading>
+            <Muted>You can do more if momentum arrives, but Spark will not ask for it.</Muted>
+          </Card>
+        ) : null}
 
         {announcement ? (
           <Card style={{ borderColor: theme.purple }}>
@@ -156,6 +181,42 @@ export default function TodayScreen() {
           </View>
         </View>
 
+        <View style={styles.timeArea}>
+          <Muted>What context are you in?</Muted>
+          <View style={styles.chips}>
+            {(
+              [
+                ['home', 'Home'],
+                ['work', 'Work'],
+                ['outside', 'Outside'],
+                ['phone', 'Phone']
+              ] as const
+            ).map(([value, label]) => (
+              <Chip
+                key={value}
+                label={label}
+                selected={context === value}
+                onPress={() => setContext((current) => (current === value ? undefined : value))}
+              />
+            ))}
+          </View>
+        </View>
+
+        <Button
+          label={
+            spark.settings.minimumViableDay
+              ? 'Return to my flexible plan'
+              : 'Rescue my day: show one tiny action'
+          }
+          variant="secondary"
+          onPress={() =>
+            void spark.updateSetting(
+              'minimumViableDay',
+              !spark.settings.minimumViableDay
+            )
+          }
+        />
+
         <View style={styles.sectionTitle}>
           <View>
             <SectionHeading>Your next Sparks</SectionHeading>
@@ -175,6 +236,7 @@ export default function TodayScreen() {
             <HabitCard
               key={suggestion.habit.id}
               suggestion={suggestion}
+              showRewards={spark.settings.showRewards}
               onEdit={() => router.push(`/habit/${suggestion.habit.id}`)}
               onComplete={(variant) =>
                 void complete(suggestion.habit.title, variant, suggestion.habit.id)
@@ -224,6 +286,8 @@ export default function TodayScreen() {
         title={celebration?.title ?? ''}
         reward={celebration?.reward ?? 0}
         reducedMotion={spark.settings.reducedMotion}
+        sensoryProfile={spark.settings.sensoryProfile}
+        showReward={spark.settings.showRewards}
         onDismiss={() => setCelebration(null)}
       />
       {celebration ? (

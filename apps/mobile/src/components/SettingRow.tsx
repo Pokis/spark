@@ -42,6 +42,8 @@ export function SettingRow({
   return onPress ? (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={description}
       onPress={onPress}
       style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
     >

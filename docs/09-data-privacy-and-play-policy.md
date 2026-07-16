@@ -35,25 +35,29 @@ Treat free-form text as sensitive even if it is not formally health data.
 
 Spark has no required account. An optional anonymous cloud identity can be deleted from
 **Settings → Delete optional cloud data**. The API recursively removes its support threads,
-entitlement record, user record, and Firebase Auth identity. Local data is deliberately
-unchanged.
+entitlement record, user record, and Firebase Auth identity. Retained purchase, promotion,
+message-author, and audit identifiers are replaced with a random deletion pseudonym. Local data
+is deliberately unchanged.
 
 Uninstalling the app or clearing app storage removes local data and the database key. Export a
 backup first if desired.
 
 ## Retention recommendation
 
-Before production, adopt and publish exact periods. A conservative starting point:
+Before production, adopt and publish exact periods. The implemented defaults and a conservative
+starting point are:
 
-- resolved support: delete after 180 days unless needed for an active dispute
-- unused anonymous identities with no purchase/support: delete after 90 days
+- support conversations: delete 90 days after the latest message by default
+- unused anonymous identities: retain until user deletion unless an additional automated policy
+  is deliberately adopted and disclosed
 - assigned promo inventory: retain until campaign reconciliation plus 180 days
 - purchase/grant audits: retain for the legal/accounting period required in your jurisdiction
-- general admin audit: 12 months
+- general admin audit: delete after 365 days by default
 
-Automated TTL deletes are not configured because Firestore TTL operations are billable and the
-initial support volume should be small. Run a documented owner review monthly until automation is
-justified.
+Spark avoids billable Firestore TTL operations. Instead, one authenticated nightly Cloud
+Scheduler request deletes expired support threads, audit records, and RTDN deduplication records
+in bounded batches. Continue a monthly owner review for purchase, grant, and promo records whose
+retention depends on legal or campaign decisions.
 
 ## Google Play Data safety
 
@@ -111,4 +115,3 @@ Before cloud production:
 6. Prepare a process to disable support/purchases remotely.
 7. Prepare user notification and regulator assessment steps appropriate to the operator's
    jurisdiction.
-

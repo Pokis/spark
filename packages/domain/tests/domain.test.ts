@@ -63,6 +63,76 @@ describe('domain behavior', () => {
     expect(plan[0]?.variant.kind).toBe('tiny');
   });
 
+  it('never lets available time override a low-capacity ceiling', () => {
+    const plan = buildTodayPlan({
+      habits: [habit],
+      completions: [],
+      now: new Date('2026-07-16T10:00:00Z'),
+      timeZone: 'UTC',
+      capacity: 'empty',
+      availableMinutes: 60,
+    });
+    expect(plan[0]?.variant.kind).toBe('tiny');
+  });
+
+  it('uses elapsed calendar days for comeback recommendation scoring', () => {
+    const oldCompletion: Completion = {
+      id: 'old',
+      habitId: habit.id,
+      variantId: 'tiny',
+      variantKind: 'tiny',
+      reward: 1,
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      loggedAt: '2026-07-01T10:00:00.000Z',
+      localDate: '2026-07-01',
+      source: 'today',
+    };
+    const plan = buildTodayPlan({
+      habits: [habit],
+      completions: [oldCompletion],
+      now: new Date('2026-07-16T10:00:00Z'),
+      timeZone: 'UTC',
+      capacity: 'steady',
+    });
+    expect(plan[0]?.explanation).toBe('Ready for a gentle comeback');
+    expect(plan[0]?.score).toBeGreaterThan(habit.priority * 20);
+  });
+
+  it('excludes only actual pause intervals from rhythm opportunities', () => {
+    const paused: Habit = {
+      ...habit,
+      pausedAt: '2026-07-14',
+      pausedUntil: '2026-07-15',
+      pauseHistory: [{ startedOn: '2026-07-10', endedOn: '2026-07-11' }],
+    };
+    expect(
+      rhythmForHabit(paused, [], new Date('2026-07-16T12:00:00Z'), 'UTC', 7)
+        .opportunities,
+    ).toBe(3);
+  });
+
+  it('detects a comeback from distinct days when several wins share a day', () => {
+    const completions: Completion[] = [
+      ['a', '2026-07-10'],
+      ['b', '2026-07-10'],
+      ['c', '2026-07-16'],
+    ].map(([id, date]) => ({
+      id: id!,
+      habitId: habit.id,
+      variantId: 'tiny',
+      variantKind: 'tiny',
+      reward: 1,
+      occurredAt: `${date}T10:00:00.000Z`,
+      loggedAt: `${date}T10:00:00.000Z`,
+      localDate: date!,
+      source: 'today',
+    }));
+    expect(
+      rhythmForHabit(habit, completions, new Date('2026-07-16T12:00:00Z'), 'UTC')
+        .comeback,
+    ).toBe(true);
+  });
+
   it('calculates rolling rhythm and rewards without penalties', () => {
     const completions: Completion[] = ['2026-07-14', '2026-07-16'].map((date, index) => ({
       id: `c${index}`,

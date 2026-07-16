@@ -9,13 +9,22 @@ export function PromosPage() {
   const [productId, setProductId] = useState('spark_premium_lifetime');
   const [rawCodes, setRawCodes] = useState('');
   const [message, setMessage] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  async function load(reset = true) {
+    setLoading(true);
     try {
-      setCodes(await adminApi.promos());
+      const result = await adminApi.promos(
+        reset ? undefined : nextCursor ?? undefined
+      );
+      setCodes((current) => (reset ? result.items : [...current, ...result.items]));
+      setNextCursor(result.nextCursor);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not load codes.');
+    } finally {
+      setLoading(false);
     }
   }
   useEffect(() => {
@@ -27,6 +36,13 @@ export function PromosPage() {
       .split(/\r?\n|,/)
       .map((value) => value.trim())
       .filter(Boolean);
+    if (
+      !window.confirm(
+        `Import ${values.length} official Play code(s) into campaign “${campaign}”?`
+      )
+    ) {
+      return;
+    }
     try {
       const result = await adminApi.importPromos({
         codes: values,
@@ -35,7 +51,7 @@ export function PromosPage() {
       });
       setMessage(`Imported ${result.imported} code(s).`);
       setRawCodes('');
-      await load();
+      await load(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Import failed.');
     }
@@ -48,7 +64,7 @@ export function PromosPage() {
         eyebrow="Google Play-managed grants"
         title="Promo codes"
         description="Import official Play Console codes. Spark does not invent a parallel public license system."
-        action={<button onClick={() => void load()}>Refresh</button>}
+        action={<button onClick={() => void load(true)}>Refresh</button>}
       />
       <ErrorBanner error={error} />
       {message ? <div className="success-banner">{message}</div> : null}
@@ -96,7 +112,7 @@ export function PromosPage() {
         </Panel>
         <Panel title="Recent inventory">
           <div className="code-list">
-            {codes.slice(0, 100).map((code) => (
+            {codes.map((code) => (
               <div key={code.id} className="code-row">
                 <div>
                   <strong>{code.campaign}</strong>
@@ -107,6 +123,15 @@ export function PromosPage() {
                 </span>
               </div>
             ))}
+            {nextCursor ? (
+              <button
+                className="secondary load-more"
+                disabled={loading}
+                onClick={() => void load(false)}
+              >
+                {loading ? 'Loading…' : 'Load more'}
+              </button>
+            ) : null}
           </div>
         </Panel>
       </div>

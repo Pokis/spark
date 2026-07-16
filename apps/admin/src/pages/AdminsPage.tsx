@@ -12,6 +12,13 @@ export function AdminsPage() {
 
   async function save() {
     setError(null);
+    if (
+      !window.confirm(
+        `Set ${email} to role “${role}”? This changes privileged access after their token refreshes.`
+      )
+    ) {
+      return;
+    }
     try {
       const result = await adminApi.setRole(email, role);
       setMessage(`${result.email} was updated. They must sign out and in to refresh claims.`);

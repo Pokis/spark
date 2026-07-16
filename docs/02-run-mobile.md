@@ -36,16 +36,21 @@ Then open the already installed Spark development client.
 Create a free Expo account, install EAS CLI through `npx`, and initialize the project once:
 
 ```powershell
-npx.cmd eas-cli login
-npx.cmd eas-cli init
-npx.cmd eas-cli build --platform android --profile development
+Set-Location apps/mobile
+npx.cmd eas-cli@latest login
+npx.cmd eas-cli@latest init
+npx.cmd eas-cli@latest build --platform android --profile development
+Set-Location ..\..
 ```
 
-`eas init` writes the Expo project ID used by `app.config.ts`. Download the resulting APK to an
-Android phone and run:
+Store the resulting Expo owner and project ID in `apps/mobile/.env.local` for local configuration
+and in the appropriate EAS environment for cloud builds. Download the resulting APK to an Android
+phone and run:
 
 ```powershell
+Set-Location apps/mobile
 npx.cmd expo start --dev-client
+Set-Location ..\..
 ```
 
 Check current EAS plan quotas before relying on cloud builds. Local Android builds do not consume
@@ -65,14 +70,16 @@ Support, admin, and verified purchase buttons remain safely disabled.
 
 ## Optional local environment
 
-Copy `.env.example` to `.env` only after deploying the cloud service:
+Expo loads environment files from the mobile project directory, not the monorepo root. Copy the
+mobile template only after deploying the cloud service:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item apps/mobile/.env.example apps/mobile/.env.local
 ```
 
 Fill the `EXPO_PUBLIC_` values. Never put a service-account key, Play Console credential, private
-API secret, or Terraform state in this file.
+API secret, or Terraform state in this file. Expo embeds every `EXPO_PUBLIC_` value in the
+application bundle, so treat those values as public configuration.
 
 ## Reset test data
 
@@ -90,4 +97,3 @@ After installing a native build:
 
 The widget updates when Spark data changes and receives a periodic Android refresh. Tapping its
 visible tiny action opens Spark and logs that tiny win.
-

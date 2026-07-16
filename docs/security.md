@@ -4,7 +4,7 @@
 
 The dependency audit was last reviewed on 2026-07-16.
 
-`npm audit` reports one moderate advisory repeated through 20 transitive dependency paths:
+`npm audit --omit=dev` reports one moderate advisory repeated through transitive dependency paths:
 `GHSA-w5hq-g745-h8pq` in `uuid` versions earlier than 11.1.1. The affected operation is the
 optional caller-supplied output buffer used by UUID v3, v5, and v6.
 

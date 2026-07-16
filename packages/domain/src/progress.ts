@@ -20,15 +20,20 @@ export function rhythmForHabit(
     countOpportunities(habit, now, timeZone, windowDays),
   );
 
-  const ordered = [...completions]
-    .filter((completion) => completion.habitId === habit.id)
-    .sort((a, b) => a.localDate.localeCompare(b.localDate));
-  const last = ordered.at(-1);
-  const previous = ordered.at(-2);
+  const orderedDays = [
+    ...new Set(
+      completions
+        .filter((completion) => completion.habitId === habit.id)
+        .map((completion) => completion.localDate),
+    ),
+  ]
+    .sort((a, b) => a.localeCompare(b));
+  const last = orderedDays.at(-1);
+  const previous = orderedDays.at(-2);
   const comeback =
     Boolean(last && previous) &&
-    Math.abs(Date.parse(`${last?.localDate}T00:00:00Z`) -
-      Date.parse(`${previous?.localDate}T00:00:00Z`)) >=
+    Math.abs(Date.parse(`${last}T00:00:00Z`) -
+      Date.parse(`${previous}T00:00:00Z`)) >=
       3 * 86_400_000;
 
   return {

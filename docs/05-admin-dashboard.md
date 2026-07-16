@@ -32,6 +32,10 @@ npm.cmd run admin
 Open [http://localhost:5173](http://localhost:5173). Its origin must appear in the Cloud Run
 `ALLOWED_ORIGINS`.
 
+For a completely local, no-account environment, follow the emulator commands in
+[04-google-cloud.md](04-google-cloud.md). The seed creates an owner, sample support thread, promo
+code, announcement, and audit event.
+
 ## Dashboard sections
 
 ### Overview
@@ -47,6 +51,7 @@ An asynchronous private inbox:
 - read messages
 - reply
 - resolve a thread
+- load older cursor-paginated threads and messages
 
 There is no typing indicator, online presence, or global real-time listener. This avoids the cost
 and moderation needs of live chat while still feeling like an in-app conversation.
@@ -54,7 +59,8 @@ and moderation needs of live chat while still feeling like an in-app conversatio
 ### Users
 
 Shows the random Firebase UID, optional linked email, app/platform version, last cloud use, and
-entitlement.
+entitlement. Search is exact and indexed by UID or normalized email; lists use cursors rather than
+loading an arbitrary first N forever.
 
 An owner may grant or revoke premium with a required audit reason. Support staff can assign an
 official Play promo code already imported by an owner.
@@ -81,7 +87,8 @@ Changes only bounded, non-sensitive global values:
 - one global announcement
 
 The mobile app caches config for 24 hours. Config must never contain per-user targeting or secret
-values.
+values. The API separately refreshes its enforcement cache every 30 seconds. Saving a global
+change requires a confirmation that summarizes the impact.
 
 ### Promo codes
 
@@ -99,6 +106,12 @@ Owner-only role management:
 - `none`: remove access
 
 Custom-claim changes take effect after the person signs out and in.
+
+### Audits
+
+Owner-only audit history shows actor, action, target, reason, and time. Use one exact actor, action,
+or target filter at a time so queries remain indexed and predictable. Audit records carry a
+retention timestamp and the nightly maintenance job removes expired entries.
 
 ## Hosting
 
@@ -123,4 +136,3 @@ At small scale, check the dashboard manually:
 - Cloud Billing: weekly during testing, monthly after stable usage
 
 Do not leave the dashboard open as a wallboard; it has no real-time updates anyway.
-

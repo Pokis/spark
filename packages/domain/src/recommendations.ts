@@ -7,7 +7,7 @@ import type {
   HabitContext,
   HabitVariant,
 } from './types';
-import { localDateKey } from './time';
+import { calendarDayDifference, localDateKey } from './time';
 
 export interface PlanInput {
   habits: Habit[];
@@ -27,18 +27,27 @@ function preferredVariant(
 ): HabitVariant {
   const sorted = [...habit.variants].sort((a, b) => a.targetMinutes - b.targetMinutes);
   const capacityKind = capacity === 'empty' ? 'tiny' : capacity === 'ready' ? 'stretch' : 'standard';
-  const capacityMatch = sorted.find((variant) => variant.kind === capacityKind);
+  const capacityIndex = sorted.findIndex((variant) => variant.kind === capacityKind);
+  const capacityAllowed =
+    capacityIndex >= 0 ? sorted.slice(0, capacityIndex + 1) : sorted;
   const timeMatch =
     availableMinutes == null
       ? undefined
-      : [...sorted].reverse().find((variant) => variant.targetMinutes <= availableMinutes);
-  return timeMatch ?? capacityMatch ?? sorted[0] ?? {
+      : [...capacityAllowed]
+          .reverse()
+          .find((variant) => variant.targetMinutes <= availableMinutes);
+  const capacityMatch = capacityAllowed.at(-1);
+  return (
+    timeMatch ??
+    (availableMinutes == null ? capacityMatch : capacityAllowed[0]) ??
+    sorted[0] ?? {
     id: `${habit.id}-default`,
     kind: 'standard',
     label: habit.title,
     targetMinutes: 5,
     reward: 2,
-  };
+    }
+  );
 }
 
 export function buildTodayPlan(input: PlanInput): ActionSuggestion[] {
@@ -76,7 +85,9 @@ export function buildTodayPlan(input: PlanInput): ActionSuggestion[] {
         score += 5;
         explanations.push('A fresh first win');
       } else if (latest.localDate < today) {
-        score += Math.min(10, Math.max(0, today.localeCompare(latest.localDate)));
+        const daysSince = calendarDayDifference(latest.localDate, today);
+        score += Math.min(10, Math.max(0, daysSince));
+        if (daysSince >= 3) explanations.push('Ready for a gentle comeback');
       }
 
       return {

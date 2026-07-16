@@ -1,15 +1,24 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
+import { Chip } from '../src/components/Chip';
 import { FormField } from '../src/components/FormField';
 import { Screen } from '../src/components/Screen';
 import { SettingRow } from '../src/components/SettingRow';
 import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
-import { pickAndRestoreBackup, shareBackup } from '../src/services/backup';
+import {
+  pickBackupForPreview,
+  restoreBackup,
+  shareBackup,
+  sharePortableCsv
+} from '../src/services/backup';
 import { cloudConfigured } from '../src/services/cloudConfig';
 import { deleteCloudIdentity } from '../src/services/api';
+import { getDatabaseSecurityStatus } from '../src/data/database';
+import { clearDiagnostics, shareDiagnostics } from '../src/services/diagnostics';
 import { requestNotificationPermission } from '../src/services/notifications';
 import { useSpark } from '../src/state/SparkProvider';
 import { useTheme } from '../src/theme';
@@ -19,6 +28,23 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const cloudAvailable = cloudConfigured();
   const supportAvailable = cloudAvailable && spark.remoteConfig.defaults.supportEnabled;
+  const [storageStatus, setStorageStatus] = useState('Checking local storage…');
+
+  useEffect(() => {
+    void getDatabaseSecurityStatus()
+      .then((status) =>
+        setStorageStatus(
+          status.encrypted
+            ? `Encrypted with SQLCipher ${status.cipherVersion ?? ''}`.trim()
+            : status.expoGoPreview
+              ? 'Expo Go preview: local database is not encrypted'
+              : 'Encryption could not be verified'
+        )
+      )
+      .catch((reason: unknown) =>
+        setStorageStatus(reason instanceof Error ? reason.message : 'Storage check failed')
+      );
+  }, []);
 
   async function toggleNotifications(value: boolean) {
     if (!value) {
@@ -36,31 +62,61 @@ export default function SettingsScreen() {
     await spark.updateSetting('notificationsEnabled', true);
   }
 
-  function restore() {
-    Alert.alert(
-      'Replace local Spark data?',
-      'Restoring a backup replaces habits, completions, focus sessions, routines, and settings on this device.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Choose backup',
-          style: 'destructive',
-          onPress: () =>
-            void pickAndRestoreBackup()
-              .then(() => spark.refresh())
-              .then(() => Alert.alert('Restored', 'Your local Spark data is ready.'))
-              .catch((error: unknown) =>
-                Alert.alert('Could not restore', error instanceof Error ? error.message : 'Try again.')
-              )
-        }
-      ]
-    );
+  async function restore() {
+    try {
+      const preview = await pickBackupForPreview();
+      if (!preview) return;
+      Alert.alert(
+        `Restore ${preview.fileName}?`,
+        [
+          `${preview.counts.habits} habits`,
+          `${preview.counts.completions} completions`,
+          `${preview.counts.focusSessions} focus sessions`,
+          `${preview.counts.captureItems} captured thoughts`,
+          `${preview.counts.routines} routines`,
+          '',
+          'Spark will first save an automatic safety copy, then replace current local data.'
+        ].join('\n'),
+        [
+          { text: 'Keep current data', style: 'cancel' },
+          {
+            text: 'Restore backup',
+             style: 'destructive',
+             onPress: () =>
+               void restoreBackup(preview)
+                .then(async (safetyCopy) => {
+                  await spark.refresh();
+                  return safetyCopy;
+                })
+                .then((safetyCopy) =>
+                  Alert.alert(
+                    'Restored',
+                    safetyCopy
+                      ? 'Your backup is ready. Spark also kept a private pre-restore safety copy in app storage.'
+                      : 'Your backup is ready.'
+                  )
+                )
+                .catch((error: unknown) =>
+                  Alert.alert(
+                    'Could not restore',
+                    error instanceof Error ? error.message : 'Try again.'
+                  )
+                )
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Could not inspect backup',
+        error instanceof Error ? error.message : 'Try again.'
+      );
+    }
   }
 
   function deleteCloudData() {
     Alert.alert(
       'Delete optional cloud data?',
-      'This removes your support conversations, cloud entitlement record, and random support identity. It does not delete local habits or backups.',
+      'This removes your support conversations, cloud entitlement record, and random support identity. Records that must be retained for fraud or legal reasons are disconnected from that identity. Local habits and backups are unchanged.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -98,6 +154,17 @@ export default function SettingsScreen() {
 
       <Card>
         <SectionHeading>Sensory comfort</SectionHeading>
+        <Muted>Choose how much celebration Spark uses. All modes keep rewards predictable.</Muted>
+        <View style={styles.choiceRow}>
+          {(['calm', 'balanced', 'celebratory'] as const).map((value) => (
+            <Chip
+              key={value}
+              label={value[0]!.toUpperCase() + value.slice(1)}
+              selected={spark.settings.sensoryProfile === value}
+              onPress={() => void spark.updateSetting('sensoryProfile', value)}
+            />
+          ))}
+        </View>
         <SettingRow
           title="Haptic celebration"
           description="A short tactile response after a win."
@@ -119,12 +186,58 @@ export default function SettingsScreen() {
       </Card>
 
       <Card>
+        <SectionHeading>Cognitive load</SectionHeading>
+        <SettingRow
+          title="Minimum viable day"
+          description="Today shows one deliberately tiny next action instead of a list."
+          value={spark.settings.minimumViableDay}
+          onValueChange={(value) => void spark.updateSetting('minimumViableDay', value)}
+        />
+        <SettingRow
+          title="Five-second launch runway"
+          description="Focus sessions can count down gently, with a clear Not yet button."
+          value={spark.settings.launchCountdownEnabled}
+          onValueChange={(value) =>
+            void spark.updateSetting('launchCountdownEnabled', value)
+          }
+        />
+        <SettingRow
+          title="Transition nudges"
+          description="After focus, Spark asks for the next tiny move without requiring one."
+          value={spark.settings.transitionNudgesEnabled}
+          onValueChange={(value) =>
+            void spark.updateSetting('transitionNudgesEnabled', value)
+          }
+        />
+        <SettingRow
+          title="Show Spark points"
+          description="Hide levels and point totals if they feel like pressure."
+          value={spark.settings.showRewards}
+          onValueChange={(value) => void spark.updateSetting('showRewards', value)}
+        />
+        <SettingRow
+          title="Show rhythm percentages"
+          description="Turn percentages off and keep qualitative progress language."
+          value={spark.settings.showRhythmPercentages}
+          onValueChange={(value) => void spark.updateSetting('showRhythmPercentages', value)}
+        />
+      </Card>
+
+      <Card>
         <SectionHeading>Gentle reminders</SectionHeading>
         <SettingRow
           title="Local notifications"
           description="Scheduled on this device. Spark does not need a server to remind you."
           value={spark.settings.notificationsEnabled}
           onValueChange={(value) => void toggleNotifications(value)}
+        />
+        <SettingRow
+          title="Quiet repeatedly ignored reminders"
+          description="After three unanswered invitations, pause that habit’s reminders for three days. Habit progress is unchanged."
+          value={spark.settings.autoQuietReminders}
+          onValueChange={(value) =>
+            void spark.updateSetting('autoQuietReminders', value)
+          }
         />
         <Muted>
           Spark schedules at most {spark.settings.notificationCap} habit reminders and prioritizes
@@ -158,7 +271,19 @@ export default function SettingsScreen() {
             )
           }
         />
-        <Button label="Restore a backup" variant="ghost" onPress={restore} />
+        <Button
+          label="Export portable CSV"
+          variant="secondary"
+          onPress={() =>
+            void sharePortableCsv().catch((error: unknown) =>
+              Alert.alert(
+                'Could not export CSV',
+                error instanceof Error ? error.message : 'Try again.'
+              )
+            )
+          }
+        />
+        <Button label="Restore a backup" variant="ghost" onPress={() => void restore()} />
       </Card>
 
       <Card>
@@ -215,6 +340,37 @@ export default function SettingsScreen() {
       <Card>
         <SectionHeading>Trust</SectionHeading>
         <SettingRow title="Privacy and data map" onPress={() => router.push('/privacy')} />
+        <Muted>{storageStatus}</Muted>
+        <Button
+          label="Export privacy-safe diagnostics"
+          variant="secondary"
+          onPress={() =>
+            void shareDiagnostics().catch((error: unknown) =>
+              Alert.alert(
+                'Could not export diagnostics',
+                error instanceof Error ? error.message : 'Try again.'
+              )
+            )
+          }
+        />
+        <Button
+          label="Clear diagnostic history"
+          variant="ghost"
+          onPress={() =>
+            Alert.alert(
+              'Clear diagnostic history?',
+              'This removes local error messages Spark kept for troubleshooting.',
+              [
+                { text: 'Keep it', style: 'cancel' },
+                {
+                  text: 'Clear',
+                  style: 'destructive',
+                  onPress: () => void clearDiagnostics()
+                }
+              ]
+            )
+          }
+        />
         <Muted>Version 0.1.0 · Android first, iPhone compatible</Muted>
       </Card>
     </Screen>
@@ -223,4 +379,5 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   capRow: { flexDirection: 'row', gap: 8 },
+  choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
 });

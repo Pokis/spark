@@ -9,6 +9,7 @@ const pages: { id: Page; label: string; icon: string }[] = [
   { id: 'users', label: 'Users', icon: '◎' },
   { id: 'config', label: 'App config', icon: '⚙' },
   { id: 'promos', label: 'Promo codes', icon: '◇' },
+  { id: 'audits', label: 'Audit log', icon: '≣' },
   { id: 'admins', label: 'Admins', icon: '♢' }
 ];
 

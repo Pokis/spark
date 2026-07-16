@@ -94,11 +94,12 @@ export function getEntitlement(): Promise<CloudEntitlement> {
 
 export function verifyGooglePurchase(
   productId: string,
-  purchaseToken: string
+  purchaseToken: string,
+  restore = false
 ): Promise<CloudEntitlement> {
   return request('/v1/purchases/google/verify', {
     method: 'POST',
-    body: JSON.stringify({ productId, purchaseToken })
+    body: JSON.stringify({ productId, purchaseToken, restore })
   });
 }
 

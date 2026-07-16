@@ -9,6 +9,9 @@ import type {
   AuthenticatedUser,
   Dependencies,
   EntitlementRecord,
+  InternalEventRecord,
+  PageRequest,
+  PlayPurchaseRecord,
   PromoCodeRecord,
   PurchaseVerifier,
   Store,
@@ -24,6 +27,8 @@ class MemoryStore implements Store {
   users = new Map<string, AdminUserRecord>();
   promos: PromoCodeRecord[] = [];
   audits: AuditRecord[] = [];
+  purchases = new Map<string, PlayPurchaseRecord>();
+  internalEvents = new Map<string, InternalEventRecord>();
 
   async getConfig() {
     return this.config;
@@ -57,14 +62,21 @@ class MemoryStore implements Store {
   }
   async listSupportThreads(
     status: SupportThreadRecord['status'] | undefined,
-    limit: number
+    page: PageRequest
   ) {
-    return [...this.threads.values()]
+    const items = [...this.threads.values()]
       .filter((thread) => !status || thread.status === status)
-      .slice(0, limit);
+      .slice(0, page.limit);
+    return { items, nextCursor: null };
   }
   async listSupportMessages(threadId: string, limit: number) {
     return (this.messages.get(threadId) ?? []).slice(0, limit);
+  }
+  async listSupportMessagesPage(threadId: string, page: PageRequest) {
+    return {
+      items: (this.messages.get(threadId) ?? []).slice(0, page.limit),
+      nextCursor: null
+    };
   }
   async addSupportMessage(
     threadId: string,
@@ -85,8 +97,109 @@ class MemoryStore implements Store {
   async setEntitlement(uid: string, entitlement: EntitlementRecord) {
     this.entitlements.set(uid, entitlement);
   }
-  async listUsers(limit: number) {
-    return [...this.users.values()].slice(0, limit);
+  async claimPlayPurchase(input: {
+    purchase: PlayPurchaseRecord;
+    entitlement?: EntitlementRecord;
+    allowTransfer: boolean;
+  }) {
+    const existing = this.purchases.get(input.purchase.tokenHash);
+    if (
+      existing &&
+      existing.ownerId !== input.purchase.ownerId &&
+      !input.allowTransfer
+    ) {
+      return { status: 'conflict' as const, previousOwnerId: existing.ownerId };
+    }
+    const previousOwnerId =
+      existing && existing.ownerId !== input.purchase.ownerId
+        ? existing.ownerId
+        : undefined;
+    if (previousOwnerId) this.entitlements.set(previousOwnerId, {
+      premium: false,
+      source: 'play',
+      expiresAt: null,
+      updatedAt: input.purchase.updatedAt
+    });
+    this.purchases.set(input.purchase.tokenHash, input.purchase);
+    if (input.entitlement) {
+      this.entitlements.set(input.purchase.ownerId, input.entitlement);
+    }
+    return previousOwnerId
+      ? { status: 'transferred' as const, previousOwnerId }
+      : existing
+        ? { status: 'existing' as const }
+        : { status: 'claimed' as const };
+  }
+  async revokePlayPurchase(input: {
+    tokenHash: string;
+    orderIdHash?: string;
+    reason: string;
+    at: string;
+  }) {
+    const purchase = this.purchases.get(input.tokenHash);
+    if (!purchase) return { changed: false };
+    const changed = purchase.state === 'active';
+    this.purchases.set(input.tokenHash, {
+      ...purchase,
+      state: 'revoked',
+      revokeReason: input.reason,
+      updatedAt: input.at
+    });
+    const entitlement = this.entitlements.get(purchase.ownerId);
+    if (entitlement?.source === 'play') {
+      this.entitlements.set(purchase.ownerId, {
+        ...entitlement,
+        premium: false,
+        updatedAt: input.at
+      });
+    }
+    return { ownerId: purchase.ownerId, changed };
+  }
+  async reconcilePlayPurchase(input: {
+    tokenHash: string;
+    orderIdHash?: string;
+    productId: string;
+    state: 'purchased' | 'pending' | 'canceled';
+    at: string;
+  }) {
+    if (input.state === 'canceled') {
+      return this.revokePlayPurchase({
+        tokenHash: input.tokenHash,
+        orderIdHash: input.orderIdHash,
+        reason: 'canceled',
+        at: input.at
+      });
+    }
+    const purchase = this.purchases.get(input.tokenHash);
+    if (!purchase) return { changed: false };
+    const nextState = input.state === 'purchased' ? 'active' : 'pending';
+    const changed = purchase.state !== nextState;
+    this.purchases.set(input.tokenHash, {
+      ...purchase,
+      state: nextState,
+      updatedAt: input.at
+    });
+    if (input.state === 'purchased') {
+      this.entitlements.set(purchase.ownerId, {
+        premium: true,
+        source: 'play',
+        productId: input.productId,
+        expiresAt: null,
+        updatedAt: input.at
+      });
+    }
+    return { ownerId: purchase.ownerId, changed };
+  }
+  async listUsers(page: PageRequest & { search?: string }) {
+    const items = [...this.users.values()]
+      .filter(
+        (user) =>
+          !page.search ||
+          user.uid === page.search ||
+          user.email?.toLowerCase() === page.search.toLowerCase()
+      )
+      .slice(0, page.limit);
+    return { items, nextCursor: null };
   }
   async overview() {
     return {
@@ -106,12 +219,63 @@ class MemoryStore implements Store {
     Object.assign(code, { status: 'assigned', assignedTo: uid, assignedAt: now });
     return code;
   }
-  async listPromoCodes(limit: number) {
-    return this.promos.slice(0, limit);
+  async listPromoCodes(page: PageRequest) {
+    return { items: this.promos.slice(0, page.limit), nextCursor: null };
+  }
+  async listAudits(page: PageRequest & {
+    action?: string;
+    actorId?: string;
+    target?: string;
+  }) {
+    return {
+      items: this.audits
+        .filter(
+          (audit) =>
+            (!page.action || audit.action === page.action) &&
+            (!page.actorId || audit.actorId === page.actorId) &&
+            (!page.target || audit.target === page.target)
+        )
+        .slice(0, page.limit),
+      nextCursor: null
+    };
   }
   async writeAudit(record: AuditRecord) {
     this.audits.push(record);
   }
+  async claimInternalEvent(record: InternalEventRecord) {
+    if (this.internalEvents.has(record.id)) return false;
+    this.internalEvents.set(record.id, record);
+    return true;
+  }
+  async releaseInternalEvent(id: string) {
+    this.internalEvents.delete(id);
+  }
+  async purgeExpired(now: string) {
+    let supportThreads = 0;
+    let audits = 0;
+    let internalEvents = 0;
+    for (const [id, thread] of this.threads) {
+      if (thread.deleteAfter <= now) {
+        this.threads.delete(id);
+        supportThreads += 1;
+      }
+    }
+    this.audits = this.audits.filter((audit) => {
+      if (audit.deleteAfter <= now) {
+        audits += 1;
+        return false;
+      }
+      return true;
+    });
+    for (const [id, event] of this.internalEvents) {
+      if (event.deleteAfter <= now) {
+        this.internalEvents.delete(id);
+        internalEvents += 1;
+      }
+    }
+    return { supportThreads, audits, internalEvents };
+  }
+  async healthCheck() {}
   async deleteUserData(uid: string) {
     this.users.delete(uid);
     this.entitlements.delete(uid);
@@ -143,18 +307,47 @@ class TestAuth implements AuthService {
 }
 
 class TestPurchases implements PurchaseVerifier {
+  calls = 0;
+  failuresRemaining = 0;
+  obfuscatedAccountId?: string;
   async verifyProduct() {
-    return { valid: true, acknowledged: true, orderId: 'order-1' };
+    this.calls += 1;
+    if (this.failuresRemaining > 0) {
+      this.failuresRemaining -= 1;
+      throw new Error('temporary Google API failure');
+    }
+    return {
+      state: 'purchased' as const,
+      acknowledged: true,
+      orderId: 'order-1',
+      obfuscatedAccountId: this.obfuscatedAccountId
+    };
   }
 }
 
-function setup() {
+function setup({ enabled = true }: { enabled?: boolean } = {}) {
   const store = new MemoryStore();
+  if (enabled) {
+    store.config = {
+      ...defaultAppConfig,
+      defaults: {
+        ...defaultAppConfig.defaults,
+        supportEnabled: true,
+        purchasesEnabled: true
+      }
+    };
+  }
   let id = 0;
+  const purchases = new TestPurchases();
   const dependencies: Dependencies = {
     store,
     auth: new TestAuth(),
-    purchases: new TestPurchases(),
+    purchases,
+    internalAuth: {
+      async verify(token: string) {
+        if (token !== 'internal') throw new Error('invalid');
+      }
+    },
     now: () => new Date('2026-07-16T12:00:00.000Z'),
     id: (prefix) => `${prefix}-${++id}`,
     adminEmailAllowlist: [],
@@ -162,13 +355,26 @@ function setup() {
   };
   return {
     store,
-    app: createApp(dependencies, { premiumProductId: 'spark_premium_lifetime' })
+    purchases,
+    app: createApp(dependencies, {
+      premiumProductId: 'spark_premium_lifetime',
+      packageName: 'com.sparkhabits.app'
+    })
+  };
+}
+
+function pubSubBody(messageId: string, notification: Record<string, unknown>) {
+  return {
+    message: {
+      messageId,
+      data: Buffer.from(JSON.stringify(notification)).toString('base64')
+    }
   };
 }
 
 describe('Spark control plane', () => {
   it('serves baked defaults without authentication or database setup', async () => {
-    const { app } = setup();
+    const { app } = setup({ enabled: false });
     const response = await request(app).get('/v1/config').expect(200);
     expect(response.body).toEqual(defaultAppConfig);
     expect(response.headers['cache-control']).toContain('max-age=300');
@@ -212,6 +418,183 @@ describe('Spark control plane', () => {
     expect(store.audits[0]?.action).toBe('purchase.verified');
   });
 
+  it('enforces support and purchase shutdowns in the API', async () => {
+    const { app, purchases } = setup({ enabled: false });
+    await request(app)
+      .post('/v1/support/threads')
+      .set('Authorization', 'Bearer user')
+      .send({
+        subject: 'A rough edge',
+        message: 'I got stuck here.',
+        appVersion: '0.1.0',
+        platform: 'android'
+      })
+      .expect(503);
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send({
+        productId: 'spark_premium_lifetime',
+        purchaseToken: 'a-valid-looking-purchase-token'
+      })
+      .expect(503);
+    expect(purchases.calls).toBe(0);
+  });
+
+  it('prevents a purchase token from granting two active identities', async () => {
+    const { app, store } = setup();
+    const body = {
+      productId: 'spark_premium_lifetime',
+      purchaseToken: 'one-token-that-cannot-be-shared'
+    };
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send(body)
+      .expect(200);
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer other')
+      .send(body)
+      .expect(409);
+    expect(store.entitlements.get('user-1')?.premium).toBe(true);
+    expect(store.entitlements.get('user-2')).toBeUndefined();
+  });
+
+  it('makes repeated verification idempotent and audits it as a duplicate', async () => {
+    const { app, store } = setup();
+    const body = {
+      productId: 'spark_premium_lifetime',
+      purchaseToken: 'one-token-for-idempotent-verification'
+    };
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send(body)
+      .expect(200);
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send(body)
+      .expect(200);
+    expect(
+      store.audits.some((audit) => audit.action === 'purchase.duplicate')
+    ).toBe(true);
+  });
+
+  it('rejects a Play account binding mismatch unless Restore is explicit', async () => {
+    const { app, store, purchases } = setup();
+    purchases.obfuscatedAccountId = 'user-1';
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer other')
+      .send({
+        productId: 'spark_premium_lifetime',
+        purchaseToken: 'token-with-another-obfuscated-owner'
+      })
+      .expect(409);
+    expect(store.entitlements.get('user-2')).toBeUndefined();
+    expect(
+      store.audits.some((audit) => audit.action === 'purchase.account_mismatch')
+    ).toBe(true);
+  });
+
+  it('atomically transfers the single entitlement during explicit restore', async () => {
+    const { app, store } = setup();
+    const body = {
+      productId: 'spark_premium_lifetime',
+      purchaseToken: 'one-token-for-an-explicit-restore'
+    };
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send(body)
+      .expect(200);
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer other')
+      .send({ ...body, restore: true })
+      .expect(200);
+    expect(store.entitlements.get('user-1')?.premium).toBe(false);
+    expect(store.entitlements.get('user-2')?.premium).toBe(true);
+    const transferredAudit = store.audits.find(
+      (audit) => audit.action === 'purchase.transferred'
+    );
+    expect(transferredAudit?.metadata).toEqual({
+      productId: 'spark_premium_lifetime',
+      transferredFromAnotherIdentity: true
+    });
+  });
+
+  it('revokes a bound entitlement from an authenticated Google Play RTDN', async () => {
+    const { app, store } = setup();
+    const purchaseToken = 'a-token-that-will-be-refunded';
+    await request(app)
+      .post('/v1/purchases/google/verify')
+      .set('Authorization', 'Bearer user')
+      .send({
+        productId: 'spark_premium_lifetime',
+        purchaseToken
+      })
+      .expect(200);
+    const notification = {
+      packageName: 'com.sparkhabits.app',
+      voidedPurchaseNotification: {
+        purchaseToken,
+        orderId: 'order-1',
+        productType: 2,
+        refundType: 1
+      }
+    };
+    const envelope = {
+      message: {
+        messageId: 'message-1',
+        data: Buffer.from(JSON.stringify(notification)).toString('base64')
+      }
+    };
+    await request(app)
+      .post('/v1/internal/google-play/rtdn')
+      .set('Authorization', 'Bearer internal')
+      .send(envelope)
+      .expect(204);
+    expect(store.entitlements.get('user-1')?.premium).toBe(false);
+    expect(store.audits.some((audit) => audit.action === 'purchase.voided')).toBe(
+      true
+    );
+    await request(app)
+      .post('/v1/internal/google-play/rtdn')
+      .set('Authorization', 'Bearer internal')
+      .send(envelope)
+      .expect(204);
+    expect(
+      store.audits.filter((audit) => audit.action === 'purchase.voided')
+    ).toHaveLength(1);
+  });
+
+  it('releases an RTDN event after a transient failure so Pub/Sub can retry', async () => {
+    const { app, purchases } = setup();
+    purchases.failuresRemaining = 1;
+    const body = pubSubBody('retryable-event', {
+      packageName: 'com.sparkhabits.app',
+      oneTimeProductNotification: {
+        notificationType: 1,
+        purchaseToken: 'a-retryable-purchase-token',
+        sku: 'spark_premium_lifetime'
+      }
+    });
+    await request(app)
+      .post('/v1/internal/google-play/rtdn')
+      .set('Authorization', 'Bearer internal')
+      .send(body)
+      .expect(500);
+    await request(app)
+      .post('/v1/internal/google-play/rtdn')
+      .set('Authorization', 'Bearer internal')
+      .send(body)
+      .expect(204);
+    expect(purchases.calls).toBe(2);
+  });
+
   it('prevents support admins from manually granting premium', async () => {
     const { app } = setup();
     await request(app)
@@ -230,6 +613,15 @@ describe('Spark control plane', () => {
       .expect(200);
     expect(store.entitlements.get('user-1')?.source).toBe('admin');
     expect(store.audits[0]?.reason).toBe('Accessibility testing group');
+  });
+
+  it('returns 404 instead of creating a missing support thread during status changes', async () => {
+    const { app } = setup();
+    await request(app)
+      .patch('/v1/admin/support/missing/status')
+      .set('Authorization', 'Bearer support')
+      .send({ status: 'resolved' })
+      .expect(404);
   });
 
   it('imports and assigns official promo codes only through admin roles', async () => {

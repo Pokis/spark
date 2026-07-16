@@ -13,7 +13,48 @@ export interface DueContext {
 }
 
 export function isHabitPaused(habit: Habit, today: string): boolean {
-  return Boolean(habit.pausedUntil && habit.pausedUntil >= today);
+  return Boolean(
+    habit.pausedAt &&
+      habit.pausedUntil &&
+      habit.pausedAt <= today &&
+      habit.pausedUntil >= today,
+  );
+}
+
+export function isDatePaused(habit: Habit, dateKey: string): boolean {
+  if (
+    habit.pausedAt &&
+    habit.pausedUntil &&
+    habit.pausedAt <= dateKey &&
+    dateKey <= habit.pausedUntil
+  ) {
+    return true;
+  }
+  return Boolean(
+    habit.pauseHistory?.some(
+      (interval) => interval.startedOn <= dateKey && dateKey <= interval.endedOn,
+    ),
+  );
+}
+
+export function isHabitScheduledOn(
+  habit: Habit,
+  dateKey: string,
+  weekday: number,
+): boolean {
+  if (habit.archivedAt || isDatePaused(habit, dateKey)) return false;
+  switch (habit.schedule.type) {
+    case 'daily':
+    case 'anytime':
+    case 'timesPerWeek':
+      return true;
+    case 'weekdays':
+      return habit.schedule.days.includes(weekday);
+    case 'interval': {
+      const difference = calendarDayDifference(habit.schedule.anchorDate, dateKey);
+      return difference >= 0 && difference % habit.schedule.everyDays === 0;
+    }
+  }
 }
 
 export function isHabitDue(habit: Habit, context: DueContext): boolean {
@@ -59,22 +100,15 @@ export function countOpportunities(
   windowDays: number,
 ): number {
   if (habit.schedule.type === 'timesPerWeek') {
-    return Math.ceil((windowDays / 7) * habit.schedule.count);
+    const activeDays = recentDateKeys(now, timeZone, windowDays).filter(
+      (dateKey) => !isDatePaused(habit, dateKey),
+    ).length;
+    return Math.ceil((activeDays / 7) * habit.schedule.count);
   }
-  if (habit.schedule.type === 'anytime') return windowDays;
 
   const days = recentDateKeys(now, timeZone, windowDays);
   return days.filter((dateKey) => {
-    if (habit.pausedUntil && dateKey <= habit.pausedUntil) return false;
-    if (habit.schedule.type === 'daily') return true;
-    if (habit.schedule.type === 'interval') {
-      const difference = calendarDayDifference(habit.schedule.anchorDate, dateKey);
-      return difference >= 0 && difference % habit.schedule.everyDays === 0;
-    }
-    if (habit.schedule.type === 'weekdays') {
-      const date = new Date(`${dateKey}T12:00:00Z`);
-      return habit.schedule.days.includes(date.getUTCDay());
-    }
-    return false;
+    const date = new Date(`${dateKey}T12:00:00Z`);
+    return isHabitScheduledOn(habit, dateKey, date.getUTCDay());
   }).length;
 }

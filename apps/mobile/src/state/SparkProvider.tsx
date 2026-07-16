@@ -21,6 +21,7 @@ import {
   useState,
   type PropsWithChildren
 } from 'react';
+import { AppState } from 'react-native';
 import type { CaptureItem } from '@spark/domain';
 import {
   deleteCompletion,
@@ -28,6 +29,7 @@ import {
   insertCompletion,
   insertFocusSession,
   loadAppData,
+  loadCompletionInsights,
   saveCheckIn,
   saveEntitlement,
   saveSetting,
@@ -45,6 +47,7 @@ import {
 import { deviceTimeZone } from '../lib/date';
 import { createId } from '../lib/id';
 import { loadAppConfig } from '../services/cloudConfig';
+import { reportError, runSafely } from '../services/diagnostics';
 import {
   ACTION_SNOOZE,
   ACTION_TINY,
@@ -81,6 +84,8 @@ interface SparkContextValue extends AppData {
 const emptyData: AppData = {
   habits: [],
   completions: [],
+  completionTotals: { totalWins: 0, totalSparks: 0 },
+  completionDailySummaries: [],
   focusSessions: [],
   captureItems: [],
   routines: [],
@@ -96,13 +101,14 @@ export function SparkProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [remoteConfig, setRemoteConfig] = useState<AppConfig>(defaultAppConfig);
-  const timeZone = deviceTimeZone();
+  const [timeZone, setTimeZone] = useState(deviceTimeZone);
 
   const refresh = useCallback(async () => {
     try {
       setData(await loadAppData());
       setError(null);
     } catch (reason) {
+      void reportError('data.refresh', reason);
       setError(reason instanceof Error ? reason.message : 'Spark could not open local data.');
     } finally {
       setLoading(false);
@@ -110,32 +116,54 @@ export function SparkProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    void refresh();
-    void loadAppConfig().then(setRemoteConfig);
+    runSafely('app.initial_refresh', refresh);
+    runSafely('cloud.config', async () => setRemoteConfig(await loadAppConfig()));
   }, [refresh]);
 
   useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setTimeZone(deviceTimeZone());
+    });
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     if (loading) return;
-    void rescheduleHabitNotifications(
-      data.habits,
-      data.settings.notificationsEnabled,
-      Math.min(data.settings.notificationCap, remoteConfig.defaults.maxDailyHabitNotifications)
+    runSafely(
+      'notifications.reschedule',
+      () =>
+        rescheduleHabitNotifications(
+          data.habits,
+          data.completions,
+          data.settings.notificationsEnabled,
+          Math.min(
+            data.settings.notificationCap,
+            remoteConfig.defaults.maxDailyHabitNotifications
+          ),
+          timeZone,
+          data.settings.autoQuietReminders
+        )
     );
   }, [
+    data.completions,
     data.habits,
     data.settings.notificationCap,
     data.settings.notificationsEnabled,
+    data.settings.autoQuietReminders,
     loading,
-    remoteConfig.defaults.maxDailyHabitNotifications
+    remoteConfig.defaults.maxDailyHabitNotifications,
+    timeZone
   ]);
 
   useEffect(() => {
     if (!loading) {
-      void syncTodayWidget({
-        habits: data.habits,
-        completions: data.completions,
-        timeZone
-      });
+      runSafely('widget.sync', () =>
+        syncTodayWidget({
+          habits: data.habits,
+          completions: data.completions,
+          timeZone
+        })
+      );
     }
   }, [data.completions, data.habits, loading, timeZone]);
 
@@ -158,16 +186,22 @@ export function SparkProvider({ children }: PropsWithChildren) {
         source
       };
       await insertCompletion(completion);
+      const insights = await loadCompletionInsights();
       setData((current) => ({
         ...current,
-        completions: [completion, ...current.completions]
+        completions: [completion, ...current.completions],
+        ...insights
       }));
       if (data.settings.hapticsEnabled) {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (data.settings.sensoryProfile === 'calm') {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } else {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
       }
       return completion;
     },
-    [data.settings.hapticsEnabled, timeZone]
+    [data.settings.hapticsEnabled, data.settings.sensoryProfile, timeZone]
   );
 
   useEffect(() => {
@@ -178,9 +212,13 @@ export function SparkProvider({ children }: PropsWithChildren) {
       if (response.actionIdentifier === ACTION_TINY) {
         const variant =
           habit.variants.find((candidate) => candidate.kind === 'tiny') ?? habit.variants[0];
-        if (variant) void completeHabit(habit, variant, 'notification');
+        if (variant) {
+          runSafely('notifications.complete_tiny', () =>
+            completeHabit(habit, variant, 'notification')
+          );
+        }
       } else if (response.actionIdentifier === ACTION_SNOOZE) {
-        void snoozeHabit(habit.id);
+        runSafely('notifications.snooze', () => snoozeHabit(habit.id));
       }
     });
     return () => subscription.remove();
@@ -213,9 +251,11 @@ export function SparkProvider({ children }: PropsWithChildren) {
       completeHabit,
       async undoCompletion(id) {
         await deleteCompletion(id);
+        const insights = await loadCompletionInsights();
         setData((current) => ({
           ...current,
-          completions: current.completions.filter((completion) => completion.id !== id)
+          completions: current.completions.filter((completion) => completion.id !== id),
+          ...insights
         }));
       },
       async saveHabit(habit) {
@@ -223,7 +263,21 @@ export function SparkProvider({ children }: PropsWithChildren) {
         await refresh();
       },
       async pauseHabit(habit, pausedUntil) {
-        await upsertHabit({ ...habit, pausedUntil });
+        const today = localDateKey(new Date(), timeZone);
+        const history = [...(habit.pauseHistory ?? [])];
+        if (habit.pausedAt && habit.pausedUntil) {
+          const endedOn =
+            habit.pausedUntil < today ? habit.pausedUntil : today;
+          if (endedOn >= habit.pausedAt) {
+            history.push({ startedOn: habit.pausedAt, endedOn });
+          }
+        }
+        await upsertHabit({
+          ...habit,
+          pausedAt: pausedUntil ? today : null,
+          pausedUntil,
+          pauseHistory: history
+        });
         await refresh();
       },
       async archiveHabit(habit) {

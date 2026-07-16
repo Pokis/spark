@@ -1,4 +1,4 @@
-import type { AdminRole, AppConfig } from '@spark/cloud-contracts';
+import type { AdminRole, AppConfig, PageResult } from '@spark/cloud-contracts';
 
 export interface AuthenticatedUser {
   uid: string;
@@ -17,6 +17,7 @@ export interface SupportThreadRecord {
   unreadByAdmin: number;
   appVersion: string;
   platform: 'android' | 'ios';
+  deleteAfter: string;
 }
 
 export interface SupportMessageRecord {
@@ -64,6 +65,29 @@ export interface AuditRecord {
   reason?: string;
   at: string;
   metadata?: Record<string, unknown>;
+  deleteAfter: string;
+}
+
+export interface PlayPurchaseRecord {
+  tokenHash: string;
+  orderIdHash?: string;
+  ownerId: string;
+  productId: string;
+  state: 'pending' | 'active' | 'revoked' | 'canceled';
+  verifiedAt: string;
+  updatedAt: string;
+  revokeReason?: string;
+}
+
+export interface InternalEventRecord {
+  id: string;
+  receivedAt: string;
+  deleteAfter: string;
+}
+
+export interface PageRequest {
+  limit: number;
+  cursor?: string;
 }
 
 export interface Store {
@@ -81,9 +105,13 @@ export interface Store {
   getSupportThread(id: string): Promise<SupportThreadRecord | null>;
   listSupportThreads(
     status: SupportThreadRecord['status'] | undefined,
-    limit: number
-  ): Promise<SupportThreadRecord[]>;
+    page: PageRequest
+  ): Promise<PageResult<SupportThreadRecord>>;
   listSupportMessages(threadId: string, limit: number): Promise<SupportMessageRecord[]>;
+  listSupportMessagesPage(
+    threadId: string,
+    page: PageRequest
+  ): Promise<PageResult<SupportMessageRecord>>;
   addSupportMessage(
     threadId: string,
     message: SupportMessageRecord,
@@ -92,12 +120,50 @@ export interface Store {
   updateSupportThread(id: string, updates: Partial<SupportThreadRecord>): Promise<void>;
   getEntitlement(uid: string): Promise<EntitlementRecord | null>;
   setEntitlement(uid: string, entitlement: EntitlementRecord): Promise<void>;
-  listUsers(limit: number): Promise<AdminUserRecord[]>;
+  claimPlayPurchase(input: {
+    purchase: PlayPurchaseRecord;
+    entitlement?: EntitlementRecord;
+    allowTransfer: boolean;
+  }): Promise<{
+    status: 'claimed' | 'existing' | 'transferred' | 'conflict';
+    previousOwnerId?: string;
+  }>;
+  revokePlayPurchase(input: {
+    tokenHash: string;
+    orderIdHash?: string;
+    reason: string;
+    at: string;
+  }): Promise<{ ownerId?: string; changed: boolean }>;
+  reconcilePlayPurchase(input: {
+    tokenHash: string;
+    orderIdHash?: string;
+    productId: string;
+    state: 'purchased' | 'pending' | 'canceled';
+    at: string;
+  }): Promise<{ ownerId?: string; changed: boolean }>;
+  listUsers(
+    page: PageRequest & { search?: string }
+  ): Promise<PageResult<AdminUserRecord>>;
   overview(): Promise<{ users: number; openSupport: number; premium: number }>;
   importPromoCodes(codes: PromoCodeRecord[]): Promise<number>;
   assignPromoCode(uid: string, now: string): Promise<PromoCodeRecord | null>;
-  listPromoCodes(limit: number): Promise<PromoCodeRecord[]>;
+  listPromoCodes(page: PageRequest): Promise<PageResult<PromoCodeRecord>>;
+  listAudits(
+    page: PageRequest & {
+      action?: string;
+      actorId?: string;
+      target?: string;
+    }
+  ): Promise<PageResult<AuditRecord>>;
   writeAudit(record: AuditRecord): Promise<void>;
+  claimInternalEvent(record: InternalEventRecord): Promise<boolean>;
+  releaseInternalEvent(id: string): Promise<void>;
+  purgeExpired(now: string, limit: number): Promise<{
+    supportThreads: number;
+    audits: number;
+    internalEvents: number;
+  }>;
+  healthCheck(): Promise<void>;
   deleteUserData(uid: string): Promise<void>;
 }
 
@@ -111,13 +177,23 @@ export interface PurchaseVerifier {
   verifyProduct(input: {
     productId: string;
     purchaseToken: string;
-  }): Promise<{ valid: boolean; acknowledged: boolean; orderId?: string }>;
+  }): Promise<{
+    state: 'purchased' | 'pending' | 'canceled';
+    acknowledged: boolean;
+    orderId?: string;
+    obfuscatedAccountId?: string;
+  }>;
+}
+
+export interface InternalAuthService {
+  verify(token: string): Promise<void>;
 }
 
 export interface Dependencies {
   store: Store;
   auth: AuthService;
   purchases: PurchaseVerifier;
+  internalAuth: InternalAuthService;
   now(): Date;
   id(prefix: string): string;
   adminEmailAllowlist: string[];

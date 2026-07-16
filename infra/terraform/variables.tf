@@ -39,6 +39,36 @@ variable "google_play_package_name" {
   default = "com.sparkhabits.app"
 }
 
+variable "internal_oidc_audience" {
+  description = "Private audience shared by Cloud Run, Pub/Sub, and Cloud Scheduler OIDC tokens."
+  type        = string
+  default     = "spark-internal"
+}
+
+variable "support_retention_days" {
+  description = "Days to retain support conversations after their last activity."
+  type        = number
+  default     = 90
+}
+
+variable "audit_retention_days" {
+  description = "Days to retain administrator audit records."
+  type        = number
+  default     = 365
+}
+
+variable "enable_synthetic_monitoring" {
+  description = "Enable five-minute readiness probes and 5xx alerts. Off by default to preserve scale-to-zero."
+  type        = bool
+  default     = false
+}
+
+variable "alert_email" {
+  description = "Optional operator email for monitoring notifications."
+  type        = string
+  default     = ""
+}
+
 variable "billing_account_id" {
   description = "Optional billing account ID for a budget alert. Budgets are alerts, not hard caps."
   type        = string

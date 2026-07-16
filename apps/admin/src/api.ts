@@ -2,7 +2,9 @@ import type { AppConfig } from '@spark/cloud-contracts';
 import { adminToken } from './firebase';
 import type {
   AdminUser,
+  AuditRecord,
   Overview,
+  PageResult,
   PromoCode,
   SupportMessage,
   SupportThread
@@ -37,11 +39,24 @@ async function request<T>(path: string, init: RequestInit = {}, auth = true): Pr
 
 export const adminApi = {
   overview: () => request<Overview>('/v1/admin/overview'),
-  users: () => request<AdminUser[]>('/v1/admin/users'),
-  support: (status = 'all') =>
-    request<SupportThread[]>(`/v1/admin/support?status=${encodeURIComponent(status)}`),
-  messages: (id: string) =>
-    request<SupportMessage[]>(`/v1/admin/support/${encodeURIComponent(id)}/messages`),
+  users: (cursor?: string, search?: string) => {
+    const query = new URLSearchParams({ limit: '50' });
+    if (cursor) query.set('cursor', cursor);
+    if (search) query.set('search', search);
+    return request<PageResult<AdminUser>>(`/v1/admin/users?${query}`);
+  },
+  support: (status = 'all', cursor?: string) => {
+    const query = new URLSearchParams({ status, limit: '50' });
+    if (cursor) query.set('cursor', cursor);
+    return request<PageResult<SupportThread>>(`/v1/admin/support?${query}`);
+  },
+  messages: (id: string, cursor?: string) => {
+    const query = new URLSearchParams({ limit: '100' });
+    if (cursor) query.set('cursor', cursor);
+    return request<PageResult<SupportMessage>>(
+      `/v1/admin/support/${encodeURIComponent(id)}/messages?${query}`
+    );
+  },
   reply: (id: string, text: string) =>
     request<{ id: string }>(`/v1/admin/support/${encodeURIComponent(id)}/messages`, {
       method: 'POST',
@@ -58,7 +73,22 @@ export const adminApi = {
       method: 'POST',
       body: JSON.stringify(config)
     }),
-  promos: () => request<PromoCode[]>('/v1/admin/promo-codes'),
+  promos: (cursor?: string) => {
+    const query = new URLSearchParams({ limit: '100' });
+    if (cursor) query.set('cursor', cursor);
+    return request<PageResult<PromoCode>>(`/v1/admin/promo-codes?${query}`);
+  },
+  audits: (
+    cursor?: string,
+    filters: { action?: string; actorId?: string; target?: string } = {}
+  ) => {
+    const query = new URLSearchParams({ limit: '50' });
+    if (cursor) query.set('cursor', cursor);
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) query.set(key, value);
+    }
+    return request<PageResult<AuditRecord>>(`/v1/admin/audits?${query}`);
+  },
   importPromos: (input: { codes: string[]; campaign: string; productId: string }) =>
     request<{ imported: number }>('/v1/admin/promo-codes/import', {
       method: 'POST',

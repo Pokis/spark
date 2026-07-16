@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { AppErrorBoundary } from '../src/components/AppErrorBoundary';
 import { SparkProvider, useSpark } from '../src/state/SparkProvider';
 import { SparkThemeProvider, useTheme } from '../src/theme';
 
@@ -49,8 +50,10 @@ function ThemedNavigation() {
 
 export default function RootLayout() {
   return (
-    <SparkProvider>
-      <ThemedNavigation />
-    </SparkProvider>
+    <AppErrorBoundary>
+      <SparkProvider>
+        <ThemedNavigation />
+      </SparkProvider>
+    </AppErrorBoundary>
   );
 }

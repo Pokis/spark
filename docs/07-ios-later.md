@@ -30,7 +30,9 @@ native problems are still easier to diagnose with Xcode.
 After joining the program:
 
 ```powershell
-npx.cmd eas-cli build --platform ios --profile production-ios
+Set-Location apps/mobile
+npx.cmd eas-cli@latest build --platform ios --profile production-ios
+Set-Location ..\..
 ```
 
 EAS will guide credential creation. Do not reuse the Android Play purchase verification endpoint
@@ -51,4 +53,3 @@ it is a native target with its own signing and shared-container considerations.
 5. TestFlight.
 6. App Store review.
 7. iOS widget after the main app is stable.
-

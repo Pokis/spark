@@ -79,7 +79,7 @@ The dashboard uses Google sign-in. Cloud Run verifies every Firebase ID token an
 
 ## Security controls
 
-- 64 KB API body limit
+- 128 KB API body limit
 - global and support-specific rate limits
 - bounded list sizes
 - strict CORS for the dashboard
@@ -89,4 +89,3 @@ The dashboard uses Google sign-in. Cloud Run verifies every Firebase ID token an
 - audited purchase, grant, promo, support, config, and role changes
 - no service-account JSON keys in the repository or mobile app
 - Cloud Run service account receives only datastore and Firebase Auth administration roles
-

@@ -15,16 +15,26 @@
     "ios": "npm run ios --workspace @spark/mobile",
     "admin": "npm run dev --workspace @spark/admin",
     "api": "npm run dev --workspace @spark/control-plane",
+    "preapi": "npm run build:packages",
+    "preemulators": "npm run build --workspace @spark/admin",
+    "emulators": "firebase emulators:start --project demo-spark-local --only auth,firestore,hosting",
+    "emulators:seed": "node scripts/seed-emulators.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "pretest": "npm run build:packages",
     "test": "npm run test --workspaces --if-present",
+    "pretest:ci": "npm run build:packages",
     "test:ci": "npm run test:ci --workspaces --if-present",
     "e2e:android": "maestro test apps/mobile/e2e/maestro",
-    "build": "npm run build --workspaces --if-present",
+    "build:packages": "npm run build --workspace @spark/cloud-contracts && npm run build --workspace @spark/domain",
+    "build": "npm run build:packages && npm run build --workspace @spark/admin && npm run build --workspace @spark/mobile && npm run build --workspace @spark/control-plane",
     "release:check": "node scripts/release-check.mjs",
     "clean": "node scripts/clean.mjs"
   },
   "engines": {
     "node": ">=22 <25"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "npm@11.12.1",
+  "devDependencies": {
+    "firebase-tools": "^15.24.0"
+  }
 }

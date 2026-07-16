@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
@@ -9,7 +9,12 @@ import { Screen } from '../src/components/Screen';
 import { Body, Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
 import { getEntitlement } from '../src/services/api';
 import { cloudConfigured } from '../src/services/cloudConfig';
-import { purchasePremium, restorePurchases } from '../src/services/purchases';
+import {
+  purchasePremium,
+  premiumDisplayPrice,
+  purchasesSupportedOnPlatform,
+  restorePurchases
+} from '../src/services/purchases';
 import { useSpark } from '../src/state/SparkProvider';
 import { useTheme } from '../src/theme';
 
@@ -31,8 +36,18 @@ export default function PaywallScreen() {
   const spark = useSpark();
   const theme = useTheme();
   const [busy, setBusy] = useState(false);
+  const [price, setPrice] = useState<string | null>(null);
   const configured = cloudConfigured();
-  const purchasesAvailable = configured && spark.remoteConfig.defaults.purchasesEnabled;
+  const platformSupported = purchasesSupportedOnPlatform();
+  const purchasesAvailable =
+    platformSupported && configured && spark.remoteConfig.defaults.purchasesEnabled;
+
+  useEffect(() => {
+    if (!purchasesAvailable) return;
+    void premiumDisplayPrice()
+      .then(setPrice)
+      .catch(() => setPrice(null));
+  }, [purchasesAvailable]);
 
   async function refreshEntitlement() {
     const remote = await getEntitlement();
@@ -101,7 +116,7 @@ export default function PaywallScreen() {
           <Muted>Access source: {spark.entitlement.source}</Muted>
         ) : (
           <Button
-            label="Buy lifetime premium"
+            label={price ? `Buy lifetime premium · ${price}` : 'Buy lifetime premium'}
             loading={busy}
             disabled={!purchasesAvailable}
             onPress={() => void run('buy')}
@@ -112,7 +127,7 @@ export default function PaywallScreen() {
       <Card>
         <SectionHeading>Already have access?</SectionHeading>
         <Button
-          label="Restore Play purchase"
+          label={platformSupported ? 'Restore Play purchase' : 'iPhone purchase coming later'}
           variant="secondary"
           loading={busy}
           disabled={!purchasesAvailable}
@@ -140,9 +155,9 @@ export default function PaywallScreen() {
         <Card style={{ borderColor: theme.warning }}>
           <SectionHeading>Developer note</SectionHeading>
           <Muted>
-            Purchase buttons are intentionally disabled until the verification service,
-            Firebase identity, and dashboard purchase switch are enabled. This prevents
-            unverified or lost purchases.
+            {platformSupported
+              ? 'Purchase buttons are intentionally disabled until the verification service, Firebase identity, and dashboard purchase switch are enabled. This prevents unverified or lost purchases.'
+              : 'iPhone purchases are intentionally disabled until App Store server verification, restore, and revocation handling are complete.'}
           </Muted>
         </Card>
       ) : null}

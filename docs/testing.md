@@ -36,9 +36,9 @@ zero-cloud-cost path.
 
 This runs:
 
-- pure domain tests
-- mobile component tests
-- control-plane API tests with in-memory dependencies
+- pure domain scheduling, rhythm, recommendation, and comeback tests
+- mobile component, backup, notification-planning, and accessibility tests
+- control-plane API privacy, role, kill-switch, purchase, RTDN, and retention tests
 - dashboard component tests
 
 Run static checks:
@@ -55,14 +55,15 @@ npm.cmd run build
 
 ## Android end-to-end tests
 
-Install [Maestro](https://maestro.mobile.dev/) and a Spark native development build. Complete the
-onboarding flow test first because it resets app state:
+Install [Maestro](https://maestro.mobile.dev/) and a Spark native development build. The release
+suite entry point is:
 
 ```powershell
-maestro test apps/mobile/e2e/onboarding-and-habit.yaml
-maestro test apps/mobile/e2e/capture.yaml
-maestro test apps/mobile/e2e/focus.yaml
+maestro test apps/mobile/e2e/maestro
 ```
+
+There is one authoritative flow under `apps/mobile/e2e/maestro`; outdated partial flows were
+removed so they cannot disagree with the release experience.
 
 Run these on:
 
@@ -112,6 +113,9 @@ Use Play Console internal testing and license tester accounts. Test:
 - refund/revocation process
 - official promo redemption
 - manual grant and revocation
+- the same RTDN message delivered twice
+- a purchase token claimed by a different anonymous identity
+- explicit Restore transferring the single entitlement
 
 Do not test by using a real production charge on an owner account if a license-test path is
 available.
@@ -129,3 +133,7 @@ Check:
 - keyboard navigation in admin dashboard
 - visible browser focus
 - widget accessibility label
+
+Automated component assertions cover labelled completion actions, setting switches, navigation
+row names/hints, and non-judgmental capacity language. They supplement rather than replace
+TalkBack and large-text device testing.

@@ -1,4 +1,16 @@
-export type Page = 'overview' | 'support' | 'users' | 'config' | 'promos' | 'admins';
+export type Page =
+  | 'overview'
+  | 'support'
+  | 'users'
+  | 'config'
+  | 'promos'
+  | 'audits'
+  | 'admins';
+
+export interface PageResult<T> {
+  items: T[];
+  nextCursor: string | null;
+}
 
 export interface Overview {
   users: number;
@@ -47,4 +59,14 @@ export interface PromoCode {
   status: 'available' | 'assigned';
   importedAt: string;
   assignedTo?: string;
+}
+
+export interface AuditRecord {
+  id: string;
+  actorId: string;
+  action: string;
+  target: string;
+  reason?: string;
+  at: string;
+  metadata?: Record<string, unknown>;
 }

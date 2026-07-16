@@ -9,11 +9,13 @@ import { Muted } from './Typography';
 export function HabitCard({
   suggestion,
   onComplete,
-  onEdit
+  onEdit,
+  showRewards = true
 }: {
   suggestion: ActionSuggestion;
   onComplete(variant: HabitVariant): void;
   onEdit(): void;
+  showRewards?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
@@ -55,7 +57,9 @@ export function HabitCard({
           <Pressable
             key={candidate.id}
             accessibilityRole="button"
-            accessibilityLabel={`Complete ${habit.title}: ${candidate.label}, ${candidate.targetMinutes} minutes`}
+            accessibilityLabel={`Complete ${habit.title}: ${candidate.label}, ${candidate.targetMinutes} ${
+              candidate.targetMinutes === 1 ? 'minute' : 'minutes'
+            }`}
             onPress={() => onComplete(candidate)}
             style={({ pressed }) => [
               styles.variant,
@@ -81,7 +85,8 @@ export function HabitCard({
                   { color: candidate.kind === 'tiny' ? theme.textMuted : '#FFFFFFCC' }
                 ]}
               >
-                {candidate.targetMinutes} min · +{candidate.reward} sparks
+                {candidate.targetMinutes} min
+                {showRewards ? ` · +${candidate.reward} sparks` : ''}
               </Text>
             </View>
             <View

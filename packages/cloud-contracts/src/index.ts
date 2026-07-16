@@ -57,6 +57,7 @@ export const createSupportThreadSchema = z.object({
 export const verifyGooglePurchaseSchema = z.object({
   productId: z.string().min(1).max(200),
   purchaseToken: z.string().min(16).max(4096),
+  restore: z.boolean().default(false),
 });
 
 export const importPromoCodesSchema = z.object({
@@ -90,4 +91,9 @@ export interface ApiErrorBody {
   error: string;
   message: string;
   requestId?: string;
+}
+
+export interface PageResult<T> {
+  items: T[];
+  nextCursor: string | null;
 }

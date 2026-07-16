@@ -9,7 +9,12 @@ export class GooglePlayPurchaseVerifier implements PurchaseVerifier {
   async verifyProduct(input: {
     productId: string;
     purchaseToken: string;
-  }): Promise<{ valid: boolean; acknowledged: boolean; orderId?: string }> {
+  }): Promise<{
+    state: 'purchased' | 'pending' | 'canceled';
+    acknowledged: boolean;
+    orderId?: string;
+    obfuscatedAccountId?: string;
+  }> {
     const auth = new google.auth.GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/androidpublisher']
     });
@@ -17,14 +22,26 @@ export class GooglePlayPurchaseVerifier implements PurchaseVerifier {
       version: 'v3',
       auth
     });
-    const result = await androidpublisher.purchases.products.get({
+    const result =
+      await androidpublisher.purchases.productsv2.getproductpurchasev2({
       packageName: this.packageName,
-      productId: input.productId,
-      token: input.purchaseToken
-    });
-    const valid = result.data.purchaseState === 0;
-    const acknowledged = result.data.acknowledgementState === 1;
-    if (valid && !acknowledged) {
+        token: input.purchaseToken
+      });
+    const containsExpectedProduct = result.data.productLineItem?.some(
+      (lineItem) => lineItem.productId === input.productId
+    );
+    if (!containsExpectedProduct) {
+      throw new Error('Google Play confirmed a different product for this token.');
+    }
+    const purchaseState = result.data.purchaseStateContext?.purchaseState;
+    const state =
+      purchaseState === 'PURCHASED'
+        ? 'purchased'
+        : purchaseState === 'PENDING'
+          ? 'pending'
+          : 'canceled';
+    const acknowledged = result.data.acknowledgementState === 'ACKNOWLEDGED';
+    if (state === 'purchased' && !acknowledged) {
       await androidpublisher.purchases.products.acknowledge({
         packageName: this.packageName,
         productId: input.productId,
@@ -33,9 +50,11 @@ export class GooglePlayPurchaseVerifier implements PurchaseVerifier {
       });
     }
     return {
-      valid,
-      acknowledged: acknowledged || valid,
-      orderId: result.data.orderId ?? undefined
+      state,
+      acknowledged: acknowledged || state === 'purchased',
+      orderId: result.data.orderId ?? undefined,
+      obfuscatedAccountId:
+        result.data.obfuscatedExternalAccountId ?? undefined
     };
   }
 }

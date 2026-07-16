@@ -3,6 +3,11 @@ export type HabitVariantKind = 'tiny' | 'standard' | 'stretch';
 export type HabitContext = 'anywhere' | 'home' | 'work' | 'outside' | 'phone';
 export type CompletionSource = 'today' | 'widget' | 'notification' | 'history' | 'routine';
 
+export interface HabitPauseInterval {
+  startedOn: string;
+  endedOn: string;
+}
+
 export interface HabitVariant {
   id: string;
   kind: HabitVariantKind;
@@ -32,7 +37,9 @@ export interface Habit {
   priority: 1 | 2 | 3;
   contexts: HabitContext[];
   createdAt: string;
+  pausedAt?: string | null;
   pausedUntil?: string | null;
+  pauseHistory?: HabitPauseInterval[];
   archivedAt?: string | null;
   sortOrder: number;
 }

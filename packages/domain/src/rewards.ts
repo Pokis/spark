@@ -2,6 +2,10 @@ import type { Completion, RewardSummary } from './types';
 
 export function rewardSummary(completions: Completion[]): RewardSummary {
   const totalSparks = completions.reduce((sum, completion) => sum + completion.reward, 0);
+  return rewardSummaryFromTotal(totalSparks);
+}
+
+export function rewardSummaryFromTotal(totalSparks: number): RewardSummary {
   const level = Math.floor(Math.sqrt(totalSparks / 10)) + 1;
   const currentLevelStart = Math.pow(level - 1, 2) * 10;
   const nextLevelAt = Math.pow(level, 2) * 10;

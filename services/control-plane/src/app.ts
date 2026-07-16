@@ -22,7 +22,8 @@ import express, {
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { createHash } from 'node:crypto';
-import { ZodError } from 'zod';
+import { randomUUID } from 'node:crypto';
+import { z, ZodError } from 'zod';
 import type {
   AuthenticatedUser,
   Dependencies,
@@ -33,7 +34,37 @@ import type {
 
 interface UserRequest extends Request {
   user?: AuthenticatedUser;
+  requestId?: string;
 }
+
+const pubSubEnvelopeSchema = z.object({
+  message: z.object({
+    messageId: z.string().min(1).max(300),
+    data: z.string().min(1).max(100_000)
+  }),
+  subscription: z.string().optional()
+});
+
+const developerNotificationSchema = z.object({
+  packageName: z.string(),
+  eventTimeMillis: z.string().optional(),
+  oneTimeProductNotification: z
+    .object({
+      notificationType: z.number().int(),
+      purchaseToken: z.string(),
+      sku: z.string()
+    })
+    .optional(),
+  voidedPurchaseNotification: z
+    .object({
+      purchaseToken: z.string(),
+      orderId: z.string().optional(),
+      productType: z.number().int(),
+      refundType: z.number().int().optional()
+    })
+    .optional(),
+  testNotification: z.record(z.string(), z.unknown()).optional()
+});
 
 function bearerToken(request: Request): string | null {
   const value = request.header('authorization');
@@ -45,6 +76,25 @@ function routeParam(request: Request, name: string): string {
   const value = request.params[name];
   if (Array.isArray(value)) return value[0] ?? '';
   return value ?? '';
+}
+
+function queryValue(request: Request, name: string): string | undefined {
+  const value = request.query[name];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function pageInput(request: Request, defaultLimit = 50, maxLimit = 100) {
+  const requested = Number(queryValue(request, 'limit') ?? defaultLimit);
+  return {
+    limit: Number.isInteger(requested)
+      ? Math.max(1, Math.min(maxLimit, requested))
+      : defaultLimit,
+    cursor: queryValue(request, 'cursor')
+  };
+}
+
+function addDays(iso: string, days: number): string {
+  return new Date(Date.parse(iso) + days * 86_400_000).toISOString();
 }
 
 function normalizeRole(
@@ -84,11 +134,39 @@ function activeEntitlement(
 
 export function createApp(
   dependencies: Dependencies,
-  options: { premiumProductId?: string } = {}
+  options: {
+    premiumProductId?: string;
+    packageName?: string;
+    supportRetentionDays?: number;
+    auditRetentionDays?: number;
+  } = {}
 ) {
   const app = express();
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
+  app.use((request: UserRequest, response, next) => {
+    const incoming = request.header('x-request-id');
+    request.requestId =
+      incoming && /^[A-Za-z0-9._-]{1,100}$/.test(incoming)
+        ? incoming
+        : randomUUID();
+    response.set('X-Request-Id', request.requestId);
+    const startedAt = Date.now();
+    response.on('finish', () => {
+      console.log(
+        JSON.stringify({
+          severity: response.statusCode >= 500 ? 'ERROR' : 'INFO',
+          event: 'http.request',
+          requestId: request.requestId,
+          method: request.method,
+          path: request.path,
+          status: response.statusCode,
+          durationMs: Date.now() - startedAt
+        })
+      );
+    });
+    next();
+  });
   app.use(helmet());
   app.use(
     cors({
@@ -101,7 +179,7 @@ export function createApp(
       maxAge: 3600
     })
   );
-  app.use(express.json({ limit: '64kb' }));
+  app.use(express.json({ limit: '128kb' }));
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000,
@@ -160,6 +238,16 @@ export function createApp(
       message: 'Please wait before sending more support messages.'
     }
   });
+  const purchaseLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 20,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+      error: 'rate_limited',
+      message: 'Please wait before checking this purchase again.'
+    }
+  });
   let configCache: { value: AppConfig; expiresAt: number } | null = null;
 
   const currentConfig = async () => {
@@ -168,12 +256,82 @@ export function createApp(
     const value = appConfigSchema.parse(
       (await dependencies.store.getConfig()) ?? defaultAppConfig
     );
-    configCache = { value, expiresAt: now + 5 * 60 * 1000 };
+    // Mutation routes re-check frequently so an emergency shutdown propagates
+    // across independently scaled Cloud Run instances without a restart.
+    configCache = { value, expiresAt: now + 30 * 1000 };
     return value;
+  };
+
+  const requireFeature =
+    (feature: 'support' | 'purchases') =>
+    async (_request: UserRequest, response: Response, next: NextFunction) => {
+      try {
+        const config = await currentConfig();
+        const enabled =
+          feature === 'support'
+            ? config.defaults.supportEnabled
+            : config.defaults.purchasesEnabled;
+        if (!enabled) {
+          response.status(503).json({
+            error: 'feature_disabled',
+            message:
+              feature === 'support'
+                ? 'Private support is temporarily paused.'
+                : 'Purchases are temporarily paused.'
+          });
+          return;
+        }
+        next();
+      } catch (error) {
+        next(error);
+      }
+    };
+
+  const authenticateInternal = async (
+    request: UserRequest,
+    response: Response,
+    next: NextFunction
+  ) => {
+    const token = bearerToken(request);
+    if (!token) {
+      response.status(401).json({
+        error: 'unauthenticated',
+        message: 'Internal authentication is required.'
+      });
+      return;
+    }
+    try {
+      await dependencies.internalAuth.verify(token);
+      next();
+    } catch {
+      response.status(401).json({
+        error: 'invalid_internal_token',
+        message: 'The internal caller identity is invalid.'
+      });
+    }
+  };
+
+  const writeAudit = async (
+    record: Omit<Parameters<Dependencies['store']['writeAudit']>[0], 'deleteAfter'>
+  ) => {
+    const retentionDays = options.auditRetentionDays ?? 365;
+    await dependencies.store.writeAudit({
+      ...record,
+      deleteAfter: addDays(record.at, retentionDays)
+    });
   };
 
   app.get('/healthz', (_request, response) => {
     response.json({ ok: true, service: 'spark-control-plane' });
+  });
+
+  app.get('/readyz', async (_request, response, next) => {
+    try {
+      await dependencies.store.healthCheck();
+      response.json({ ok: true, dependencies: { firestore: 'ready' } });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.get('/v1/config', async (_request, response, next) => {
@@ -184,6 +342,150 @@ export function createApp(
       next(error);
     }
   });
+
+  app.post(
+    '/v1/internal/google-play/rtdn',
+    authenticateInternal,
+    async (request: UserRequest, response, next) => {
+      let claimedEventId: string | null = null;
+      try {
+        const envelope = pubSubEnvelopeSchema.parse(request.body);
+        const receivedAt = dependencies.now().toISOString();
+        const eventId = createHash('sha256')
+          .update(`google-play:${envelope.message.messageId}`)
+          .digest('hex');
+        const firstDelivery = await dependencies.store.claimInternalEvent({
+          id: eventId,
+          receivedAt,
+          deleteAfter: addDays(receivedAt, 30)
+        });
+        if (!firstDelivery) {
+          response.status(204).end();
+          return;
+        }
+        claimedEventId = eventId;
+
+        const decoded = Buffer.from(envelope.message.data, 'base64').toString('utf8');
+        let notification: z.infer<typeof developerNotificationSchema>;
+        try {
+          notification = developerNotificationSchema.parse(JSON.parse(decoded));
+        } catch (reason) {
+          console.warn(
+            JSON.stringify({
+              severity: 'WARNING',
+              event: 'google_play.rtdn_invalid_payload',
+              requestId: request.requestId,
+              message: reason instanceof Error ? reason.message.slice(0, 300) : 'Invalid payload'
+            })
+          );
+          response.status(204).end();
+          return;
+        }
+        if (
+          options.packageName &&
+          notification.packageName !== options.packageName
+        ) {
+          response.status(204).end();
+          return;
+        }
+
+        const oneTime = notification.oneTimeProductNotification;
+        if (oneTime) {
+          const expected = options.premiumProductId ?? 'spark_premium_lifetime';
+          if (oneTime.sku === expected) {
+            const verified = await dependencies.purchases.verifyProduct({
+              productId: oneTime.sku,
+              purchaseToken: oneTime.purchaseToken
+            });
+            const result = await dependencies.store.reconcilePlayPurchase({
+              tokenHash: createHash('sha256')
+                .update(oneTime.purchaseToken)
+                .digest('hex'),
+              orderIdHash: verified.orderId
+                ? createHash('sha256').update(verified.orderId).digest('hex')
+                : undefined,
+              productId: oneTime.sku,
+              state: verified.state,
+              at: receivedAt
+            });
+            await writeAudit({
+              id: dependencies.id('audit'),
+              actorId: 'google-play-rtdn',
+              action: `purchase.rtdn.${verified.state}`,
+              target: result.ownerId ?? 'unbound-purchase',
+              at: receivedAt,
+              metadata: {
+                productId: oneTime.sku,
+                notificationType: oneTime.notificationType,
+                entitlementChanged: result.changed
+              }
+            });
+          }
+        }
+
+        const voided = notification.voidedPurchaseNotification;
+        if (voided && voided.productType === 2) {
+          const result = await dependencies.store.revokePlayPurchase({
+            tokenHash: createHash('sha256')
+              .update(voided.purchaseToken)
+              .digest('hex'),
+            orderIdHash: voided.orderId
+              ? createHash('sha256').update(voided.orderId).digest('hex')
+              : undefined,
+            reason: `voided:${voided.refundType ?? 'unknown'}`,
+            at: receivedAt
+          });
+          await writeAudit({
+            id: dependencies.id('audit'),
+            actorId: 'google-play-rtdn',
+            action: 'purchase.voided',
+            target: result.ownerId ?? 'unbound-purchase',
+            at: receivedAt,
+            metadata: {
+              refundType: voided.refundType,
+              entitlementChanged: result.changed
+            }
+          });
+        }
+        response.status(204).end();
+      } catch (error) {
+        if (claimedEventId) {
+          try {
+            await dependencies.store.releaseInternalEvent(claimedEventId);
+          } catch (releaseError) {
+            console.error(
+              JSON.stringify({
+                severity: 'ERROR',
+                event: 'google_play.rtdn_release_failed',
+                requestId: request.requestId,
+                errorName:
+                  releaseError instanceof Error
+                    ? releaseError.name
+                    : 'UnknownError'
+              })
+            );
+          }
+        }
+        next(error);
+      }
+    }
+  );
+
+  app.post(
+    '/v1/internal/maintenance',
+    authenticateInternal,
+    async (_request, response, next) => {
+      try {
+        const result = await dependencies.store.purgeExpired(
+          dependencies.now().toISOString(),
+          200
+        );
+        response.json({ ok: true, purged: result });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
   app.get('/v1/me/entitlement', authenticate, async (request: UserRequest, response, next) => {
     try {
@@ -214,50 +516,158 @@ export function createApp(
 
   app.post(
     '/v1/purchases/google/verify',
+    purchaseLimiter,
     authenticate,
+    requireFeature('purchases'),
     async (request: UserRequest, response, next) => {
       try {
         const input = verifyGooglePurchaseSchema.parse(request.body);
+        const now = dependencies.now().toISOString();
         const expected = options.premiumProductId ?? 'spark_premium_lifetime';
         if (input.productId !== expected) {
+          await writeAudit({
+            id: dependencies.id('audit'),
+            actorId: request.user!.uid,
+            action: 'purchase.rejected_unknown_product',
+            target: request.user!.uid,
+            at: now,
+            metadata: { productId: input.productId }
+          });
           response.status(400).json({
             error: 'unknown_product',
             message: 'This product is not recognized by Spark.'
           });
           return;
         }
-        const verified = await dependencies.purchases.verifyProduct(input);
-        if (!verified.valid) {
+        let verified: Awaited<ReturnType<Dependencies['purchases']['verifyProduct']>>;
+        try {
+          verified = await dependencies.purchases.verifyProduct(input);
+        } catch (error) {
+          await writeAudit({
+            id: dependencies.id('audit'),
+            actorId: request.user!.uid,
+            action: 'purchase.verification_failed',
+            target: request.user!.uid,
+            at: now,
+            metadata: { productId: input.productId }
+          });
+          throw error;
+        }
+        if (verified.state === 'canceled') {
+          await writeAudit({
+            id: dependencies.id('audit'),
+            actorId: request.user!.uid,
+            action: 'purchase.rejected',
+            target: request.user!.uid,
+            at: now,
+            metadata: { productId: input.productId }
+          });
           response.status(402).json({
             error: 'purchase_invalid',
             message: 'Google Play did not confirm this purchase.'
           });
           return;
         }
-        const now = dependencies.now().toISOString();
-        const entitlement: EntitlementRecord = {
-          premium: true,
-          source: 'play',
-          productId: input.productId,
-          expiresAt: null,
-          updatedAt: now
-        };
-        await dependencies.store.setEntitlement(request.user!.uid, entitlement);
+        if (
+          verified.obfuscatedAccountId &&
+          ![
+            request.user!.uid,
+            createHash('sha256').update(request.user!.uid).digest('hex')
+          ].includes(verified.obfuscatedAccountId) &&
+          !input.restore
+        ) {
+          await writeAudit({
+            id: dependencies.id('audit'),
+            actorId: request.user!.uid,
+            action: 'purchase.account_mismatch',
+            target: request.user!.uid,
+            at: now,
+            metadata: { productId: input.productId }
+          });
+          response.status(409).json({
+            error: 'purchase_account_mismatch',
+            message:
+              'Google Play attached this purchase to another Spark identity. Use Restore to transfer the single entitlement.'
+          });
+          return;
+        }
+        const tokenHash = createHash('sha256')
+          .update(input.purchaseToken)
+          .digest('hex');
+        const orderIdHash = verified.orderId
+          ? createHash('sha256').update(verified.orderId).digest('hex')
+          : undefined;
+        const entitlement: EntitlementRecord | undefined =
+          verified.state === 'purchased'
+            ? {
+                premium: true,
+                source: 'play',
+                productId: input.productId,
+                expiresAt: null,
+                updatedAt: now
+              }
+            : undefined;
+        const claimed = await dependencies.store.claimPlayPurchase({
+          purchase: {
+            tokenHash,
+            orderIdHash,
+            ownerId: request.user!.uid,
+            productId: input.productId,
+            state: verified.state === 'purchased' ? 'active' : 'pending',
+            verifiedAt: now,
+            updatedAt: now
+          },
+          entitlement,
+          allowTransfer: input.restore
+        });
+        if (claimed.status === 'conflict') {
+          await writeAudit({
+            id: dependencies.id('audit'),
+            actorId: request.user!.uid,
+            action: 'purchase.claim_conflict',
+            target: request.user!.uid,
+            at: now,
+            metadata: { productId: input.productId }
+          });
+          response.status(409).json({
+            error: 'purchase_already_claimed',
+            message:
+              'This purchase is attached to another Spark cloud identity. Use Restore to transfer the single active entitlement.'
+          });
+          return;
+        }
         await dependencies.store.touchUser(request.user!.uid, {
           email: request.user?.email,
           at: now
         });
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
-          action: 'purchase.verified',
+          action:
+            verified.state === 'pending'
+              ? 'purchase.pending'
+              : claimed.status === 'transferred'
+                ? 'purchase.transferred'
+                : claimed.status === 'existing'
+                  ? 'purchase.duplicate'
+                : input.restore
+                  ? 'purchase.restored'
+                  : 'purchase.verified',
           target: request.user!.uid,
           at: now,
           metadata: {
             productId: input.productId,
-            orderId: verified.orderId
+            transferredFromAnotherIdentity: Boolean(claimed.previousOwnerId)
           }
         });
+        if (verified.state === 'pending') {
+          response.status(409).json({
+            error: 'purchase_pending',
+            message:
+              'Google Play is still processing this payment. Spark will grant access after Play confirms it.'
+          });
+          return;
+        }
         response.json({
           premium: true,
           source: 'play',
@@ -272,6 +682,7 @@ export function createApp(
   app.get(
     '/v1/support/threads',
     authenticate,
+    requireFeature('support'),
     async (request: UserRequest, response, next) => {
       try {
         response.json(await dependencies.store.listUserSupportThreads(request.user!.uid, 20));
@@ -285,6 +696,7 @@ export function createApp(
     '/v1/support/threads',
     supportLimiter,
     authenticate,
+    requireFeature('support'),
     async (request: UserRequest, response, next) => {
       try {
         const input = createSupportThreadSchema.parse(request.body);
@@ -300,7 +712,8 @@ export function createApp(
           unreadByUser: 0,
           unreadByAdmin: 1,
           appVersion: input.appVersion,
-          platform: input.platform
+          platform: input.platform,
+          deleteAfter: addDays(at, options.supportRetentionDays ?? 90)
         };
         const message: SupportMessageRecord = {
           id: dependencies.id('message'),
@@ -326,6 +739,7 @@ export function createApp(
   app.get(
     '/v1/support/threads/:id/messages',
     authenticate,
+    requireFeature('support'),
     async (request: UserRequest, response, next) => {
       try {
         const thread = await dependencies.store.getSupportThread(routeParam(request, 'id'));
@@ -348,6 +762,7 @@ export function createApp(
     '/v1/support/threads/:id/messages',
     supportLimiter,
     authenticate,
+    requireFeature('support'),
     async (request: UserRequest, response, next) => {
       try {
         const input = supportMessageSchema.parse(request.body);
@@ -370,7 +785,8 @@ export function createApp(
         await dependencies.store.addSupportMessage(thread.id, message, {
           status: 'open',
           lastMessageAt: at,
-          unreadByAdmin: thread.unreadByAdmin + 1
+          unreadByAdmin: thread.unreadByAdmin + 1,
+          deleteAfter: addDays(at, options.supportRetentionDays ?? 90)
         });
         response.status(201).json({ id: message.id });
       } catch (error) {
@@ -396,9 +812,14 @@ export function createApp(
     '/v1/admin/users',
     authenticate,
     requireRole('owner', 'support'),
-    async (_request, response, next) => {
+    async (request, response, next) => {
       try {
-        response.json(await dependencies.store.listUsers(100));
+        response.json(
+          await dependencies.store.listUsers({
+            ...pageInput(request),
+            search: queryValue(request, 'search')
+          })
+        );
       } catch (error) {
         next(error);
       }
@@ -416,7 +837,9 @@ export function createApp(
           typeof rawStatus === 'string' && rawStatus !== 'all'
             ? supportStatusSchema.parse({ status: rawStatus }).status
             : undefined;
-        response.json(await dependencies.store.listSupportThreads(status, 100));
+        response.json(
+          await dependencies.store.listSupportThreads(status, pageInput(request))
+        );
       } catch (error) {
         next(error);
       }
@@ -435,7 +858,12 @@ export function createApp(
           return;
         }
         await dependencies.store.updateSupportThread(thread.id, { unreadByAdmin: 0 });
-        response.json(await dependencies.store.listSupportMessages(thread.id, 100));
+        response.json(
+          await dependencies.store.listSupportMessagesPage(
+            thread.id,
+            pageInput(request, 100, 100)
+          )
+        );
       } catch (error) {
         next(error);
       }
@@ -465,9 +893,10 @@ export function createApp(
         await dependencies.store.addSupportMessage(thread.id, message, {
           status: 'waiting_on_user',
           lastMessageAt: at,
-          unreadByUser: thread.unreadByUser + 1
+          unreadByUser: thread.unreadByUser + 1,
+          deleteAfter: addDays(at, options.supportRetentionDays ?? 90)
         });
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
           action: 'support.replied',
@@ -489,11 +918,19 @@ export function createApp(
       try {
         const input = supportStatusSchema.parse(request.body);
         const threadId = routeParam(request, 'id');
+        const thread = await dependencies.store.getSupportThread(threadId);
+        if (!thread) {
+          response.status(404).json({
+            error: 'not_found',
+            message: 'Thread not found.'
+          });
+          return;
+        }
         await dependencies.store.updateSupportThread(threadId, {
           status: input.status
         });
         const at = dependencies.now().toISOString();
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
           action: 'support.status_changed',
@@ -519,9 +956,9 @@ export function createApp(
         await dependencies.store.setConfig(config);
         configCache = {
           value: appConfigSchema.parse(config),
-          expiresAt: dependencies.now().getTime() + 5 * 60 * 1000
+          expiresAt: dependencies.now().getTime() + 30 * 1000
         };
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
           action: 'config.updated',
@@ -539,9 +976,41 @@ export function createApp(
     '/v1/admin/promo-codes',
     authenticate,
     requireRole('owner', 'support'),
-    async (_request, response, next) => {
+    async (request, response, next) => {
       try {
-        response.json(await dependencies.store.listPromoCodes(200));
+        response.json(
+          await dependencies.store.listPromoCodes(pageInput(request, 100, 200))
+        );
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  app.get(
+    '/v1/admin/audits',
+    authenticate,
+    requireRole('owner'),
+    async (request, response, next) => {
+      try {
+        const filters = {
+          action: queryValue(request, 'action'),
+          actorId: queryValue(request, 'actorId'),
+          target: queryValue(request, 'target')
+        };
+        if (Object.values(filters).filter(Boolean).length > 1) {
+          response.status(400).json({
+            error: 'too_many_filters',
+            message: 'Use one exact audit filter at a time to keep queries bounded and cheap.'
+          });
+          return;
+        }
+        response.json(
+          await dependencies.store.listAudits({
+            ...pageInput(request),
+            ...filters
+          })
+        );
       } catch (error) {
         next(error);
       }
@@ -566,7 +1035,7 @@ export function createApp(
           importedAt: at
         }));
         const imported = await dependencies.store.importPromoCodes(codes);
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
           action: 'promo.imported',
@@ -597,7 +1066,7 @@ export function createApp(
           });
           return;
         }
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
           action: 'promo.assigned',
@@ -628,7 +1097,7 @@ export function createApp(
         };
         const uid = routeParam(request, 'uid');
         await dependencies.store.setEntitlement(uid, entitlement);
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
           action: input.premium ? 'entitlement.granted' : 'entitlement.revoked',
@@ -653,7 +1122,7 @@ export function createApp(
         const input = setAdminRoleSchema.parse(request.body);
         const changed = await dependencies.auth.setRole(input.email, input.role);
         const at = dependencies.now().toISOString();
-        await dependencies.store.writeAudit({
+        await writeAudit({
           id: dependencies.id('audit'),
           actorId: request.user!.uid,
           action: 'admin.role_changed',
@@ -674,18 +1143,31 @@ export function createApp(
   });
 
   app.use(
-    (error: unknown, _request: Request, response: Response, _next: NextFunction) => {
+    (error: unknown, request: UserRequest, response: Response, _next: NextFunction) => {
       if (error instanceof ZodError) {
         response.status(400).json({
           error: 'invalid_request',
-          message: error.issues[0]?.message ?? 'The request is invalid.'
+          message: error.issues[0]?.message ?? 'The request is invalid.',
+          requestId: request.requestId
         });
         return;
       }
-      console.error(error);
+      console.error(
+        JSON.stringify({
+          severity: 'ERROR',
+          event: 'http.error',
+          requestId: request.requestId,
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+          message:
+            error instanceof Error
+              ? error.message.slice(0, 500)
+              : 'Unknown server error'
+        })
+      );
       response.status(500).json({
         error: 'internal',
-        message: 'Spark could not complete that request.'
+        message: 'Spark could not complete that request.',
+        requestId: request.requestId
       });
     }
   );

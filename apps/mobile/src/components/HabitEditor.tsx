@@ -4,8 +4,9 @@ import type {
   HabitVariantKind,
   ScheduleRule
 } from '@spark/domain';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { addCalendarDays, localDateKey } from '@spark/domain';
 import { useSpark } from '../state/SparkProvider';
 import { habitColors, useTheme } from '../theme';
@@ -17,6 +18,7 @@ import { Screen } from './Screen';
 import { SettingRow } from './SettingRow';
 import { Body, Muted, SectionHeading } from './Typography';
 import { createId } from '../lib/id';
+import { isValidPreferredTime } from '../services/notifications';
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const iconChoices = ['✨', '💧', '🧠', '🌿', '📚', '🏃', '🧹', '💊', '🫶', '🎨'];
@@ -27,6 +29,29 @@ const contexts: { value: HabitContext; label: string }[] = [
   { value: 'outside', label: 'Outside' },
   { value: 'phone', label: 'Phone' }
 ];
+const starterTemplates = [
+  {
+    title: 'Read something',
+    tiny: 'Read one sentence',
+    standard: 'Read for 5 minutes',
+    stretch: 'Read for 15 minutes',
+    icon: '📚'
+  },
+  {
+    title: 'Move my body',
+    tiny: 'Put on movement shoes',
+    standard: 'Move for 5 minutes',
+    stretch: 'Move for 15 minutes',
+    icon: '🏃'
+  },
+  {
+    title: 'Reset my space',
+    tiny: 'Put away one thing',
+    standard: 'Clear one small surface',
+    stretch: 'Do a 15-minute reset',
+    icon: '✨'
+  }
+] as const;
 
 type ScheduleType = ScheduleRule['type'];
 
@@ -81,12 +106,14 @@ export function HabitEditor({
     String(habit?.schedule.type === 'interval' ? habit.schedule.everyDays : 2)
   );
   const [preferredTime, setPreferredTime] = useState(habit?.preferredTime ?? '09:00');
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(habit?.reminderEnabled ?? false);
   const [priority, setPriority] = useState<1 | 2 | 3>(habit?.priority ?? 2);
   const [selectedContexts, setSelectedContexts] = useState<HabitContext[]>(
     habit?.contexts ?? ['anywhere']
   );
   const [saving, setSaving] = useState(false);
+  const [advanced, setAdvanced] = useState(Boolean(habit));
 
   function schedule(): ScheduleRule {
     if (scheduleType === 'weekdays') return { type: 'weekdays', days };
@@ -111,6 +138,13 @@ export function HabitEditor({
     }
     if (scheduleType === 'weekdays' && days.length === 0) {
       Alert.alert('Choose a day', 'Select at least one day for this rhythm.');
+      return;
+    }
+    if (reminderEnabled && !isValidPreferredTime(preferredTime)) {
+      Alert.alert(
+        'Check the reminder time',
+        'Use a 24-hour time from 00:00 through 23:59, for example 09:30.'
+      );
       return;
     }
     setSaving(true);
@@ -151,7 +185,9 @@ export function HabitEditor({
       priority,
       contexts: selectedContexts.length ? selectedContexts : ['anywhere'],
       createdAt: habit?.createdAt ?? new Date().toISOString(),
+      pausedAt: habit?.pausedAt ?? null,
       pausedUntil: habit?.pausedUntil ?? null,
+      pauseHistory: habit?.pauseHistory ?? [],
       archivedAt: habit?.archivedAt ?? null,
       sortOrder: habit?.sortOrder ?? spark.habits.length
     };
@@ -177,17 +213,68 @@ export function HabitEditor({
     );
   }
 
+  function applyTemplate(template: (typeof starterTemplates)[number]) {
+    setTitle(template.title);
+    setTiny(template.tiny);
+    setStandard(template.standard);
+    setStretch(template.stretch);
+    setIcon(template.icon);
+  }
+
+  function suggestedTiny(value: string): string {
+    const lower = value.toLowerCase();
+    if (lower.includes('read')) return 'Read one sentence';
+    if (lower.includes('walk') || lower.includes('move') || lower.includes('exercise')) {
+      return 'Put on movement shoes';
+    }
+    if (lower.includes('clean') || lower.includes('tidy') || lower.includes('reset')) {
+      return 'Put away one thing';
+    }
+    if (lower.includes('write')) return 'Write one sentence';
+    return value.trim() ? `Touch the first step for ${value.trim()}` : 'Touch the first step';
+  }
+
+  function preferredTimeDate(): Date {
+    const value = new Date();
+    const [hour, minute] = preferredTime.split(':').map(Number);
+    value.setHours(
+      Number.isInteger(hour) ? hour! : 9,
+      Number.isInteger(minute) ? minute! : 0,
+      0,
+      0
+    );
+    return value;
+  }
+
   return (
     <Screen>
       <Card>
         <SectionHeading>Make the first step visible</SectionHeading>
+        {!habit ? (
+          <>
+            <Muted>Choose a starter or name your own. Every detail remains editable.</Muted>
+            <View style={styles.choices}>
+              {starterTemplates.map((template) => (
+                <Chip
+                  key={template.title}
+                  label={`${template.icon} ${template.title}`}
+                  selected={title === template.title}
+                  onPress={() => applyTemplate(template)}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
         <FormField
           label="Habit name"
           placeholder="e.g. Read something"
           value={title}
           onChangeText={(value) => {
             setTitle(value);
-            if (!habit && !standard) setStandard(value);
+            if (!habit && (!standard || standard === title)) setStandard(value);
+            if (!habit && (tiny === 'Touch the first step' || tiny.startsWith('Touch the first step for '))) {
+              setTiny(suggestedTiny(value));
+            }
           }}
           maxLength={80}
           autoFocus={!habit}
@@ -212,6 +299,14 @@ export function HabitEditor({
         />
       </Card>
 
+      <Button
+        label={advanced ? 'Hide fine-tuning' : 'Fine-tune sizes, schedule, and reminders'}
+        variant="secondary"
+        onPress={() => setAdvanced((value) => !value)}
+      />
+
+      {advanced ? (
+        <>
       <Card>
         <SectionHeading>Pick a look</SectionHeading>
         <View style={styles.choices}>
@@ -385,16 +480,50 @@ export function HabitEditor({
           onValueChange={setReminderEnabled}
         />
         {reminderEnabled ? (
-          <FormField
-            label="Preferred time"
-            hint="24-hour time, for example 09:30"
-            value={preferredTime}
-            onChangeText={setPreferredTime}
-            maxLength={5}
-            keyboardType="numbers-and-punctuation"
-          />
+          <View style={styles.timePicker}>
+            <Muted>Preferred time: {preferredTime}</Muted>
+            <Button
+              label="Choose reminder time"
+              variant="secondary"
+              onPress={() => setShowTimePicker(true)}
+            />
+            {showTimePicker ? (
+              <DateTimePicker
+                value={preferredTimeDate()}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(_event, selected) => {
+                  if (Platform.OS === 'android') setShowTimePicker(false);
+                  if (!selected) return;
+                  setPreferredTime(
+                    `${String(selected.getHours()).padStart(2, '0')}:${String(
+                      selected.getMinutes()
+                    ).padStart(2, '0')}`
+                  );
+                }}
+              />
+            ) : null}
+            {showTimePicker && Platform.OS === 'ios' ? (
+              <Button
+                label="Use this time"
+                variant="ghost"
+                onPress={() => setShowTimePicker(false)}
+              />
+            ) : null}
+          </View>
         ) : null}
       </Card>
+
+        </>
+      ) : (
+        <Card>
+          <Muted>
+            Spark will start with a 1-minute tiny version, a 5-minute standard version, a
+            15-minute stretch, and a flexible daily rhythm. Open fine-tuning whenever you want
+            different details.
+          </Muted>
+        </Card>
+      )}
 
       {habit ? (
         <Card>
@@ -478,5 +607,6 @@ const styles = StyleSheet.create({
   variantRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
   variantInput: { flex: 1 },
   minutesInput: { width: 72 },
+  timePicker: { gap: 8 },
   pauseActions: { gap: 8 }
 });

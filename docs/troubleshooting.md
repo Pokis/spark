@@ -78,12 +78,12 @@ native development, preview, and production builds.
 
 ## Support buttons are disabled
 
-This is correct until `.env` contains an API URL and Firebase mobile config, and the feature is
-enabled. Core features do not depend on support.
+This is correct until `apps/mobile/.env.local` contains an API URL and Firebase mobile config, and
+the feature is enabled. Restart Metro after changing it. Core features do not depend on support.
 
 ## Dashboard says it is safely offline
 
-Create `apps/admin/.env.local` from `.env.example` values. Restart Vite after editing.
+Copy `apps/admin/.env.example` to `apps/admin/.env.local`. Restart Vite after editing.
 
 ## Dashboard receives 403
 

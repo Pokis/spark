@@ -20,20 +20,30 @@ export async function syncTodayWidget(input: {
   })[0];
   const today = localDateKey(new Date(), input.timeZone);
   const winsToday = input.completions.filter((item) => item.localDate === today).length;
+  const wordingIndex = Math.abs(
+    [...today].reduce((sum, character) => sum + character.charCodeAt(0), 0)
+  ) % 3;
+  const tinyPrefixes = ['Tiny option', 'Starting point', 'Just begin with'];
+  const restMessages = [
+    'Rest is allowed. Tap to see your Journey.',
+    'Nothing is overdue. Your wins are still here.',
+    'Enough is a complete sentence.'
+  ];
   const snapshot: SparkWidgetSnapshot = suggestion
     ? {
         habitId: suggestion.habit.id,
         title: suggestion.habit.title,
-        tinyLabel:
+        tinyLabel: `${tinyPrefixes[wordingIndex]}: ${
           suggestion.habit.variants.find((variant) => variant.kind === 'tiny')?.label ??
-          suggestion.variant.label,
+          suggestion.variant.label
+        }`,
         winsToday,
         accent: suggestion.habit.color
       }
     : {
         habitId: null,
         title: 'Enough for today',
-        tinyLabel: 'Rest is allowed. Tap to see your Journey.',
+        tinyLabel: restMessages[wordingIndex]!,
         winsToday,
         accent: '#20B8B2'
       };

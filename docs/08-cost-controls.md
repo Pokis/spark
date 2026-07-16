@@ -62,14 +62,16 @@ These are architecture estimates, not a price guarantee.
 - 512 MiB memory, one vCPU, request-based billing, CPU idle
 - concurrency `40`
 - 30-second timeout
-- 64 KB JSON bodies
+- 128 KB JSON bodies (large enough for one bounded 500-code promo import)
 - global and support-specific rate limits
 - one config fetch per device per 24 hours
-- at most 100 rows in admin lists
+- cursor-paginated admin reads, normally 50–100 rows
 - no dashboard real-time listeners
 - no phone/SMS auth
 - no Cloud Storage bucket
-- no scheduled function
+- one nightly authenticated Cloud Scheduler request for retention cleanup
+- one Pub/Sub topic/subscription only when Google Play billing is deployed
+- synthetic five-minute monitoring disabled by default
 - no AI API
 - Artifact Registry removes untagged images older than 14 days
 - Terraform can create a USD 5 monthly alert at 50%, 90%, and 100%
@@ -91,7 +93,7 @@ features off until needed.
 - Firestore index/storage growth from unreconciled support and audit history
 - Authentication above the no-cost MAU tier
 - Firebase Hosting traffic if the privacy/admin site becomes unexpectedly popular
-- purchase-refund notification infrastructure added later
+- frequent synthetic checks if you explicitly enable them
 
 The cleanup policy handles untagged container images. Review Firestore retention and Hosting
 releases monthly.
@@ -100,13 +102,17 @@ releases monthly.
 
 If spending rises unexpectedly:
 
-1. Disable support and purchases in app config.
+1. Disable support and purchases in app config; the API enforces the switch within about 30
+   seconds per active instance.
 2. Set Cloud Run maximum instances to `1` or remove public invoker access.
 3. Inspect Cloud Billing by service and SKU.
 4. Inspect Cloud Run request logs for abusive paths and IP patterns.
 5. Lower quotas or deploy a stricter rate limit.
 6. Do **not** disable billing casually; Google warns resources can stop and may eventually be
    deleted.
+
+If the dashboard is unavailable, removing Cloud Run public invoker access is the final emergency
+stop. It also stops legitimate mobile and RTDN traffic, so use it only as an incident action.
 
 ## Recommendation
 

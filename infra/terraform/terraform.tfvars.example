@@ -5,6 +5,11 @@ container_image         = ""
 admin_email_allowlist   = "you@example.com"
 allowed_origins         = "http://localhost:5173,https://your-project.web.app"
 google_play_package_name = "com.sparkhabits.app"
+internal_oidc_audience   = "spark-internal"
+support_retention_days   = 90
+audit_retention_days     = 365
+enable_synthetic_monitoring = false
+alert_email                 = ""
 
 # Optional. Alerts do not cap spending.
 billing_account_id = ""

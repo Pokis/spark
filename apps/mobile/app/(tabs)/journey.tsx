@@ -1,7 +1,7 @@
 import {
   localDateKey,
   recentDateKeys,
-  rewardSummary,
+  rewardSummaryFromTotal,
   rhythmForHabit
 } from '@spark/domain';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -17,14 +17,20 @@ import { useTheme } from '../../src/theme';
 export default function JourneyScreen() {
   const spark = useSpark();
   const theme = useTheme();
-  const summary = rewardSummary(spark.completions);
+  const summary = rewardSummaryFromTotal(spark.completionTotals.totalSparks);
   const days = recentDateKeys(new Date(), spark.timeZone, 14);
   const winsByDay = days.map(
-    (day) => spark.completions.filter((completion) => completion.localDate === day).length
+    (day) =>
+      spark.completionDailySummaries.find((summary) => summary.localDate === day)?.wins ?? 0
   );
   const maxWins = Math.max(1, ...winsByDay);
   const today = localDateKey(new Date(), spark.timeZone);
   const activeHabits = spark.habits.filter((habit) => !habit.archivedAt);
+  const lastSevenDays = new Set(recentDateKeys(new Date(), spark.timeZone, 7));
+  const recentWins = spark.completions.filter((completion) =>
+    lastSevenDays.has(completion.localDate)
+  );
+  const tinyWins = recentWins.filter((completion) => completion.variantKind === 'tiny').length;
 
   return (
     <Screen testID="journey-screen">
@@ -34,6 +40,7 @@ export default function JourneyScreen() {
         <Muted>Blank days are blank. They do not erase any win you already made.</Muted>
       </View>
 
+      {spark.settings.showRewards ? (
       <Card style={[styles.levelCard, { backgroundColor: theme.surfaceAlt }]}>
         <View style={[styles.levelOrb, { backgroundColor: theme.primary }]}>
           <Text style={styles.levelNumber}>{summary.level}</Text>
@@ -57,6 +64,7 @@ export default function JourneyScreen() {
           </View>
         </View>
       </Card>
+      ) : null}
 
       <Card>
         <SectionHeading>Last 14 days</SectionHeading>
@@ -88,6 +96,24 @@ export default function JourneyScreen() {
           {winsByDay.filter(Boolean).length} active days ·{' '}
           {winsByDay.reduce((sum, value) => sum + value, 0)} completed actions
         </Muted>
+      </Card>
+
+      <Card style={{ borderColor: theme.purple }}>
+        <Eyebrow>Gentle weekly reflection</Eyebrow>
+        <SectionHeading>
+          {recentWins.length
+            ? `${recentWins.length} moments moved forward.`
+            : 'There is room for a kind restart.'}
+        </SectionHeading>
+        <Body>
+          {recentWins.length
+            ? `${new Set(recentWins.map((completion) => completion.habitId)).size} intentions received attention. ${
+                tinyWins
+                  ? `${tinyWins} tiny ${tinyWins === 1 ? 'step was' : 'steps were'} enough to count.`
+                  : 'Your wins took the size that worked for you.'
+              }`
+            : 'No missed-day score is waiting here. Choose one action small enough to begin when you are ready.'}
+        </Body>
       </Card>
 
       <View style={styles.sectionHeading}>
@@ -128,9 +154,19 @@ export default function JourneyScreen() {
                   {rhythm.comeback ? ' · comeback!' : ''}
                 </Muted>
               </View>
-              <Text style={[styles.percentage, { color: habit.color }]}>
-                {rhythm.percentage}%
-              </Text>
+              {spark.settings.showRhythmPercentages ? (
+                <Text style={[styles.percentage, { color: habit.color }]}>
+                  {rhythm.percentage}%
+                </Text>
+              ) : (
+                <Muted>
+                  {rhythm.activeDays === 0
+                    ? 'Room to begin'
+                    : rhythm.comeback
+                      ? 'Came back'
+                      : 'Finding a rhythm'}
+                </Muted>
+              )}
             </Card>
           </Pressable>
         );

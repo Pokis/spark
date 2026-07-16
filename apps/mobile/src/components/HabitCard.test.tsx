@@ -34,7 +34,7 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Complete Drink water: One sip, 1 minutes'
+        name: 'Complete Drink water: One sip, 1 minute'
       })
     );
     expect(onComplete).toHaveBeenCalledWith(suggestion.variant);

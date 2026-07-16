@@ -16,6 +16,9 @@ name: Spark full offline journey
 - assertVisible: "Your real life stays on this device."
 - tapOn:
     id: onboarding-continue
+- assertVisible: "Make the first step yours."
+- tapOn:
+    id: onboarding-continue
 - assertVisible:
     id: today-screen
 
@@ -33,11 +36,12 @@ name: Spark full offline journey
 - tapOn:
     id: save-habit
 - assertVisible: "Drink water"
+- tapOn: "Running low"
 
 # Complete the recommended version and receive an immediate reward
-- tapOn: "Complete Drink water: Touch the first step, 1 minutes"
-- assertVisible: "Drink water completed. You earned 1 sparks. Tap to continue."
-- tapOn: "Drink water completed. You earned 1 sparks. Tap to continue."
+- tapOn: "Complete Drink water: Touch the first step, 1 minute"
+- assertVisible: "Drink water completed. You earned 1 spark. Tap to continue."
+- tapOn: "Drink water completed. You earned 1 spark. Tap to continue."
 - assertVisible: "Logged. Tiny still counts."
 
 # Capture an interruption without organizing it

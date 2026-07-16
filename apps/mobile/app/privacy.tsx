@@ -29,6 +29,14 @@ export default function PrivacyScreen() {
         </Body>
       </Card>
       <Card>
+        <SectionHeading>You can delete the optional cloud identity</SectionHeading>
+        <Body>
+          Settings can remove support conversations, cloud access, and the random Firebase
+          identity. Purchase or security records that must be retained are disconnected from that
+          identity with a random deletion pseudonym. Local data is unchanged.
+        </Body>
+      </Card>
+      <Card>
         <SectionHeading>Health disclaimer</SectionHeading>
         <Body>
           Spark is a self-management and organization tool. It does not diagnose, treat, cure, or

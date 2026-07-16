@@ -79,21 +79,24 @@ review.
 
 ## Retention
 
-`REPLACE_ME` with final periods. The intended starting schedule is:
+`REPLACE_ME` with final periods. The implemented defaults and intended starting schedule are:
 
-- resolved support: up to 180 days
-- inactive anonymous cloud identities without support or purchases: up to 90 days
+- support conversations: 90 days after the latest message by default
+- anonymous cloud identities: until the user deletes the identity or the operator adopts an
+  additional documented inactive-account policy
 - promo assignment records: campaign reconciliation plus up to 180 days
 - purchase and access-grant records: as required for fraud, tax, accounting, and legal obligations
-- administrative security records: up to 12 months unless a longer legal need applies
+- administrative security records: 365 days by default unless a longer legal need applies
 
 Local data remains until the user deletes app storage or uninstalls the app.
 
 ## Deletion and rights
 
 The user can delete optional cloud data from Spark Settings. This removes support conversations,
-the cloud entitlement record, user record, and Firebase Authentication identity. Local data is
-not removed by that action.
+the cloud entitlement record, user record, and Firebase Authentication identity. Purchase,
+promotion, and security records that must be retained for fraud, accounting, or legal purposes
+are disconnected from the deleted Firebase identity by replacing that identifier with a random
+deletion pseudonym. Local data is not removed by that action.
 
 The user can remove local data by clearing Spark's app storage or uninstalling it. A backup can be
 exported first.
@@ -134,4 +137,3 @@ or store listing.
 ## Contact
 
 Privacy questions: `REPLACE_ME@example.com`
-

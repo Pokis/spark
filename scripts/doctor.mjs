@@ -6,10 +6,23 @@ const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '
 const isWindows = process.platform === 'win32';
 const npmCommand = isWindows ? 'cmd.exe' : 'npm';
 const npmArgs = isWindows ? ['/d', '/s', '/c', 'npm.cmd --version'] : ['--version'];
+const firebasePackagePath = join(
+  root,
+  'node_modules',
+  'firebase-tools',
+  'package.json',
+);
+const firebaseVersion = existsSync(firebasePackagePath)
+  ? JSON.parse(readFileSync(firebasePackagePath, 'utf8')).version
+  : null;
 
 function commandVersion(command, args = ['--version']) {
   try {
-    return execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+    return execFileSync(command, args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, FIREBASE_CLI_DISABLE_UPDATE_CHECK: 'true' },
+    })
       .trim()
       .split(/\r?\n/)[0];
   } catch {
@@ -51,6 +64,19 @@ const checks = [
     ok: existsSync(join(root, 'node_modules')),
     fix: 'Run npm.cmd install from the repository root.',
   },
+  {
+    name: 'Firebase Emulator CLI',
+    value: firebaseVersion,
+    ok: Boolean(firebaseVersion),
+    fix: 'Run npm.cmd install from the repository root.',
+  },
+  {
+    name: 'Terraform',
+    value: commandVersion('terraform', ['version']),
+    ok: Boolean(commandVersion('terraform', ['version'])),
+    fix: 'Install Terraform before applying Google Cloud infrastructure.',
+    optional: true,
+  },
 ];
 
 console.log('\nSpark development doctor\n');
@@ -60,9 +86,25 @@ for (const check of checks) {
   if (!check.ok) console.log(`       ${check.fix}`);
 }
 
-const envFile = join(root, '.env');
+const mobileEnvFile = join(root, 'apps', 'mobile', '.env.local');
+const adminEnvFile = join(root, 'apps', 'admin', '.env.local');
+const apiEnvFile = join(root, 'services', 'control-plane', '.env');
 console.log(
-  `\n[INFO] Cloud configuration: ${existsSync(envFile) ? '.env present' : 'not configured (core app still works)'}`,
+  `\n[INFO] Mobile cloud configuration: ${
+    existsSync(mobileEnvFile) ? 'apps/mobile/.env.local present' : 'not configured (core app still works)'
+  }`,
+);
+console.log(
+  `[INFO] Admin configuration: ${
+    existsSync(adminEnvFile) ? 'apps/admin/.env.local present' : 'not configured (dashboard stays offline)'
+  }`,
+);
+console.log(
+  `[INFO] Local API configuration: ${
+    existsSync(apiEnvFile)
+      ? 'services/control-plane/.env present'
+      : 'copy services/control-plane/.env.example to .env for emulator mode'
+  }`,
 );
 
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));

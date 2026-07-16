@@ -142,6 +142,14 @@ textarea { resize: vertical; line-height: 1.45; }
 .switch-row small { color: #667085; font-weight: 500; line-height: 1.35; }
 .switch-row input { width: 22px; min-height: 22px; accent-color: #ff6b5f; }
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.search-row, .filter-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+}
+.filter-grid { grid-template-columns: repeat(3, minmax(180px, 1fr)) auto; }
+.load-more { width: 100%; margin-top: 14px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th { text-align: left; color: #667085; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
