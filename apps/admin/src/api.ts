@@ -13,7 +13,10 @@ import type {
 const apiUrl = String(import.meta.env.VITE_SPARK_API_URL || '').replace(/\/$/, '');
 
 export function apiConfigured(): boolean {
-  return apiUrl.startsWith('https://') || apiUrl.startsWith('http://localhost');
+  return (
+    import.meta.env.VITE_SPARK_ADMIN_ENABLED === 'true' &&
+    (apiUrl.startsWith('https://') || apiUrl.startsWith('http://localhost'))
+  );
 }
 
 async function request<T>(path: string, init: RequestInit = {}, auth = true): Promise<T> {

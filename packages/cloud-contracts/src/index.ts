@@ -15,8 +15,13 @@ export const appConfigSchema = z.object({
   defaults: z.object({
     maxDailyHabitNotifications: z.number().int().min(0).max(8),
     focusMinutes: z.array(z.number().int().min(1).max(180)).max(8),
-    supportEnabled: z.boolean(),
-    purchasesEnabled: z.boolean(),
+    announcementsEnabled: z.boolean().default(false),
+    supportEnabled: z.boolean().default(false),
+    purchasesEnabled: z.boolean().default(false),
+    userReviewEnabled: z.boolean().default(false),
+    manualGrantsEnabled: z.boolean().default(false),
+    promoCodesEnabled: z.boolean().default(false),
+    adminRolesEnabled: z.boolean().default(false),
   }),
 });
 
@@ -30,12 +35,22 @@ export const defaultAppConfig: AppConfig = {
     supportInbox: false,
     premiumPurchase: false,
     cloudConfig: false,
+    globalAnnouncements: false,
+    userReview: false,
+    manualGrants: false,
+    promoCodes: false,
+    adminRoles: false,
   },
   defaults: {
     maxDailyHabitNotifications: 4,
     focusMinutes: [5, 10, 25, 50],
+    announcementsEnabled: false,
     supportEnabled: false,
     purchasesEnabled: false,
+    userReviewEnabled: false,
+    manualGrantsEnabled: false,
+    promoCodesEnabled: false,
+    adminRolesEnabled: false,
   },
 };
 

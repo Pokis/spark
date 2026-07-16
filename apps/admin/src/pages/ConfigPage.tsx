@@ -3,6 +3,65 @@ import { defaultAppConfig, type AppConfig } from '@spark/cloud-contracts';
 import { adminApi } from '../api';
 import { ErrorBanner, PageHeader, Panel } from '../components/Common';
 
+type CostedFlag =
+  | 'announcementsEnabled'
+  | 'supportEnabled'
+  | 'purchasesEnabled'
+  | 'userReviewEnabled'
+  | 'manualGrantsEnabled'
+  | 'promoCodesEnabled'
+  | 'adminRolesEnabled';
+
+const costedSwitches: {
+  flag: CostedFlag;
+  feature: string;
+  title: string;
+  description: string;
+}[] = [
+  {
+    flag: 'announcementsEnabled',
+    feature: 'globalAnnouncements',
+    title: 'Global announcements',
+    description: 'Allows enabled announcement content to appear on Today.'
+  },
+  {
+    flag: 'supportEnabled',
+    feature: 'supportInbox',
+    title: 'Support inbox',
+    description: 'Allows configured mobile builds and admins to use private support conversations.'
+  },
+  {
+    flag: 'purchasesEnabled',
+    feature: 'premiumPurchase',
+    title: 'Purchases and restore',
+    description: 'Keep off until the Play product and verification permission are ready.'
+  },
+  {
+    flag: 'userReviewEnabled',
+    feature: 'userReview',
+    title: 'User and operations review',
+    description: 'Enables overview counts, bounded user lookup, and audit-log review.'
+  },
+  {
+    flag: 'manualGrantsEnabled',
+    feature: 'manualGrants',
+    title: 'Manual premium grants',
+    description: 'Allows owners to grant or revoke premium for a known cloud identity.'
+  },
+  {
+    flag: 'promoCodesEnabled',
+    feature: 'promoCodes',
+    title: 'Google Play promo inventory',
+    description: 'Allows official Play codes to be imported, listed, and assigned.'
+  },
+  {
+    flag: 'adminRolesEnabled',
+    feature: 'adminRoles',
+    title: 'Admin role management',
+    description: 'Allows owners to add, change, or remove dashboard roles.'
+  }
+];
+
 export function ConfigPage() {
   const [config, setConfig] = useState<AppConfig>(defaultAppConfig);
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +83,13 @@ export function ConfigPage() {
       !window.confirm(
         [
           'Publish this global configuration?',
+          `Announcements: ${config.defaults.announcementsEnabled ? 'enabled' : 'disabled'}`,
           `Support: ${config.defaults.supportEnabled ? 'enabled' : 'disabled'}`,
           `Purchases: ${config.defaults.purchasesEnabled ? 'enabled' : 'disabled'}`,
+          `User review: ${config.defaults.userReviewEnabled ? 'enabled' : 'disabled'}`,
+          `Manual grants: ${config.defaults.manualGrantsEnabled ? 'enabled' : 'disabled'}`,
+          `Promo codes: ${config.defaults.promoCodesEnabled ? 'enabled' : 'disabled'}`,
+          `Admin roles: ${config.defaults.adminRolesEnabled ? 'enabled' : 'disabled'}`,
           `Notification cap: ${config.defaults.maxDailyHabitNotifications}`
         ].join('\n')
       )
@@ -71,40 +135,35 @@ export function ConfigPage() {
       <div className="two-column">
         <Panel title="Service switches">
           <div className="form-stack">
-            <label className="switch-row">
-              <span>
-                <strong>Support inbox</strong>
-                <small>Allows configured mobile builds to create support conversations.</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={config.defaults.supportEnabled}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    defaults: { ...current.defaults, supportEnabled: event.target.checked },
-                    features: { ...current.features, supportInbox: event.target.checked }
-                  }))
-                }
-              />
-            </label>
-            <label className="switch-row">
-              <span>
-                <strong>Purchases</strong>
-                <small>Keep off until the Play product and verification permission are ready.</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={config.defaults.purchasesEnabled}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    defaults: { ...current.defaults, purchasesEnabled: event.target.checked },
-                    features: { ...current.features, premiumPurchase: event.target.checked }
-                  }))
-                }
-              />
-            </label>
+            <p className="hint">
+              These switches are all off in baked defaults. The Terraform cloud-runtime master
+              switch must also be on before any of them can create billable usage.
+            </p>
+            {costedSwitches.map((item) => (
+              <label className="switch-row" key={item.flag}>
+                <span>
+                  <strong>{item.title}</strong>
+                  <small>{item.description}</small>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={config.defaults[item.flag]}
+                  onChange={(event) =>
+                    setConfig((current) => ({
+                      ...current,
+                      defaults: {
+                        ...current.defaults,
+                        [item.flag]: event.target.checked
+                      },
+                      features: {
+                        ...current.features,
+                        [item.feature]: event.target.checked
+                      }
+                    }))
+                  }
+                />
+              </label>
+            ))}
             <label>
               Maximum daily habit notifications
               <input
@@ -153,7 +212,8 @@ export function ConfigPage() {
               </span>
               <input
                 type="checkbox"
-                checked={announcement.enabled}
+                checked={announcement.enabled && config.defaults.announcementsEnabled}
+                disabled={!config.defaults.announcementsEnabled}
                 onChange={(event) => setAnnouncement({ enabled: event.target.checked })}
               />
             </label>

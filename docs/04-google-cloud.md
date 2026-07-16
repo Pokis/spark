@@ -3,6 +3,9 @@
 Do not follow this guide to run the habit tracker. Deploy cloud services only when you want
 private support or verified premium access.
 
+Read [08-cost-controls.md](./08-cost-controls.md) first. It is the authoritative register of
+every billable capability, its default-off switch, and its approximate cost by user count.
+
 ## Recommended shape
 
 Use one dedicated Firebase-enabled Google Cloud project:
@@ -13,8 +16,8 @@ Use one dedicated Firebase-enabled Google Cloud project:
 - Firebase Hosting: static admin and privacy page
 - Firebase Auth: Anonymous for mobile; Google for admins
 - Artifact Registry: one repository with untagged-image cleanup
-- Pub/Sub: one RTDN topic and authenticated push subscription
-- Cloud Scheduler: one nightly retention cleanup request
+- optional Pub/Sub RTDN topic and authenticated push subscription, disabled by default
+- optional Cloud Scheduler nightly retention cleanup request, disabled by default
 - optional uptime/5xx monitoring, disabled by default to preserve scale-to-zero
 
 Firestore location is immutable. If most eventual users will be far from Europe, review the
@@ -36,6 +39,9 @@ Before creating a real project, use the Firebase emulators:
 Copy-Item services/control-plane/.env.example services/control-plane/.env
 Copy-Item apps/admin/.env.example apps/admin/.env.local
 ```
+
+Edit `apps/admin/.env.local` and set `VITE_SPARK_ADMIN_ENABLED=true`. This explicitly opts the
+local dashboard into making emulator/API requests; it remains `false` in the committed example.
 
 Start Auth/Firestore/Hosting, wait for readiness, then seed and run the apps:
 
@@ -77,8 +83,23 @@ Copy Terraform variables:
 Copy-Item infra\terraform\terraform.tfvars.example infra\terraform\terraform.tfvars
 ```
 
-Edit `terraform.tfvars`. Start with `container_image = ""`; this creates the Firebase project
-binding, APIs, Firestore, repository, RTDN topic, IAM, and optional budget without Cloud Run.
+Edit `terraform.tfvars`. For the first planning run, leave every cost-bearing switch off:
+
+```hcl
+enable_cloud_runtime        = false
+enable_google_play_rtdn     = false
+enable_maintenance_job      = false
+enable_synthetic_monitoring = false
+container_image             = ""
+```
+
+This first plan creates only the Firebase project binding, enables APIs, and optionally creates a
+budget alert. Enabling an API does not itself create usage.
+
+When you are deliberately ready to create Firestore and Artifact Registry, set
+`enable_cloud_runtime = true`, keep `container_image = ""`, review the plan, and apply again.
+Do not set the master switch back to `false` after real data exists without carefully reviewing
+the destruction plan; normal on/off control happens through the individual app-config switches.
 
 ```powershell
 Set-Location infra\terraform
@@ -116,6 +137,7 @@ apps/admin/.env.local
 Use:
 
 ```text
+VITE_SPARK_ADMIN_ENABLED=true
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
@@ -150,6 +172,15 @@ Set-Location ..\..
 Terraform outputs the Cloud Run URL. Add it to `apps/admin/.env.local` and
 `apps/mobile/.env.local`. Configure the same mobile values in the EAS build environment before a
 cloud build.
+
+The mobile build also needs this explicit opt-in before it requests remote configuration:
+
+```text
+EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED=true
+```
+
+Leave it `false` for offline-only builds. When false, Spark ignores even an old cached remote
+configuration and uses baked, all-off cloud defaults.
 
 ## 5. Bootstrap the first owner
 
@@ -190,15 +221,29 @@ The topic grants publisher access only to Google's Play notification service acc
 pushes to `/v1/internal/google-play/rtdn` with an OIDC token from Spark's dedicated internal
 invoker. The same identity calls `/v1/internal/maintenance` nightly through Cloud Scheduler.
 
+Neither integration exists by default. Before applying, set only the integration you are actively
+testing:
+
+```hcl
+enable_google_play_rtdn = true
+enable_maintenance_job  = true
+```
+
+RTDN should be enabled before paid production release. The maintenance job should be enabled once
+support or admin audit records are being retained.
+
 ## 8. Turn on features
 
 In the admin dashboard:
 
-1. Enable support.
-2. Test a conversation.
-3. Create the Play product and run an internal test purchase.
-4. Confirm the entitlement.
-5. Enable purchases last.
+1. Open **App config**; it is the dashboard's initial page on a new deployment.
+2. Enable **Admin role management**, assign the durable owner, then remove the bootstrap allowlist.
+3. Enable **User and operations review** only if you need overview/user/audit pages.
+4. Enable **Support**, then test one conversation.
+5. Enable **Manual grants** or **Promo codes** only while testing those workflows.
+6. Create the Play product and run an internal test purchase.
+7. Enable **Purchases and restore** last.
+8. Enable **Global announcements** only when a real announcement is ready.
 
 Cloud config is enforced by the API, not only the UI. Allow up to 30 seconds for the config cache
 on another scaled instance to observe an emergency change.

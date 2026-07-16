@@ -15,7 +15,9 @@ import type { Page } from './types';
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
-  const [page, setPage] = useState<Page>('overview');
+  // Configuration remains reachable while every costed operation is safely
+  // disabled, so it is the least surprising first page for a new deployment.
+  const [page, setPage] = useState<Page>('config');
   const configured = firebaseConfigured() && apiConfigured();
 
   useEffect(
@@ -34,11 +36,12 @@ export default function App() {
           <span className="brand-mark large">✦</span>
           <h1>Spark admin is safely offline.</h1>
           <p>
-            Add Firebase web-app values and the Cloud Run URL to
+            Explicitly enable the dashboard, then add Firebase web-app values and the Cloud Run URL to
             <code> apps/admin/.env.local</code>. The mobile app does not need this dashboard.
           </p>
           <pre>
-{`VITE_FIREBASE_API_KEY=
+{`VITE_SPARK_ADMIN_ENABLED=true
+VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
 VITE_FIREBASE_APP_ID=

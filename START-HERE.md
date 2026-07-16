@@ -35,12 +35,17 @@ npm.cmd run test:ci       # Runs the automated test suite once
 npm.cmd run release:check # Checks whether a release is ready
 ```
 
-Continue with:
+Choose the path that matches what you are doing:
 
-1. [Windows setup](./docs/01-windows-setup.md)
-2. [Run the mobile app](./docs/02-run-mobile.md)
-3. [Android release](./docs/03-android-release.md)
-4. [Google Cloud setup](./docs/04-google-cloud.md) only when you want cloud features
+- First local run: [Windows setup](./docs/01-windows-setup.md), then
+  [run the mobile app](./docs/02-run-mobile.md).
+- Testing: [testing guide](./docs/testing.md).
+- Android release: [Android release](./docs/03-android-release.md), then the
+  [release checklist](./docs/release-checklist.md).
+- Optional cloud: read [costed features and switches](./docs/08-cost-controls.md)
+  before [Google Cloud setup](./docs/04-google-cloud.md).
+
+The purpose-based map for every document is [docs/README.md](./docs/README.md).
 
 The app requires no server for habits, reminders, focus sessions, routines, widgets, or
 backups. Before a public release, also read the

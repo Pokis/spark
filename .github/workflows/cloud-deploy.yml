@@ -6,11 +6,11 @@ on:
       deploy_api:
         description: Deploy Cloud Run API
         type: boolean
-        default: true
+        default: false
       deploy_admin:
         description: Deploy Firebase Hosting dashboard
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: read
@@ -44,6 +44,7 @@ jobs:
         if: ${{ inputs.deploy_admin }}
         run: npm run build --workspace @spark/admin
         env:
+          VITE_SPARK_ADMIN_ENABLED: "true"
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}

@@ -129,7 +129,8 @@ Do this only after the control plane is deployed:
 4. Give it only the permission needed to view orders/subscriptions and manage purchase
    acknowledgement.
 5. Add license testers.
-6. Set `purchasesEnabled` in the admin dashboard only after a test purchase verifies.
+6. Confirm `EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED=true` only in the cloud-enabled test build.
+7. Set `purchasesEnabled` in the admin dashboard only after a test purchase verifies.
 
 Do not finish a transaction before the control plane confirms it. The mobile adapter follows this
 order.

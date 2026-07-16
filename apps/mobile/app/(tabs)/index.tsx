@@ -201,7 +201,9 @@ export default function TodayScreen() {
     );
   }
 
-  const announcement = spark.remoteConfig.announcements.find((item) => item.enabled);
+  const announcement = spark.remoteConfig.defaults.announcementsEnabled
+    ? spark.remoteConfig.announcements.find((item) => item.enabled)
+    : undefined;
 
   return (
     <>

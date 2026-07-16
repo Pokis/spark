@@ -19,6 +19,12 @@ Recommended:
 Validate willingness to pay before finalizing the price. Google Play handles regional tax and
 price conversion.
 
+Purchase verification is disabled by default through `purchasesEnabled`. RTDN has a separate
+default-off Terraform switch, `enable_google_play_rtdn`. Current user-scale cloud estimates and
+an illustrative percentage-of-sales fee table are in
+[08-cost-controls.md](./08-cost-controls.md); actual Play fees vary by region, install timing,
+and enrolled program.
+
 The implemented supporter catalog contains:
 
 - Aurora, Ocean, and Forest accent themes
@@ -92,7 +98,8 @@ App Store transaction identifiers, but expose one platform-neutral entitlement t
 Google Play can refund, cancel, or revoke a purchase after initial verification. Spark now
 implements the required lifecycle path:
 
-- Terraform creates the Pub/Sub topic and authenticated push subscription.
+- Terraform creates the Pub/Sub topic and authenticated push subscription only after
+  `enable_google_play_rtdn=true`.
 - Play one-time-product RTDN messages are deduplicated and re-verified with
   `purchases.productsv2.getproductpurchasev2`.
 - Pending and cancelled purchases do not grant premium.

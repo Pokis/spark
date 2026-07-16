@@ -21,6 +21,24 @@ variable "container_image" {
   default     = ""
 }
 
+variable "enable_cloud_runtime" {
+  description = "Master switch for cost-bearing Spark cloud resources. Keep false for an offline-only release."
+  type        = bool
+  default     = false
+}
+
+variable "enable_google_play_rtdn" {
+  description = "Create Google Play real-time developer notification resources. Requires the cloud runtime and a deployed image."
+  type        = bool
+  default     = false
+}
+
+variable "enable_maintenance_job" {
+  description = "Create the nightly bounded-retention cleanup job. Requires the cloud runtime and a deployed image."
+  type        = bool
+  default     = false
+}
+
 variable "admin_email_allowlist" {
   description = "Comma-separated bootstrap owners. Remove after durable custom claims exist."
   type        = string

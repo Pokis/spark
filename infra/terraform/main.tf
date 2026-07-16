@@ -27,6 +27,10 @@ locals {
     "pubsub.googleapis.com",
     "run.googleapis.com"
   ])
+  cloud_service_enabled = var.enable_cloud_runtime && var.container_image != ""
+  rtdn_enabled          = local.cloud_service_enabled && var.enable_google_play_rtdn
+  maintenance_enabled   = local.cloud_service_enabled && var.enable_maintenance_job
+  monitoring_enabled    = local.cloud_service_enabled && var.enable_synthetic_monitoring
 }
 
 resource "google_firebase_project" "spark" {
@@ -44,6 +48,8 @@ resource "google_project_service" "required" {
 }
 
 resource "google_artifact_registry_repository" "spark" {
+  count = var.enable_cloud_runtime ? 1 : 0
+
   location      = var.region
   repository_id = "spark"
   description   = "Spark control-plane containers"
@@ -62,6 +68,7 @@ resource "google_artifact_registry_repository" "spark" {
 }
 
 resource "google_firestore_database" "spark" {
+  count                       = var.enable_cloud_runtime ? 1 : 0
   provider                    = google-beta
   project                     = var.project_id
   name                        = "(default)"
@@ -85,19 +92,21 @@ resource "google_service_account" "internal_invoker" {
 }
 
 resource "google_project_iam_member" "datastore_user" {
+  count   = var.enable_cloud_runtime ? 1 : 0
   project = var.project_id
   role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.control_plane.email}"
 }
 
 resource "google_project_iam_member" "firebase_auth_admin" {
+  count   = var.enable_cloud_runtime ? 1 : 0
   project = var.project_id
   role    = "roles/firebaseauth.admin"
   member  = "serviceAccount:${google_service_account.control_plane.email}"
 }
 
 resource "google_cloud_run_v2_service" "control_plane" {
-  count    = var.container_image == "" ? 0 : 1
+  count    = local.cloud_service_enabled ? 1 : 0
   name     = "spark-control-plane"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
@@ -168,13 +177,15 @@ resource "google_cloud_run_v2_service" "control_plane" {
 
   depends_on = [
     google_project_service.required,
+    google_artifact_registry_repository.spark,
+    google_firestore_database.spark,
     google_project_iam_member.datastore_user,
     google_project_iam_member.firebase_auth_admin
   ]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
-  count    = var.container_image == "" ? 0 : 1
+  count    = local.cloud_service_enabled ? 1 : 0
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_service.control_plane[0].name
@@ -183,7 +194,7 @@ resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "internal_invoker" {
-  count    = var.container_image == "" ? 0 : 1
+  count    = local.cloud_service_enabled ? 1 : 0
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_service.control_plane[0].name
@@ -192,6 +203,8 @@ resource "google_cloud_run_v2_service_iam_member" "internal_invoker" {
 }
 
 resource "google_pubsub_topic" "google_play_rtdn" {
+  count = local.rtdn_enabled ? 1 : 0
+
   name                       = "spark-google-play-rtdn"
   message_retention_duration = "604800s"
 
@@ -200,12 +213,14 @@ resource "google_pubsub_topic" "google_play_rtdn" {
 
 resource "google_pubsub_topic_iam_member" "google_play_publisher" {
   project = var.project_id
-  topic   = google_pubsub_topic.google_play_rtdn.name
+  count   = local.rtdn_enabled ? 1 : 0
+  topic   = google_pubsub_topic.google_play_rtdn[0].name
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:google-play-developer-notifications@system.gserviceaccount.com"
 }
 
 resource "google_project_iam_member" "pubsub_token_creator" {
+  count   = local.rtdn_enabled ? 1 : 0
   project = var.project_id
   role    = "roles/iam.serviceAccountTokenCreator"
   member  = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
@@ -214,10 +229,10 @@ resource "google_project_iam_member" "pubsub_token_creator" {
 }
 
 resource "google_pubsub_subscription" "google_play_rtdn" {
-  count = var.container_image == "" ? 0 : 1
+  count = local.rtdn_enabled ? 1 : 0
 
   name  = "spark-google-play-rtdn-push"
-  topic = google_pubsub_topic.google_play_rtdn.id
+  topic = google_pubsub_topic.google_play_rtdn[0].id
 
   ack_deadline_seconds       = 30
   message_retention_duration = "604800s"
@@ -244,7 +259,7 @@ resource "google_pubsub_subscription" "google_play_rtdn" {
 }
 
 resource "google_cloud_scheduler_job" "maintenance" {
-  count = var.container_image == "" ? 0 : 1
+  count = local.maintenance_enabled ? 1 : 0
 
   name             = "spark-nightly-maintenance"
   description      = "Purge expired support, audit, and event-deduplication records."
@@ -277,7 +292,7 @@ resource "google_cloud_scheduler_job" "maintenance" {
 }
 
 resource "google_monitoring_notification_channel" "operator_email" {
-  count = var.enable_synthetic_monitoring && var.alert_email != "" ? 1 : 0
+  count = local.monitoring_enabled && var.alert_email != "" ? 1 : 0
 
   display_name = "Spark operator email"
   type         = "email"
@@ -289,7 +304,7 @@ resource "google_monitoring_notification_channel" "operator_email" {
 # Disabled by default because a five-minute uptime probe intentionally wakes a
 # scale-to-zero service. Enable it when cloud support or purchases become public.
 resource "google_monitoring_uptime_check_config" "control_plane" {
-  count = var.container_image != "" && var.enable_synthetic_monitoring ? 1 : 0
+  count = local.monitoring_enabled ? 1 : 0
 
   display_name = "Spark control plane readiness"
   timeout      = "10s"
@@ -314,7 +329,7 @@ resource "google_monitoring_uptime_check_config" "control_plane" {
 }
 
 resource "google_monitoring_alert_policy" "control_plane_errors" {
-  count = var.container_image != "" && var.enable_synthetic_monitoring ? 1 : 0
+  count = local.monitoring_enabled ? 1 : 0
 
   display_name = "Spark control plane elevated 5xx errors"
   combiner     = "OR"

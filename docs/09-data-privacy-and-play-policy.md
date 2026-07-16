@@ -54,10 +54,11 @@ starting point are:
 - purchase/grant audits: retain for the legal/accounting period required in your jurisdiction
 - general admin audit: delete after 365 days by default
 
-Spark avoids billable Firestore TTL operations. Instead, one authenticated nightly Cloud
-Scheduler request deletes expired support threads, audit records, and RTDN deduplication records
-in bounded batches. Continue a monthly owner review for purchase, grant, and promo records whose
-retention depends on legal or campaign decisions.
+Spark avoids billable Firestore TTL operations. When cloud records are retained, the operator
+enables one authenticated nightly Cloud Scheduler request to delete expired support threads,
+audit records, and RTDN deduplication records in bounded batches. Its Terraform flag is off by
+default for an offline release. Continue a monthly owner review for purchase, grant, and promo
+records whose retention depends on legal or campaign decisions.
 
 ## Google Play Data safety
 

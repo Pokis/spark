@@ -137,6 +137,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       projectId: process.env.EXPO_PROJECT_ID || undefined
     },
     sparkApiUrl: process.env.EXPO_PUBLIC_SPARK_API_URL || '',
+    sparkRemoteConfigEnabled:
+      process.env.EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED === 'true',
     firebase: {
       apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '',
       authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || '',

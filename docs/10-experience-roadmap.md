@@ -19,7 +19,7 @@ Completion summary:
 - Ethical supporter additions: **implemented** as cosmetics/comfort; all core executive-function
   support remains free.
 
-This is the next product backlog after the release-readiness review. It favors improvements that
+This was the product backlog after the release-readiness review. It favored improvements that
 make Spark calmer, faster, clearer, and more useful without adding a server, sensitive
 permissions, compulsive engagement, or a large maintenance burden.
 
@@ -149,7 +149,7 @@ value:
 - variable rewards, streak insurance, or loss-framed notifications;
 - mandatory analytics or third-party session replay.
 
-## Suggested implementation order
+## Historical implementation order
 
 1. Widget semantics and duplicate-tap protection.
 2. Remembered/collapsible Today check-in and neutral deferral.

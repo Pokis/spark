@@ -73,12 +73,17 @@
 - [ ] restore passes
 - [ ] official promo code passes
 - [ ] manual grant/revoke passes
-- [ ] Terraform RTDN topic/subscription deployed and connected in Play Console
+- [ ] if purchases will launch, Terraform RTDN flag is enabled and its topic/subscription is connected in Play Console
 - [ ] authenticated RTDN purchase/refund/revocation tests pass
 - [ ] purchase terms and support process published
 
 ## Cloud cost and security
 
+- [ ] [costed-feature register](./08-cost-controls.md) reviewed against current official pricing
+- [ ] every unused app-config cost switch remains off
+- [ ] `enable_cloud_runtime` was intentionally enabled only if cloud is required
+- [ ] mobile remote-config flag is false for offline builds
+- [ ] admin dashboard build flag is false unless the dashboard is intentionally deployed
 - [ ] dedicated project and intended Firestore region
 - [ ] Cloud Run min 0/max 2
 - [ ] USD 5 or chosen budget alert
@@ -88,7 +93,7 @@
 - [ ] CORS contains only real dashboard origins
 - [ ] no service-account key files
 - [ ] Artifact Registry cleanup active
-- [ ] nightly retention job succeeded
+- [ ] if support/audits are retained, nightly retention flag is enabled and the job succeeded
 - [ ] synthetic monitoring decision recorded; if enabled, alert email verified
 - [ ] support rate limit manually tested
 - [ ] cross-user and cross-role tests pass

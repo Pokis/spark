@@ -1,6 +1,10 @@
 project_id              = "your-firebase-project-id"
 region                  = "europe-central2"
 firestore_location      = "europe-central2"
+# Cost-bearing infrastructure is opt-in. Leave all of these false for local/mobile-only use.
+enable_cloud_runtime     = false
+enable_google_play_rtdn  = false
+enable_maintenance_job   = false
 container_image         = ""
 admin_email_allowlist   = "you@example.com"
 allowed_origins         = "http://localhost:5173,https://your-project.web.app"

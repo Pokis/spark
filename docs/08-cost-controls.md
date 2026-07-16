@@ -1,122 +1,202 @@
-# Cost controls and expected runtime cost
+# Costed features, switches, and expected spend
 
-Pricing changes. The figures below were checked on July 16, 2026; verify the linked official pages
-before deployment.
+Pricing checked: **2026-07-16**. Currency: **USD**. Cloud prices and Google Play
+fees can change, so re-check the linked official pages before a production launch.
 
-## Short answer
+This is Spark's authoritative cost register. Every implemented capability that can
+cause a third-party bill is listed here with its switch, default, usage assumption,
+and approximate cost. The feature catalog links back to this register rather than
+repeating estimates in multiple places.
 
-| Situation | Expected Spark cloud runtime |
-|---|---:|
-| Mobile app only, no Firebase/GCP deployment | **USD 0/month** |
-| Private Android testing, cloud disabled | **USD 0/month** |
-| Small support/purchase beta using the provided limits | **Usually USD 0/month** within no-cost quotas |
-| Larger usage or abusive traffic | Variable; billing is enabled, so quotas and monitoring matter |
+## The safe default
 
-This excludes the developer accounts you already own, store transaction fees, optional EAS paid
-plans, a domain name, and your own labor.
+An offline Android or iPhone build costs **$0/month in cloud runtime**. Habits,
+completions, reminders, focus, soundscapes, Capture, routines, widgets, insights,
+backups, and all accessibility features stay on the device.
 
-## Why the small beta should stay free
+There are two independent controls for optional cloud behavior:
 
-Current no-cost quotas include:
+1. Terraform must explicitly create the cloud runtime with
+   `enable_cloud_runtime = true`. Its default is `false`.
+2. Each product capability must then be explicitly enabled. All product switches
+   use baked `false` defaults.
 
-- Cloud Run request billing: 2 million requests, 180,000 vCPU-seconds, and 360,000 GiB-seconds per
-  month; Warsaw is listed among eligible regions
-- Firestore: 50,000 document reads, 20,000 writes, and 20,000 deletes per day, 1 GiB stored, and
-  10 GiB outbound per month for one database
-- Firebase Hosting: 10 GB stored and 10 GB data transfer per month
-- Firebase Authentication: most methods are no-cost; on Blaze with Identity Platform, the
-  no-cost tier is 50,000 monthly active email/social/anonymous/custom users
+A Cloud Run URL by itself therefore does not turn features on.
 
-Official sources:
+## Switch register
 
-- [Cloud Run pricing](https://cloud.google.com/run/pricing)
-- [Firestore pricing and free quota](https://firebase.google.com/docs/firestore/pricing)
-- [Firebase Hosting quota and pricing](https://firebase.google.com/docs/hosting/usage-quotas-pricing)
-- [Firebase pricing plans](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)
-- [Firebase Authentication limits](https://firebase.google.com/docs/auth)
+| Cost-bearing capability | Switch or control | Default | Where to change it |
+| --- | --- | --- | --- |
+| Cloud Run, Firestore, and Artifact Registry foundation | `enable_cloud_runtime` | `false` | `infra/terraform/terraform.tfvars` and `terraform apply` |
+| Mobile remote-config checks | `EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED` | `false` | mobile `.env.local` or EAS build environment; requires a new app build |
+| Global announcements | `announcementsEnabled` | `false` | Admin → App config |
+| Private support | `supportEnabled` | `false` | Admin → App config |
+| Purchase verification and restore | `purchasesEnabled` | `false` | Admin → App config |
+| User/overview/audit review | `userReviewEnabled` | `false` | Admin → App config |
+| Manual supporter grants | `manualGrantsEnabled` | `false` | Admin → App config |
+| Play promo inventory | `promoCodesEnabled` | `false` | Admin → App config |
+| Admin-role changes | `adminRolesEnabled` | `false` | Admin → App config |
+| Admin web application | `VITE_SPARK_ADMIN_ENABLED` | `false` | admin `.env.local`; also do not deploy Hosting until wanted |
+| Google Play RTDN | `enable_google_play_rtdn` | `false` | Terraform variables and apply |
+| Nightly retention cleanup | `enable_maintenance_job` | `false` | Terraform variables and apply |
+| Five-minute uptime and 5xx monitoring | `enable_synthetic_monitoring` | `false` | Terraform variables and apply |
+| Email monitoring channel | `alert_email` | blank | Terraform variables and apply |
+| Billing alerts | `billing_account_id` | blank | Terraform variables and apply |
+| Manual GitHub cloud deployment | `deploy_api` / `deploy_admin` workflow inputs | both `false` | GitHub Actions manual dispatch |
+| EAS cloud builds | operational choice | unused by default | use local Android builds, or deliberately invoke EAS |
+| Google Play sales fees | controlled by `purchasesEnabled` and whether a product is sold | no sales | Play Console and Admin → App config |
 
-## Approximate scenarios
+The API enforces support, purchase, user-review, grant, promo, and role switches;
+they are not merely hidden in the UI. Configuration remains reachable so an owner
+can turn a disabled capability on. The API refreshes its configuration within about
+30 seconds on each active Cloud Run instance. Mobile devices normally refresh
+configuration once per 24 hours.
 
-Assumptions:
+`enable_cloud_runtime` is a deployment gate, not the normal emergency switch.
+After production data exists, do not set it to `false` without reviewing the
+Terraform destruction plan. Use the product switches first; they preserve data and
+stop normal feature traffic.
 
-- the app checks config once per day, not every launch
-- most people never use cloud support
-- each support message is a handful of Firestore operations
-- Cloud Run responses are small and fast
-- no habit data sync
+## Estimation assumptions
 
-| Monthly active installs | Daily config requests | Support activity | Likely result |
-|---:|---:|---:|---|
-| 100 | 100 | 20 threads/month | comfortably no-cost |
-| 1,000 | 1,000 | 100 threads/month | comfortably no-cost |
-| 10,000 | 10,000 | 500 threads/month | likely no-cost, monitor daily Firestore reads |
-| 50,000 | 50,000 | material | config alone reaches Firestore's daily free-read boundary; add CDN/cache redesign |
+The estimates below use deliberately simple, inspectable assumptions:
 
-These are architecture estimates, not a price guarantee.
+- 30 days per month;
+- one remote-config request per enabled installed device per day;
+- Cloud Run request-based billing, 1 vCPU, 512 MiB, concurrency 40, `min=0`,
+  `max=2`;
+- 5% of users open one support thread per month, with four messages and roughly
+  ten API requests per participating user;
+- 2% of users buy one $9.99 lifetime product, with roughly four API requests per
+  buyer;
+- 1% receive a manual grant or promo assignment;
+- two operators use the dashboard a few times each week;
+- no habit, focus, routine, Capture, or completion data is uploaded.
 
-## Controls already in code
+The rows are **incremental estimates and are not additive** because Cloud Run,
+Firestore, Auth, and their free quotas are shared.
 
-- mobile is fully functional without an API URL
-- Cloud Run minimum instances `0`
-- Cloud Run maximum instances `2`
-- 512 MiB memory, one vCPU, request-based billing, CPU idle
-- concurrency `40`
-- 30-second timeout
-- 128 KB JSON bodies (large enough for one bounded 500-code promo import)
-- global and support-specific rate limits
-- one config fetch per device per 24 hours
-- cursor-paginated admin reads, normally 50–100 rows
-- no dashboard real-time listeners
-- no phone/SMS auth
-- no Cloud Storage bucket
-- one nightly authenticated Cloud Scheduler request for retention cleanup
-- one Pub/Sub topic/subscription only when Google Play billing is deployed
-- synthetic five-minute monitoring disabled by default
-- no AI API
-- Artifact Registry removes untagged images older than 14 days
-- Terraform can create a USD 5 monthly alert at 50%, 90%, and 100%
+## Approximate monthly cost by feature and total users
 
-## Budget warning
+| Feature | 100 users | 1,000 users | 10,000 users | 50,000 users | Main reason |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Offline mobile product | $0 | $0 | $0 | $0 | No server or paid API |
+| Cloud foundation while idle | $0–$0.10 | $0–$0.10 | $0–$0.10 | $0–$0.10 | Scale-to-zero; possible container storage above 0.5 GiB |
+| Remote config and announcements | $0 | $0 | $0 | $0–$1 | 3,000 to 1.5M small requests/month; shared config is cached |
+| Private support | $0 | $0 | $0 | $0–$1 | About 5 to 2,500 participating users; bounded reads/writes |
+| Purchase verification/restore cloud work | $0 | $0 | $0 | $0–$1 | About 2 to 1,000 buyers; Play fee is separate below |
+| User, overview, and audit review | $0 | $0 | $0 | $0–$0.25 | Operator-driven bounded pages, not per-user polling |
+| Manual grants | $0 | $0 | $0 | $0–$0.25 | Roughly 1 to 500 small writes plus audits |
+| Promo-code inventory | $0 | $0 | $0 | $0–$0.25 | Roughly 1 to 500 assignments plus audits |
+| Admin role management | $0 | $0 | $0 | $0–$0.25 | Rare Auth/admin writes plus audits |
+| Static admin/privacy Hosting | $0 | $0 | $0 | $0 expected | Operator traffic should stay far below 10 GB/month |
+| Google Play RTDN | $0 | $0 | $0 | $0 expected | Tiny messages; first 10 GiB Pub/Sub throughput is free |
+| One nightly maintenance job | $0 expected | $0 expected | $0 expected | $0 expected | Three Scheduler jobs are free per billing account; otherwise $0.10/job/month |
+| Uptime/5xx monitoring | $0–$1 | $0–$1 | $0–$1 | $0–$1 | Uptime allowance is large; the checks also wake Cloud Run |
+| Combined enabled-cloud planning range | $0–$0.25 | $0–$0.50 | $0–$2 | $0–$5 | Shared free quotas mean the feature rows should not be summed |
 
-A Google Cloud budget is an alert, **not a hard cap**. Reporting can be delayed. Google explicitly
-warns that a budget does not automatically stop usage or charges:
-[Cloud Billing budgets](https://docs.cloud.google.com/billing/docs/how-to/budgets).
+At these assumptions, the expected Google Cloud bill is normally **$0 to a few
+dollars per month through 50,000 users**, not including store fees. The range exists
+because free quotas are shared across projects on a billing account, request latency
+varies, abusive traffic is possible, and regional/network pricing can change.
 
-The safer controls are service quotas, maximum instances, rate limits, and keeping optional
-features off until needed.
+### Authentication threshold
 
-## Deployment costs that can surprise you
+Email, social, and anonymous Identity Platform users currently have a 50,000 MAU
+free tier. If every one of 50,000 users signs into a cloud feature, the estimated
+Auth charge is still $0. From 50,000 to 100,000 MAU, the current rate is $0.0055 per
+additional MAU, so 100,000 cloud-active users would be about **$275/month** for
+Authentication alone. Spark avoids creating an identity until a cloud feature is
+used.
 
-- Artifact Registry storage if old images accumulate
-- Cloud Build minutes during frequent deployments
-- outbound Cloud Run traffic
-- Firestore index/storage growth from unreconciled support and audit history
-- Authentication above the no-cost MAU tier
-- Firebase Hosting traffic if the privacy/admin site becomes unexpectedly popular
-- frequent synthetic checks if you explicitly enable them
+### Google Play transaction fee illustration
 
-The cleanup policy handles untagged container images. Review Firestore retention and Hosting
-releases monthly.
+The Play fee is deducted from sales revenue; it is not a Google Cloud charge and
+Google Cloud credits do not cover it. Google introduced more region/install/program
+specific fee rules for EEA, UK, and US transactions from June 30, 2026, so the
+actual fee must be checked in your Play account.
 
-## Emergency procedure
+The table below is only a planning illustration using a 15% effective fee, a $9.99
+product, and 2% buyers:
 
-If spending rises unexpectedly:
+| Total users | Buyers | Gross sales | Illustrative 15% Play fee |
+| ---: | ---: | ---: | ---: |
+| 100 | 2 | $19.98 | $3.00 |
+| 1,000 | 20 | $199.80 | $29.97 |
+| 10,000 | 200 | $1,998.00 | $299.70 |
+| 50,000 | 1,000 | $9,990.00 | $1,498.50 |
 
-1. Disable support and purchases in app config; the API enforces the switch within about 30
-   seconds per active instance.
-2. Set Cloud Run maximum instances to `1` or remove public invoker access.
-3. Inspect Cloud Billing by service and SKU.
-4. Inspect Cloud Run request logs for abusive paths and IP patterns.
-5. Lower quotas or deploy a stricter rate limit.
-6. Do **not** disable billing casually; Google warns resources can stop and may eventually be
-   deleted.
+Taxes, refunds, currency conversion, chargebacks, and the exact applicable Play
+program are excluded.
 
-If the dashboard is unavailable, removing Cloud Run public invoker access is the final emergency
-stop. It also stops legitimate mobile and RTDN traffic, so use it only as an incident action.
+## Infrastructure and deployment charges
 
-## Recommendation
+These depend on deployments rather than user count:
 
-Release the offline Android app first. Do not deploy cloud for the first hands-on test. Add the
-control plane immediately before support or monetization testing. At that scale, your likely
-runtime bill is zero or cents, and your monthly credits should cover eligible charges—but keep
-the budget and maximum-instance protections anyway.
+| Item | Current allowance/rate | Spark expectation and control |
+| --- | --- | --- |
+| Cloud Run | 2M requests, 180k vCPU-seconds, and 360k GiB-seconds free monthly for request-based services | Usually $0 at small scale; `min=0`, `max=2`; no service exists until cloud runtime and image are enabled |
+| Firestore | 50k reads/day, 20k writes/day, 20k deletes/day, 1 GiB storage, 10 GiB outbound monthly | Usually $0; one default database, bounded queries, no habit sync |
+| Firebase Hosting | 10 GB storage and 10 GB transfer monthly free; Blaze overage currently $0.026/GB storage and $0.15/GB transfer | Usually $0; do not deploy admin Hosting until wanted |
+| Identity Platform | 50k Tier-1 MAU free, then tiered per-MAU pricing | Usually $0; identity is lazy and no phone/SMS auth is used |
+| Pub/Sub | First 10 GiB Message Delivery Basic throughput per billing account free; then $40/TiB | RTDN should remain $0; separately disabled |
+| Cloud Scheduler | Three jobs/month per billing account free; then $0.10/job/month | One job, separately disabled |
+| Artifact Registry | First 0.5 GiB-month free; roughly $0.10/GiB-month after that | A 1 GiB retained image is about $0.05/month; untagged images older than 14 days are deleted |
+| Cloud Build | 2,500 free `e2-standard-2` build-minutes per billing account/month; then currently $0.006/minute | Normal occasional releases should be $0; builds are manual |
+| Monitoring uptime checks | First 1M executions/project/month, then $0.30/1,000 | Expected $0, but checks intentionally wake Cloud Run |
+| Monitoring alert policy | Google lists $0.35/month per metric reference plus query points effective September 1, 2026 | Allow about $0.35+ monthly for the one 5xx condition after that date |
+| Cloud Logging | First 50 GiB/project/month currently free; then $0.50/GiB for standard log-bucket ingestion | Shared `enable_cloud_runtime` control; structured logs are small and default retention is used |
+| EAS Build | Current Free plan lists 15 Android and 15 iOS builds | Optional; local Android builds avoid this dependency entirely |
+
+Official pricing:
+
+- [Cloud Run](https://cloud.google.com/run/pricing)
+- [Firestore](https://cloud.google.com/firestore/pricing)
+- [Firebase Hosting](https://firebase.google.com/docs/hosting/usage-quotas-pricing)
+- [Identity Platform](https://cloud.google.com/identity-platform/pricing)
+- [Pub/Sub](https://cloud.google.com/pubsub/pricing)
+- [Cloud Scheduler](https://cloud.google.com/scheduler/pricing)
+- [Artifact Registry](https://cloud.google.com/artifact-registry/pricing)
+- [Cloud Build](https://cloud.google.com/build/pricing)
+- [Google Cloud Observability](https://cloud.google.com/products/observability)
+- [Expo plans](https://expo.dev/pricing)
+- [Google Play service fees](https://support.google.com/googleplay/android-developer/answer/112622)
+
+## Cost controls already enforced
+
+- no cloud resources in the normal mobile development path;
+- all costed product switches default to `false`;
+- remote-config checks ignore even previously cached cloud values when the build
+  flag is off;
+- the admin web app stays inert until its build flag is true;
+- Cloud Run scales to zero and is capped at two instances;
+- 30-second API timeout, concurrency 40, bounded body size, and route rate limits;
+- cursor-paginated admin queries with no real-time listeners;
+- no phone/SMS auth, Cloud Storage, analytics SDK, ads, AI API, or cloud habit sync;
+- RTDN, retention scheduling, and synthetic monitoring have separate Terraform
+  flags and default to off;
+- old untagged containers are automatically removed;
+- support and audit records have bounded retention fields;
+- optional budget alerts fire at 50%, 90%, and 100% of the configured amount.
+
+## Budget and emergency procedure
+
+A Cloud Billing budget is an alert, **not a hard cap**, and reporting can be
+delayed. See [Cloud Billing budgets](https://docs.cloud.google.com/billing/docs/how-to/budgets).
+
+If spending rises:
+
+1. In Admin → App config, disable announcements, support, purchases, user review,
+   grants, promo tools, and role changes as applicable.
+2. Set `enable_google_play_rtdn`, `enable_maintenance_job`, and
+   `enable_synthetic_monitoring` to `false`, review `terraform plan`, and apply.
+3. Inspect Billing by service/SKU and Cloud Run logs by route.
+4. Reduce Cloud Run `max_instance_count` to `1` if needed.
+5. As an incident stop, remove Cloud Run public invoker access or set
+   `container_image = ""` and apply. This stops legitimate traffic too.
+6. Do not disable billing casually; resources can stop and may eventually be
+   removed.
+
+For a first Android release, the recommendation remains: ship and test the complete
+offline product first, then enable only the cloud capability you are actively
+testing.

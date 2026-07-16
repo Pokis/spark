@@ -44,9 +44,9 @@ disabled.
 - Google Play Real-time Developer Notifications are accepted through an OIDC-authenticated Pub/Sub
   push route, deduplicated by message ID, re-verified with Google, and reconciled.
 - Voided purchase notifications revoke the bound entitlement.
-- Terraform creates the RTDN topic, authenticated push subscription, least-purpose internal
-  invoker, and nightly maintenance job. Connecting the generated topic in Play Console is
-  necessarily manual.
+- Terraform can create the RTDN topic, authenticated push subscription, least-purpose internal
+  invoker, and nightly maintenance job through separate default-off flags. Connecting an enabled
+  topic in Play Console is necessarily manual.
 - The iOS paywall and purchase service refuse paid unlock because no App Store server verifier
   exists yet.
 
@@ -130,7 +130,7 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **50 tests passed**: 23 mobile, 10 domain, 16 API, 1 admin.
+- `npm.cmd run test:ci` — **54 tests passed**: 25 mobile, 10 domain, 18 API, 1 admin.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.
 - Expo Doctor — passed after aligning `@types/jest` to the Expo SDK recommendation.
@@ -177,10 +177,9 @@ The exact go/no-go list is [release-checklist.md](release-checklist.md).
 ## Next experience work
 
 The original quality findings that could be implemented automatically are complete. Further work
-is optional product polish rather than hidden release hardening. The recommended order is
-documented in [10-experience-roadmap.md](10-experience-roadmap.md), starting with explicit widget
-behavior, duplicate-tap protection, lighter daily check-ins, neutral deferral, and editable
-routines/history.
+is either deliberate deferred scope, iOS-specific work, or manual release/device validation—not a
+hidden implementation backlog. See the explicit
+[proposal audit in the feature catalog](11-feature-catalog.md#proposal-audit-what-is-still-not-implemented).
 
 ## Cost judgment
 

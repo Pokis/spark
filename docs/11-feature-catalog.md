@@ -257,15 +257,26 @@ widgets, notification actions, the share receiver, in-app purchases, or the fina
 These features do not receive habit content, completion history, focus text, Capture text, routine
 text, or daily check-ins.
 
-| Feature | Cloud purpose | Cost control |
+| Feature | Cloud purpose | Default-off control |
 | --- | --- | --- |
-| Remote configuration | Global defaults, feature shutdowns, and announcements. | Cached/fallback config; app works with no URL. |
-| Private support | User-created asynchronous support conversations. | Anonymous identity created only when used; bounded payloads and retention. |
-| Purchase verification | Verifies Google Play ownership, acknowledgement, restore, RTDN, and revocation. | Cloud Run min 0/max 2; no subscription required for free app. |
-| Entitlement grants | Owner/admin can grant or revoke supporter access for a user. | Small Firestore records. |
-| Promo inventory | Imports and assigns official Play promo codes. | No custom redemption secret stored in app. |
-| Admin roles | Support, content, and owner access boundaries. | Server-enforced roles and audit reasons. |
-| Admin dashboard | Support inbox, user lookup, grants, configuration, promo inventory, and audits. | Static Firebase Hosting plus API calls. |
+| Cloud foundation | Shared Cloud Run, Firestore, and Artifact Registry resources. | Terraform `enable_cloud_runtime=false`. |
+| Remote configuration | Global defaults, feature shutdowns, and announcements. | Mobile `EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED=false`; cached config is ignored while off. |
+| Global announcements | One bounded message on Today. | App config `announcementsEnabled=false`. |
+| Private support | User-created asynchronous support conversations. | App config `supportEnabled=false`; enforced on user and admin API routes. |
+| Purchase verification | Verifies Google Play ownership, acknowledgement, restore, and revocation. | App config `purchasesEnabled=false`; enforced by the API. |
+| Entitlement grants | Owner/admin can grant or revoke supporter access for a user. | App config `manualGrantsEnabled=false`; enforced by the API. |
+| Promo inventory | Imports and assigns official Play promo codes. | App config `promoCodesEnabled=false`; enforced by the API. |
+| User review | Bounded overview, user lookup, and audit pages. | App config `userReviewEnabled=false`; enforced by the API. |
+| Admin roles | Support, content, and owner access boundaries. | App config `adminRolesEnabled=false`; enforced by the API. |
+| Admin dashboard | Hosts the operator interface. | Build flag `VITE_SPARK_ADMIN_ENABLED=false`; Hosting deployment remains manual. |
+| Google Play RTDN | Receives Play lifecycle events through Pub/Sub. | Terraform `enable_google_play_rtdn=false`. |
+| Retention cleanup | Deletes bounded expired support/audit/deduplication data. | Terraform `enable_maintenance_job=false`. |
+| Synthetic monitoring | Five-minute readiness probe and 5xx alert. | Terraform `enable_synthetic_monitoring=false`. |
+
+Approximate costs at 100, 1,000, 10,000, and 50,000 users, official pricing links, assumptions,
+and emergency controls are maintained in
+[08-cost-controls.md](./08-cost-controls.md). At current assumptions the cloud portion is normally
+$0 to a few dollars per month through 50,000 users; Google Play transaction fees are separate.
 
 An offline-only user cannot be reviewed, chatted with, or remotely granted access because no cloud
 identity exists. To receive a grant or support reply, the user must deliberately enable/use an
@@ -286,6 +297,30 @@ permissions disproportionate to current value:
 - microphone recording;
 - health-platform data access;
 - background sound streaming.
+
+## Proposal audit: what is still not implemented
+
+All actionable local-first UX items in
+[10-experience-roadmap.md](./10-experience-roadmap.md), including its **Helpful next layer**, are
+implemented in code. What remains falls into four explicit groups:
+
+1. **Deliberately rejected/deferred product ideas:** the items above, plus optional aggregate
+   analytics until there is a real decision need and an explicit disclosure/consent design.
+2. **Deliberate substitutions:** Spark generates three offline soundscapes instead of shipping a
+   third-party licensed sound pack. Supporter icon treatments work inside Spark/widgets, while
+   launcher icon variants remain a build-time release choice rather than fragile runtime Android
+   activity aliases.
+3. **iPhone-specific future work:** a signed iOS build, StoreKit server verification and
+   revocation handling, iOS widgets, App Store configuration, and native iPhone/iPad QA.
+4. **Manual release/operations work:** real-device Android QA, legal/operator placeholders,
+   Play/Firebase/GCP console setup, a reviewed Terraform plan, store listings, and live purchase,
+   refund, RTDN, promo, and grant tests.
+
+The original notes' casino-style variable rewards and streak insurance were not accidentally
+missed; they were intentionally replaced with fixed rewards, transparent progress, tiny versions,
+neutral blank days, and comeback support. The original “growing avatar” widget concept was also
+not copied literally: Spark uses an actionable Today widget and a Quick Capture widget, while
+companions live in Focus where they do not pressure home-screen engagement.
 
 ## Automated coverage
 
@@ -322,4 +357,3 @@ and routine recovery after the operating system kills the process.
 | Android widgets | `apps/mobile/src/widgets/`, `apps/mobile/app.config.ts` |
 | Sensory/accessibility theme | `apps/mobile/src/theme.ts`, `src/components/` |
 | Optional cloud/admin | `services/control-plane/`, `apps/admin/` |
-

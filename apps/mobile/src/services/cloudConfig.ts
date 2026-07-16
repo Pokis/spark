@@ -14,11 +14,19 @@ function apiUrl(): string {
   return String(Constants.expoConfig?.extra?.sparkApiUrl || '').replace(/\/$/, '');
 }
 
+export function remoteConfigConfigured(): boolean {
+  return Constants.expoConfig?.extra?.sparkRemoteConfigEnabled === true;
+}
+
 export function cloudConfigured(): boolean {
   return apiUrl().startsWith('https://') || apiUrl().startsWith('http://localhost');
 }
 
 export async function loadAppConfig(force = false): Promise<AppConfig> {
+  // This build-time switch is deliberately checked before cached data. Turning
+  // it off therefore restores safe baked defaults even if a previous build
+  // cached enabled cloud features.
+  if (!remoteConfigConfigured()) return defaultAppConfig;
   const cachedRaw = await Storage.getItem(CACHE_KEY);
   const checkedAt = Number(await Storage.getItem(CACHE_TIME_KEY));
   if (!force && cachedRaw && Date.now() - checkedAt < MAX_AGE_MS) {

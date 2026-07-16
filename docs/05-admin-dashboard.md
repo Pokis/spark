@@ -3,6 +3,9 @@
 The dashboard is feasible and implemented, but it is not needed for the initial offline release.
 Deploy it when you need support or monetization operations.
 
+The dashboard and every cost-bearing operation are disabled by default. Read
+[08-cost-controls.md](./08-cost-controls.md) for the authoritative switch and cost table.
+
 ## What “users” means
 
 Most people using Spark have no server account and are invisible to the dashboard. A user appears
@@ -28,6 +31,9 @@ After completing cloud setup, create `apps/admin/.env.local` and run:
 ```powershell
 npm.cmd run admin
 ```
+
+The environment file must include `VITE_SPARK_ADMIN_ENABLED=true`; when it is missing or false,
+the dashboard stays on its safe offline setup screen even if Firebase and API values are present.
 
 Open [http://localhost:5173](http://localhost:5173). Its origin must appear in the Cloud Run
 `ALLOWED_ORIGINS`.
@@ -80,8 +86,13 @@ grant.
 
 Changes only bounded, non-sensitive global values:
 
+- global announcements enabled
 - support enabled
 - purchases enabled
+- user and operations review enabled
+- manual grants enabled
+- promo inventory enabled
+- admin-role changes enabled
 - notification cap
 - focus duration choices
 - one global announcement

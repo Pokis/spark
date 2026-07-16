@@ -11,8 +11,9 @@ Google Cloud is optional. It exists only for consented support conversations, re
 verified store purchases, entitlement grants, and a small admin dashboard. Spark does not upload
 habit history to the cloud.
 
-If you are new to mobile development, use this README as the main operating guide, then follow
-[START-HERE.md](./START-HERE.md) for the shortest beginner path.
+If you are new to mobile development, begin with [START-HERE.md](./START-HERE.md). When you need
+another topic, use the purpose-based [documentation home](./docs/README.md); you do not need to
+read this long repository reference from top to bottom.
 
 ## Current status
 
@@ -33,7 +34,7 @@ indexes, Terraform, and release documentation.
 Validation snapshot on **2026-07-16**:
 
 - workspace TypeScript checks passed;
-- 50 automated tests passed: 23 mobile, 10 domain, 16 API, and 1 admin;
+- 54 automated tests passed: 25 mobile, 10 domain, 18 API, and 1 admin;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
 - Expo Doctor passed 20/20 checks;
 - the release checker correctly blocks publication while privacy placeholders remain;
@@ -384,6 +385,7 @@ Copy-Item apps/mobile/.env.example apps/mobile/.env.local
 | `EXPO_OWNER` | EAS only | Expo account or organization owner |
 | `EXPO_PROJECT_ID` | EAS only | EAS project UUID |
 | `EXPO_PUBLIC_SPARK_API_URL` | Cloud features only | Deployed Cloud Run base URL |
+| `EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED` | Cloud features only | Explicitly permits once-daily config requests; defaults to `false` |
 | `EXPO_PUBLIC_FIREBASE_API_KEY` | Cloud features only | Firebase web API key |
 | `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` | Cloud features only | Firebase auth domain |
 | `EXPO_PUBLIC_FIREBASE_PROJECT_ID` | Cloud features only | Firebase project ID |
@@ -416,6 +418,7 @@ Copy-Item apps/admin/.env.example apps/admin/.env.local
 
 | Variable | Required |
 | --- | --- |
+| `VITE_SPARK_ADMIN_ENABLED` | Explicit dashboard opt-in; defaults to `false` |
 | `VITE_FIREBASE_API_KEY` | Production only; local emulator supplies a safe demo value |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Production only |
 | `VITE_FIREBASE_PROJECT_ID` | Production only |
@@ -812,7 +815,8 @@ Monitor Play vitals, Cloud Run errors, support, billing, refunds, and reviews af
 ## Optional Google Cloud deployment
 
 Do not deploy the cloud just to run the habit tracker. Use a dedicated development project first.
-The detailed guide is [docs/04-google-cloud.md](./docs/04-google-cloud.md).
+Read the [costed-feature register](./docs/08-cost-controls.md) first, then use the detailed
+[Google Cloud guide](./docs/04-google-cloud.md).
 
 ### Recommended starting shape
 
@@ -824,8 +828,8 @@ The detailed guide is [docs/04-google-cloud.md](./docs/04-google-cloud.md).
 - Google Auth for operators;
 - Artifact Registry cleanup;
 - USD 5 budget alerts;
-- authenticated Pub/Sub push for Google Play lifecycle events;
-- one nightly retention cleanup request;
+- optional authenticated Pub/Sub push for Google Play lifecycle events, disabled by default;
+- optional nightly retention cleanup request, disabled by default;
 - optional synthetic monitoring disabled by default to preserve scale-to-zero;
 - no phone/SMS auth;
 - no habit-history synchronization;
@@ -850,8 +854,9 @@ latency, and cost.
    Copy-Item infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
    ```
 
-3. Create APIs, Firebase binding, Firestore, repository, IAM, and optional budget with
-   `container_image = ""`:
+3. Run a no-cost planning/apply pass with `enable_cloud_runtime = false` and
+   `container_image = ""`. When deliberately ready, set `enable_cloud_runtime = true` to create
+   Firestore and Artifact Registry:
 
    ```powershell
    Set-Location infra/terraform
@@ -873,7 +878,10 @@ latency, and cost.
    ```
 
 7. Put the image URI in `terraform.tfvars` and apply again.
-8. Put the Cloud Run URL in the admin/mobile environment configuration.
+8. Put the Cloud Run URL in the admin/mobile environment configuration. Set
+   `VITE_SPARK_ADMIN_ENABLED=true` only for a dashboard build you intend to use and
+   `EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED=true` only for a mobile build that should request
+   cloud configuration.
 9. Copy `.firebaserc.example` to `.firebaserc`, set the project ID, then deploy:
 
    ```powershell
@@ -885,9 +893,9 @@ latency, and cost.
 10. Add the Hosting origin to `allowed_origins` and reapply Terraform.
 11. Give the Cloud Run service account the minimum Google Play purchase lookup/acknowledgement
     permissions. Do not download a JSON key.
-12. Copy Terraform output `google_play_rtdn_topic` into Play Console's Real-time developer
-    notifications setting and send a test notification.
-13. Bootstrap the first owner, test support, then test purchases. Enable features last.
+12. Set `enable_google_play_rtdn=true`, apply, copy its output into Play Console's Real-time
+    developer notifications setting, and send a test notification.
+13. Enable the individual admin configuration switches only while testing their feature.
 
 If Firebase or Firestore already exists, import it into Terraform state instead of recreating or
 deleting it.
@@ -1013,27 +1021,14 @@ The actionable ordering and evidence are in [docs/quality-review.md](./docs/qual
 
 ## Documentation index
 
-| Document | Use it for |
-| --- | --- |
-| [START-HERE.md](./START-HERE.md) | shortest beginner path |
-| [00-product-plan.md](./docs/00-product-plan.md) | product goals and full feature plan |
-| [quality-review.md](./docs/quality-review.md) | implemented quality audit and remaining release gates |
-| [10-experience-roadmap.md](./docs/10-experience-roadmap.md) | next pleasant, low-friction product improvements |
-| [architecture.md](./docs/architecture.md) | components and privacy boundaries |
-| [01-windows-setup.md](./docs/01-windows-setup.md) | Node, Android Studio, Java, emulator, and `adb` |
-| [02-run-mobile.md](./docs/02-run-mobile.md) | Expo Go and native development builds |
-| [03-android-release.md](./docs/03-android-release.md) | Play Console release walkthrough |
-| [04-google-cloud.md](./docs/04-google-cloud.md) | optional GCP/Firebase/Terraform deployment |
-| [05-admin-dashboard.md](./docs/05-admin-dashboard.md) | roles, support, grants, config, and hosting |
-| [06-monetization.md](./docs/06-monetization.md) | lifetime purchase and free-grant strategy |
-| [07-ios-later.md](./docs/07-ios-later.md) | later Apple release |
-| [08-cost-controls.md](./docs/08-cost-controls.md) | quotas, budgets, monitoring, and emergencies |
-| [09-data-privacy-and-play-policy.md](./docs/09-data-privacy-and-play-policy.md) | Data safety and policy preparation |
-| [privacy-policy.md](./docs/privacy-policy.md) | policy template requiring operator details |
-| [testing.md](./docs/testing.md) | automated, device, cloud, purchase, and accessibility QA |
-| [security.md](./docs/security.md) | threat model, dependencies, and operator security |
-| [troubleshooting.md](./docs/troubleshooting.md) | common local/native/cloud failures |
-| [release-checklist.md](./docs/release-checklist.md) | final go/no-go gates |
+Use [docs/README.md](./docs/README.md) to choose a path by purpose: first run, testing, Android
+release, optional cloud/monetization, product reference, or iPhone later.
+
+The three authoritative references are:
+
+- [feature catalog](./docs/11-feature-catalog.md) for implemented product behavior;
+- [costed-feature register](./docs/08-cost-controls.md) for every paid surface and switch;
+- [release checklist](./docs/release-checklist.md) for the final go/no-go decision.
 
 ## Primary official references
 

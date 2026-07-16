@@ -262,22 +262,39 @@ export function createApp(
     return value;
   };
 
+  type CostedFeature =
+    | 'support'
+    | 'purchases'
+    | 'userReview'
+    | 'manualGrants'
+    | 'promoCodes'
+    | 'adminRoles';
+
   const requireFeature =
-    (feature: 'support' | 'purchases') =>
+    (feature: CostedFeature) =>
     async (_request: UserRequest, response: Response, next: NextFunction) => {
       try {
         const config = await currentConfig();
-        const enabled =
-          feature === 'support'
-            ? config.defaults.supportEnabled
-            : config.defaults.purchasesEnabled;
+        const enabled = {
+          support: config.defaults.supportEnabled,
+          purchases: config.defaults.purchasesEnabled,
+          userReview: config.defaults.userReviewEnabled,
+          manualGrants: config.defaults.manualGrantsEnabled,
+          promoCodes: config.defaults.promoCodesEnabled,
+          adminRoles: config.defaults.adminRolesEnabled
+        }[feature];
         if (!enabled) {
+          const labels: Record<CostedFeature, string> = {
+            support: 'Private support',
+            purchases: 'Purchases',
+            userReview: 'User and operations review',
+            manualGrants: 'Manual premium grants',
+            promoCodes: 'Promo-code operations',
+            adminRoles: 'Admin role management'
+          };
           response.status(503).json({
             error: 'feature_disabled',
-            message:
-              feature === 'support'
-                ? 'Private support is temporarily paused.'
-                : 'Purchases are temporarily paused.'
+            message: `${labels[feature]} is disabled by the cost-control configuration.`
           });
           return;
         }
@@ -346,6 +363,7 @@ export function createApp(
   app.post(
     '/v1/internal/google-play/rtdn',
     authenticateInternal,
+    requireFeature('purchases'),
     async (request: UserRequest, response, next) => {
       let claimedEventId: string | null = null;
       try {
@@ -799,6 +817,7 @@ export function createApp(
     '/v1/admin/overview',
     authenticate,
     requireRole('owner', 'support', 'content'),
+    requireFeature('userReview'),
     async (_request, response, next) => {
       try {
         response.json(await dependencies.store.overview());
@@ -812,6 +831,7 @@ export function createApp(
     '/v1/admin/users',
     authenticate,
     requireRole('owner', 'support'),
+    requireFeature('userReview'),
     async (request, response, next) => {
       try {
         response.json(
@@ -830,6 +850,7 @@ export function createApp(
     '/v1/admin/support',
     authenticate,
     requireRole('owner', 'support'),
+    requireFeature('support'),
     async (request, response, next) => {
       try {
         const rawStatus = request.query.status;
@@ -850,6 +871,7 @@ export function createApp(
     '/v1/admin/support/:id/messages',
     authenticate,
     requireRole('owner', 'support'),
+    requireFeature('support'),
     async (request, response, next) => {
       try {
         const thread = await dependencies.store.getSupportThread(routeParam(request, 'id'));
@@ -874,6 +896,7 @@ export function createApp(
     '/v1/admin/support/:id/messages',
     authenticate,
     requireRole('owner', 'support'),
+    requireFeature('support'),
     async (request: UserRequest, response, next) => {
       try {
         const input = supportMessageSchema.parse(request.body);
@@ -914,6 +937,7 @@ export function createApp(
     '/v1/admin/support/:id/status',
     authenticate,
     requireRole('owner', 'support'),
+    requireFeature('support'),
     async (request: UserRequest, response, next) => {
       try {
         const input = supportStatusSchema.parse(request.body);
@@ -976,6 +1000,7 @@ export function createApp(
     '/v1/admin/promo-codes',
     authenticate,
     requireRole('owner', 'support'),
+    requireFeature('promoCodes'),
     async (request, response, next) => {
       try {
         response.json(
@@ -991,6 +1016,7 @@ export function createApp(
     '/v1/admin/audits',
     authenticate,
     requireRole('owner'),
+    requireFeature('userReview'),
     async (request, response, next) => {
       try {
         const filters = {
@@ -1021,6 +1047,7 @@ export function createApp(
     '/v1/admin/promo-codes/import',
     authenticate,
     requireRole('owner'),
+    requireFeature('promoCodes'),
     async (request: UserRequest, response, next) => {
       try {
         const input = importPromoCodesSchema.parse(request.body);
@@ -1054,6 +1081,7 @@ export function createApp(
     '/v1/admin/promo-codes/assign',
     authenticate,
     requireRole('owner', 'support'),
+    requireFeature('promoCodes'),
     async (request: UserRequest, response, next) => {
       try {
         const input = assignPromoCodeSchema.parse(request.body);
@@ -1085,6 +1113,7 @@ export function createApp(
     '/v1/admin/users/:uid/entitlement',
     authenticate,
     requireRole('owner'),
+    requireFeature('manualGrants'),
     async (request: UserRequest, response, next) => {
       try {
         const input = grantEntitlementSchema.parse(request.body);
@@ -1117,6 +1146,7 @@ export function createApp(
     '/v1/admin/roles',
     authenticate,
     requireRole('owner'),
+    requireFeature('adminRoles'),
     async (request: UserRequest, response, next) => {
       try {
         const input = setAdminRoleSchema.parse(request.body);

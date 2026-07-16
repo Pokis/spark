@@ -332,8 +332,13 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
       ...defaultAppConfig,
       defaults: {
         ...defaultAppConfig.defaults,
+        announcementsEnabled: true,
         supportEnabled: true,
-        purchasesEnabled: true
+        purchasesEnabled: true,
+        userReviewEnabled: true,
+        manualGrantsEnabled: true,
+        promoCodesEnabled: true,
+        adminRolesEnabled: true
       }
     };
   }
@@ -378,6 +383,53 @@ describe('Spark control plane', () => {
     const response = await request(app).get('/v1/config').expect(200);
     expect(response.body).toEqual(defaultAppConfig);
     expect(response.headers['cache-control']).toContain('max-age=300');
+  });
+
+  it('keeps cost-bearing admin operations disabled while config remains reachable', async () => {
+    const { app } = setup({ enabled: false });
+    await request(app)
+      .get('/v1/admin/users')
+      .set('Authorization', 'Bearer owner')
+      .expect(503);
+    await request(app)
+      .post('/v1/admin/users/user-1/entitlement')
+      .set('Authorization', 'Bearer owner')
+      .send({ premium: true, reason: 'Testing disabled controls' })
+      .expect(503);
+    await request(app)
+      .post('/v1/admin/config')
+      .set('Authorization', 'Bearer owner')
+      .send({
+        ...defaultAppConfig,
+        updatedAt: undefined
+      })
+      .expect(200);
+  });
+
+  it('fills new cost switches with false when reading a legacy config document', async () => {
+    const { app, store } = setup({ enabled: false });
+    store.config = {
+      schemaVersion: 1,
+      updatedAt: '2026-07-15T00:00:00.000Z',
+      announcements: [],
+      features: {},
+      defaults: {
+        maxDailyHabitNotifications: 4,
+        focusMinutes: [5, 10, 25, 50],
+        supportEnabled: true,
+        purchasesEnabled: true
+      }
+    } as unknown as AppConfig;
+    const response = await request(app).get('/v1/config').expect(200);
+    expect(response.body.defaults).toMatchObject({
+      supportEnabled: true,
+      purchasesEnabled: true,
+      announcementsEnabled: false,
+      userReviewEnabled: false,
+      manualGrantsEnabled: false,
+      promoCodesEnabled: false,
+      adminRolesEnabled: false
+    });
   });
 
   it('keeps support threads private to their owner', async () => {
