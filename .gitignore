@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 coverage/
+artifacts/
 .firebase/
 .firebaserc.local
 firebase-debug.log
@@ -24,6 +25,8 @@ infra/terraform/.terraform/
 infra/terraform/*.tfstate
 infra/terraform/*.tfstate.*
 infra/terraform/*.tfvars
+infra/terraform/*.tfplan
 !infra/terraform/terraform.tfvars.example
 .DS_Store
 Thumbs.db
+.vs/

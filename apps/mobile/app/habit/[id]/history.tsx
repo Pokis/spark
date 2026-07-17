@@ -72,7 +72,7 @@ export default function HabitHistoryScreen() {
       <View>
         <Eyebrow>{habit.icon} Habit history</Eyebrow>
         <H1>{habit.title}</H1>
-        <Muted>Completed actions and intentional pauses are visible. Blank days stay neutral.</Muted>
+        <Muted>See completed actions, intentional pauses, and patterns across time.</Muted>
       </View>
 
       <Card>
@@ -156,7 +156,7 @@ export default function HabitHistoryScreen() {
                   onPress={() =>
                     Alert.alert(
                       'Remove this completion?',
-                      'This corrects the history. It does not mark the day as failed.',
+                      'This removes the selected completion from your history.',
                       [
                         { text: 'Keep it', style: 'cancel' },
                         {
@@ -186,8 +186,8 @@ export default function HabitHistoryScreen() {
         })
       ) : (
         <Card>
-          <SectionHeading>No entries yet.</SectionHeading>
-          <Muted>There is nothing to catch up. Log something only if it already happened.</Muted>
+          <SectionHeading>Your first win will appear here.</SectionHeading>
+          <Muted>Use “Add a win I forgot to log” for an action you already completed.</Muted>
         </Card>
       )}
     </Screen>

@@ -6,17 +6,18 @@ This is an engineering and product checklist, not legal advice.
 
 | Data | Default location | Cloud only when | Admin visible |
 |---|---|---|---|
-| Habit names, variants, schedule, cues, optional Momentum cadence/protection markers | encrypted device database | never | no |
-| Completion history and capacity | encrypted device database | never | no |
+| Habit names, variants, schedule, cues, optional streak schedule/save markers | encrypted device database | never | no |
+| Completion history and energy check-ins | encrypted device database | never | no |
 | Focus titles and interruptions | encrypted device database | never | no |
 | Capture text and routines | encrypted device database | never | no |
-| Weekly plans, departure plans, personal experiments, friction notes | encrypted device database | never | no |
+| Weekly plans, leave-on-time plans, one-week changes, friction notes | encrypted device database | never | no |
 | Dismissed tutorial preferences | encrypted local settings | never | no |
 | JSON or encrypted backup | user-chosen file destination | user places it there | no |
 | Automatic encrypted backup | one Android folder explicitly granted by user | user enables it; Spark never receives it | no |
 | Backup recovery code | operating-system secure storage and any copy made by user | never | no |
 | Selected progress card | temporary device cache/system share sheet | user explicitly shares it | no |
-| Focus/departure calendar draft | system create-event UI | user explicitly opens it | no |
+| Focus/leave-on-time calendar draft | system create-event UI | user explicitly opens it | no |
+| Optional creator-tip navigation | fixed Buy Me a Coffee HTTPS page | user explicitly taps the bottom-of-Settings link in an eligible build | no Spark data; normal browser request goes to Buy Me a Coffee |
 | Random support identity | Firebase Auth | support/purchase used | UID |
 | Support text | Firestore | user sends it | yes |
 | App/platform version | Firestore | support/purchase used | yes |
@@ -25,7 +26,7 @@ This is an engineering and product checklist, not legal advice.
 
 ## Data minimization rules for future code
 
-Do not add habit, focus, capacity, or capture fields to:
+Do not add habit, focus, energy-check-in, or capture fields to:
 
 - support payloads
 - crash breadcrumbs
@@ -39,7 +40,7 @@ Treat free-form text as sensitive even if it is not formally health data.
 
 Do not add automatic progress reporting, calendar reads/synchronization, experimentation
 assignment, backup uploads, or recipient/account graphs. The implemented calendar bridge creates
-one user-reviewed event and the progress card contains only checked wins.
+one user-reviewed event and the progress card contains only completed actions the user selected.
 
 ## Account and deletion behavior
 
@@ -82,10 +83,35 @@ Answer based on the released binary, not this plan. Likely disclosures when clou
 State that local habit and health-related content is not collected by the developer. Verify every
 third-party SDK's behavior and current Play definitions.
 
-The release manifest intentionally removes `READ_CALENDAR`, `WRITE_CALENDAR`, broad external
-storage, location, contacts, microphone/recording, system-overlay, and accessibility-service
+The release manifest intentionally removes `READ_CALENDAR`, `WRITE_CALENDAR`,
+`READ_MEDIA_IMAGES`, broad external storage, location, contacts, microphone/recording,
+system-overlay, and accessibility-service
 permissions. The system event-creation UI and Storage Access Framework folder picker do not
 justify declaring full calendar or broad storage collection.
+
+Android operating-system Auto Backup is disabled in the app configuration. Spark instead offers
+explicit, inspectable manual and password-encrypted folder backups; this avoids silently copying
+the encrypted database to an OS-managed account without its device-bound key.
+
+## External creator-support link
+
+`EXPO_PUBLIC_SPARK_CREATOR_TIP_LINK_ENABLED` defaults to `false`. When explicitly enabled, the
+bottom of Settings can open `https://buymeacoffee.com/djpokis` in the system browser. The URL is
+fixed in code, there is no automatic redirect, Spark sends no habit/account payload, and a tip
+does not unlock Premium or any other app feature.
+
+Google Play generally prohibits leading users to another payment method from an app distributed
+through Play unless a stated exception or an enrolled regional program applies. The ordinary
+donation exception is specifically for tax-exempt donations and should not be assumed to cover a
+personal creator tip. Keep the flag off for every store release until the applicable program,
+region, reporting, disclosure, billing, and coexistence rules have been reviewed for that exact
+binary. Direct/internal distribution can make a separate documented decision.
+
+Current policy references:
+
+- [Google Play Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738)
+- [Google Play external-offers program](https://support.google.com/googleplay/android-developer/answer/14372887)
+- [Buy Me a Coffee fee explanation](https://help.buymeacoffee.com/en/articles/8105744-how-to-calculate-charges-on-your-payment)
 
 ## Health policy positioning
 

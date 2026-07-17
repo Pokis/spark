@@ -33,12 +33,17 @@ import { useSpark } from '../src/state/SparkProvider';
 import { useTheme } from '../src/theme';
 import { supportedLocales } from '../src/i18n';
 import { endOfToday, isQuietNow } from '../src/lib/sensory';
+import {
+  creatorTipLinkEnabled,
+  openCreatorTipLink
+} from '../src/services/creatorSupport';
 
 export default function SettingsScreen() {
   const spark = useSpark();
   const theme = useTheme();
   const cloudAvailable = cloudConfigured();
   const supportAvailable = cloudAvailable && spark.remoteConfig.defaults.supportEnabled;
+  const creatorTipAvailable = creatorTipLinkEnabled();
   const [storageStatus, setStorageStatus] = useState('Checking local storage…');
   const [safetyCopies, setSafetyCopies] = useState(0);
   const [preview, setPreview] = useState(false);
@@ -52,12 +57,12 @@ export default function SettingsScreen() {
       .then(([status, databaseCopies, restoreCopies]) => {
         setStorageStatus(
           status.encrypted
-            ? `Encrypted with SQLCipher ${status.cipherVersion ?? ''}. Database check: ${
-                status.integrity === 'ok' ? 'healthy' : status.integrityMessage
-              }`.trim()
+            ? status.integrity === 'ok'
+              ? 'Your local data is encrypted and the storage check passed.'
+              : `Your local data is encrypted, but the storage check needs attention: ${status.integrityMessage}`
             : status.expoGoPreview
-              ? 'Expo Go preview: local database is not encrypted'
-              : 'Encryption could not be verified'
+              ? 'This Expo Go preview cannot verify encrypted storage. Installed test and release builds can.'
+              : 'Spark could not verify local storage encryption.'
         );
         setSafetyCopies(databaseCopies.length + restoreCopies.length);
       })
@@ -224,21 +229,30 @@ export default function SettingsScreen() {
         <H1>Settings</H1>
       </View>
 
-      <Button
-        label="How Spark works"
-        variant="secondary"
-        onPress={() => router.push('/guide')}
-      />
-      <Button
-        label="Browse feature tutorials"
-        variant="ghost"
-        onPress={() => router.push('/tutorials')}
-      />
+      <CollapsibleSection
+        title="Help & learning"
+        summary="Understand Spark or learn one feature at a time"
+      >
+        <SettingRow
+          title="How Spark works"
+          description="A short explanation of habits, action sizes, completed actions, and points."
+          onPress={() => router.push('/guide')}
+        />
+        <SettingRow
+          title="Learn each feature"
+          description="Short guides you can close, dismiss, or replay whenever you want."
+          onPress={() => router.push('/tutorials')}
+        />
+        <SettingRow
+          title="Help me choose right now"
+          description="Get one practical suggestion when starting feels difficult."
+          onPress={() => router.push('/help')}
+        />
+      </CollapsibleSection>
 
       <CollapsibleSection
-        title="You"
+        title="Profile"
         summary={spark.settings.displayName ? `Spark calls you ${spark.settings.displayName}` : 'Name is optional'}
-        defaultExpanded
       >
         <FormField
           label="Name Spark can use"
@@ -270,7 +284,7 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Sensory comfort"
+        title="Sound, motion & feedback"
         summary={`${spark.settings.sensoryProfile} feedback${isQuietNow(spark.settings) ? ' · quiet today' : ''}`}
       >
         <Muted>Choose how much celebration Spark uses. All modes keep rewards predictable.</Muted>
@@ -300,7 +314,7 @@ export default function SettingsScreen() {
         />
         <SettingRow
           title="Reduce motion"
-          description="Keeps celebrations calm and avoids pulsing movement."
+          description="Uses fades and restrained celebration effects instead of pulsing movement."
           value={spark.settings.reducedMotion}
           onValueChange={(value) => void spark.updateSetting('reducedMotion', value)}
         />
@@ -318,8 +332,8 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Cognitive load"
-        summary={spark.settings.simpleMode ? 'Simple mode is on' : 'Help, context, observations, and display choices'}
+        title="Keep the app simple"
+        summary={spark.settings.simpleMode ? 'Shorter Today screen is on' : 'Control prompts, suggestions, and progress details'}
       >
         <SettingRow
           title="Simple mode"
@@ -328,8 +342,8 @@ export default function SettingsScreen() {
           onValueChange={(value) => void spark.updateSetting('simpleMode', value)}
         />
         <SettingRow
-          title="Contextual help prompts"
-          description="Show a calm Help me now doorway when starting or choosing feels difficult."
+          title="Show help prompts"
+          description="Show a Help me now option with practical starting and choosing tools."
           value={spark.settings.progressiveHelpEnabled}
           onValueChange={(value) =>
             void spark.updateSetting('progressiveHelpEnabled', value)
@@ -342,8 +356,8 @@ export default function SettingsScreen() {
           onValueChange={(value) => void spark.updateSetting('rememberContextByTime', value)}
         />
         <SettingRow
-          title="Supportive observations"
-          description="Derives neutral patterns from local completions and focus sessions."
+          title="Show helpful patterns"
+          description="Find patterns in completed actions and focus sessions stored on this device."
           value={spark.settings.insightsEnabled}
           onValueChange={(value) => void spark.updateSetting('insightsEnabled', value)}
         />
@@ -357,14 +371,14 @@ export default function SettingsScreen() {
           />
         ) : null}
         <SettingRow
-          title="One-thing day"
-          description="Temporarily show one deliberately tiny action. Other habits stay saved and nothing is marked missed."
+          title="One-action view"
+          description="Highlight one tiny action on Today until you turn this view off."
           value={spark.settings.minimumViableDay}
           onValueChange={(value) => void spark.updateSetting('minimumViableDay', value)}
         />
         <SettingRow
-          title="Five-second launch runway"
-          description="Focus sessions can count down gently, with a clear Not yet button."
+          title="Five-second focus countdown"
+          description="Begin focus sessions with a five-second countdown and a clear Not yet button."
           value={spark.settings.launchCountdownEnabled}
           onValueChange={(value) =>
             void spark.updateSetting('launchCountdownEnabled', value)
@@ -372,7 +386,7 @@ export default function SettingsScreen() {
         />
         <SettingRow
           title="Transition nudges"
-          description="After focus, Spark asks for the next tiny move without requiring one."
+          description="After focus, name the next tiny move while the task is still visible."
           value={spark.settings.transitionNudgesEnabled}
           onValueChange={(value) =>
             void spark.updateSetting('transitionNudgesEnabled', value)
@@ -380,20 +394,20 @@ export default function SettingsScreen() {
         />
         <SettingRow
           title="Show Spark points"
-          description="Hide levels and point totals if they feel like pressure."
+          description="Show fixed point totals and levels alongside completed actions."
           value={spark.settings.showRewards}
           onValueChange={(value) => void spark.updateSetting('showRewards', value)}
         />
         <SettingRow
-          title="Show rhythm percentages"
-          description="Turn percentages off and keep qualitative progress language."
+          title="Show habit percentages"
+          description="Turn percentages off to use words such as Finding a rhythm instead."
           value={spark.settings.showRhythmPercentages}
           onValueChange={(value) => void spark.updateSetting('showRhythmPercentages', value)}
         />
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Gentle reminders"
+        title="Reminders"
         summary={spark.settings.notificationsEnabled ? `On · up to ${spark.settings.notificationCap} local reminders` : 'Off'}
       >
         <SettingRow
@@ -421,7 +435,7 @@ export default function SettingsScreen() {
         </View>
         <SettingRow
           title="Quiet repeatedly ignored reminders"
-          description="After three unanswered invitations, pause that habit’s reminders for three days. Habit progress is unchanged."
+          description="After three unanswered reminders, pause that habit’s reminders for three days, then restart them automatically."
           value={spark.settings.autoQuietReminders}
           onValueChange={(value) =>
             void spark.updateSetting('autoQuietReminders', value)
@@ -455,8 +469,8 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Backup without an account"
-        summary="Manual, encrypted, and portable local exports"
+        title="Backup & restore"
+        summary="Save a copy without creating an account"
       >
         <Muted>
           Export a readable JSON backup to a folder you choose. Spark never uploads it for you.
@@ -477,7 +491,7 @@ export default function SettingsScreen() {
           }
         />
         <Button
-          label="Export portable CSV"
+          label="Export spreadsheet copy (CSV)"
           variant="secondary"
           onPress={() =>
             void sharePortableCsv().catch((error: unknown) =>
@@ -490,8 +504,8 @@ export default function SettingsScreen() {
         />
         <Button label="Restore a backup" variant="ghost" onPress={() => void restore()} />
         <Muted>
-          Spark keeps at most three pre-migration database copies and three pre-restore JSON
-          copies. Current automatic safety copies: {safetyCopies}.
+          Before a major storage change or restore, Spark keeps a few temporary safety copies on
+          this device. Current safety copies: {safetyCopies}.
         </Muted>
         {safetyCopies ? (
           <Button label="Delete automatic safety copies" variant="ghost" onPress={clearSafetyCopies} />
@@ -499,7 +513,7 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="On-device privacy"
+        title="App lock & privacy"
         summary={spark.settings.appLockEnabled ? 'App lock is on' : 'App lock and private previews'}
       >
         <SettingRow
@@ -536,37 +550,41 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="More helpful tools"
-        summary="Tutorials, planning, experiments, departure, and sharing"
+        title="Planning & extra tools"
+        summary="Plan the week, leave on time, try a change, or share selected wins"
       >
         <SettingRow
-          title="Feature tutorials"
-          description="Skip, dismiss, or replay short guides for every major tool."
-          onPress={() => router.push('/tutorials')}
+          title="Plan my week"
+          description="Choose a few habits for this week and one small start for tomorrow."
+          onPress={() => router.push('/weekly-reset')}
         />
-        <SettingRow title="Help me now" onPress={() => router.push('/help')} />
-        <SettingRow title="Weekly reset" onPress={() => router.push('/weekly-reset')} />
-        <SettingRow title="Departure mode" onPress={() => router.push('/departure')} />
         <SettingRow
-          title="Personal experiments"
+          title="Help me leave on time"
+          description="Work backward from when you need to leave and include preparation time."
+          onPress={() => router.push('/departure')}
+        />
+        <SettingRow
+          title="Try a change for one week"
+          description="Try a tiny version or an afternoon reminder, then review a simple local count."
           onPress={() => router.push('/experiments')}
         />
         <SettingRow
           title="Share selected wins"
+          description="Choose completed actions, preview them, and open the device share sheet."
           onPress={() => router.push('/share-progress')}
         />
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Optional cloud features"
-        summary={cloudAvailable ? 'Available, with support controlled separately' : 'Not configured · no cloud cost'}
+        title="Optional online services"
+        summary={cloudAvailable ? 'Support and purchase checks are available but off until enabled' : 'Not set up · no cloud cost'}
       >
         <SettingRow
-          title="Private support identity"
+          title="Allow online support and purchase checks"
           description={
             cloudAvailable
-              ? 'Creates a random Firebase identity only when support or purchases are used.'
-              : 'Not configured in this build; the offline app is unaffected.'
+              ? 'Creates a private sign-in only when you contact support or verify a purchase. Habits never upload.'
+              : 'Online services are not set up in this build. The offline app works normally.'
           }
           value={spark.settings.cloudSupportEnabled}
           onValueChange={(value) => void spark.updateSetting('cloudSupportEnabled', value)}
@@ -586,7 +604,7 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Support Spark"
+        title="Premium & support"
         summary={spark.entitlement.premium ? 'Premium active · comfort and cosmetic options' : 'Core tools remain free'}
       >
         <Muted>
@@ -597,7 +615,7 @@ export default function SettingsScreen() {
           title={spark.entitlement.premium ? 'Premium active' : 'Spark premium'}
           description={
             spark.entitlement.premium
-              ? `Granted through ${spark.entitlement.source}`
+              ? 'Premium features are available on this device.'
               : 'Lifetime purchase, official promo code, or a staff grant.'
           }
           onPress={() => router.push('/paywall')}
@@ -705,17 +723,22 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Trust and diagnostics"
-        summary="Privacy map, storage health, and troubleshooting export"
+        title="Privacy & troubleshooting"
+        summary="See where data stays or check a technical problem"
       >
-        <SettingRow title="Privacy and data map" onPress={() => router.push('/privacy')} />
         <SettingRow
-          title="Open diagnostics and self-check"
+          title="Where my data is stored"
+          description="A plain-language map of local and optional online data."
+          onPress={() => router.push('/privacy')}
+        />
+        <SettingRow
+          title="Check for technical problems"
+          description="Run local checks and view information useful when asking for support."
           onPress={() => router.push('/diagnostics')}
         />
         <Muted>{storageStatus}</Muted>
         <Button
-          label="Export privacy-safe diagnostics"
+          label="Share troubleshooting report"
           variant="secondary"
           onPress={() =>
             void shareDiagnostics().catch((error: unknown) =>
@@ -727,7 +750,7 @@ export default function SettingsScreen() {
           }
         />
         <Button
-          label="Clear diagnostic history"
+          label="Clear troubleshooting history"
           variant="ghost"
           onPress={() =>
             Alert.alert(
@@ -746,6 +769,27 @@ export default function SettingsScreen() {
         />
         <Muted>Version 0.1.0 · Android first, iPhone compatible</Muted>
       </CollapsibleSection>
+
+      {creatorTipAvailable ? (
+        <View style={styles.creatorSupport}>
+          <Muted>
+            Prefer not to buy Premium? You can leave the creator an optional tip. Tips do not
+            unlock features, change your account, or send Spark data.
+          </Muted>
+          <Button
+            label="Buy the creator a coffee ↗"
+            variant="ghost"
+            onPress={() =>
+              void openCreatorTipLink().catch((error: unknown) =>
+                Alert.alert(
+                  'Could not open the support page',
+                  error instanceof Error ? error.message : 'Try again.'
+                )
+              )
+            }
+          />
+        </View>
+      ) : null}
     </Screen>
     <SparkBurst
       visible={preview && !isQuietNow(spark.settings)}
@@ -763,5 +807,6 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   capRow: { flexDirection: 'row', gap: 8 },
-  choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
+  choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  creatorSupport: { alignItems: 'center', gap: 2, paddingHorizontal: 12, paddingVertical: 6 }
 });

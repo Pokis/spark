@@ -12,7 +12,7 @@ const widgetConfig: WithAndroidWidgetsParams = {
     {
       name: 'SparkToday',
       label: 'Spark Today',
-      description: 'Keep one gentle next action visible.',
+      description: 'Keep one next action visible.',
       minWidth: '250dp',
       minHeight: '110dp',
       targetCellWidth: 4,
@@ -23,7 +23,7 @@ const widgetConfig: WithAndroidWidgetsParams = {
     {
       name: 'SparkCapture',
       label: 'Spark Quick Capture',
-      description: 'Park a thought without searching for the app.',
+      description: 'Open Quick Capture directly from your home screen.',
       minWidth: '180dp',
       minHeight: '70dp',
       targetCellWidth: 3,
@@ -45,7 +45,7 @@ const widgetConfig: WithAndroidWidgetsParams = {
     {
       name: 'SparkProgress',
       label: 'Spark Progress',
-      description: 'Keep wins and Spark points visible without a streak deadline.',
+      description: 'Keep wins, milestones, and Spark points visible.',
       minWidth: '180dp',
       minHeight: '110dp',
       targetCellWidth: 3,
@@ -63,6 +63,17 @@ const widgetConfig: WithAndroidWidgetsParams = {
       targetCellHeight: 3,
       previewImage: './assets/spark-icon-v2.png',
       updatePeriodMillis: 86_400_000
+    },
+    {
+      name: 'SparkRoutine',
+      label: 'Spark Routine',
+      description: 'Keep the current routine step visible and resume in one tap.',
+      minWidth: '180dp',
+      minHeight: '110dp',
+      targetCellWidth: 3,
+      targetCellHeight: 2,
+      previewImage: './assets/spark-icon-v2.png',
+      updatePeriodMillis: 1_800_000
     }
   ]
 };
@@ -88,8 +99,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: packageName,
     versionCode: 1,
+    allowBackup: false,
     blockedPermissions: [
       'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.READ_MEDIA_IMAGES',
       'android.permission.WRITE_EXTERNAL_STORAGE',
       'android.permission.SYSTEM_ALERT_WINDOW',
       'android.permission.READ_CALENDAR',
@@ -142,7 +155,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-notifications',
       {
         color: '#FF6B5F',
-        defaultChannel: 'gentle-reminders'
+        defaultChannel: 'spark-timers'
       }
     ],
     [
@@ -183,6 +196,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     sparkApiUrl: process.env.EXPO_PUBLIC_SPARK_API_URL || '',
     sparkRemoteConfigEnabled:
       process.env.EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED === 'true',
+    sparkCreatorTipLinkEnabled:
+      process.env.EXPO_PUBLIC_SPARK_CREATOR_TIP_LINK_ENABLED === 'true',
     firebase: {
       apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '',
       authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || '',

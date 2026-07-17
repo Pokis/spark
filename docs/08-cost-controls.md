@@ -21,20 +21,21 @@ count**:
 | --- | ---: | ---: | ---: | ---: | --- |
 | Simple mode and contextual Help me now | $0 | $0 | $0 | $0 | Local settings; both can be disabled |
 | Weekly reset and friction toolkit | $0 | $0 | $0 | $0 | Encrypted local records |
-| Departure mode | $0 | $0 | $0 | $0 | Local plan; no location API |
+| Leave-on-time planning | $0 | $0 | $0 | $0 | Local plan; no location API |
 | Calendar bridge | $0 | $0 | $0 | $0 | Opens one system calendar event; Spark blocks Android calendar read/write permissions |
-| Personal experiments | $0 | $0 | $0 | $0 | User-created local comparison; no analytics or experimentation service |
+| User-chosen one-week changes | $0 | $0 | $0 | $0 | User-created local comparison; no analytics or experimentation service |
 | Progress-card image/text sharing | $0 | $0 | $0 | $0 | System share sheet only after explicit selection |
 | Quiet now, app lock, and preview protection | $0 | $0 | $0 | $0 | Local/OS controls; off by default |
 | Notification lock-screen privacy | $0 | $0 | $0 | $0 | Local notification channels; notifications remain off by default |
 | Password-encrypted manual backups | $0 | $0 | $0 | $0 | Local cryptography and system file/share UI |
 | Automatic encrypted folder backups | $0 | $0 | $0 | $0 | Off by default; user chooses one Android folder; seven-file retention |
-| Five Android widgets and launcher shortcuts | $0 | $0 | $0 | $0 | Today, Capture, Focus, Progress, and Toolkit use local snapshots/static links; no background server |
+| Six Android widgets and launcher shortcuts | $0 | $0 | $0 | $0 | Today, Capture, Focus, Routine, Progress, and Toolkit use local snapshots/static links; no background server |
+| Optional creator-tip link | $0 | $0 | $0 | $0 | Build flag defaults off; no automated spend and no entitlement. A user may voluntarily pay Buy Me a Coffee; current service/processing fees are deducted from the contribution or passed to the supporter according to creator settings. |
 | Feature tutorials and collapsible navigation | $0 | $0 | $0 | $0 | Bundled copy, local dismissed-tip IDs, and UI state; no CMS, analytics, or experimentation service |
 | Bundled localization | $0 | $0 | $0 | $0 | Bundled strings; no translation API |
 | Privacy-safe diagnostics | $0 | $0 | $0 | $0 | Local self-check and explicit file share |
 | Startup Baseline Profile | $0 | $0 | $0 | $0 | Packaged build artifact |
-| Optional Momentum streaks, Flex passes, and planned delays | $0 | $0 | $0 | $0 | Per-habit opt-in; encrypted local JSON plus on-device calculation; no feature flag is required because it cannot create a third-party charge |
+| Optional streaks, streak saves, and planned breaks | $0 | $0 | $0 | $0 | Per-habit opt-in; encrypted local JSON plus on-device calculation; no feature flag is required because it cannot create a third-party charge |
 
 If a user deliberately selects a Google Drive, OneDrive, Dropbox, or another
 cloud-backed folder for automatic backup, any storage quota, subscription, or
@@ -57,6 +58,7 @@ A Cloud Run URL by itself therefore does not turn features on.
 | --- | --- | --- | --- |
 | Cloud Run, Firestore, and Artifact Registry foundation | `enable_cloud_runtime` | `false` | `infra/terraform/terraform.tfvars` and `terraform apply` |
 | Mobile remote-config checks | `EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED` | `false` | mobile `.env.local` or EAS build environment; requires a new app build |
+| Buy Me a Coffee creator link | `EXPO_PUBLIC_SPARK_CREATOR_TIP_LINK_ENABLED` | `false` | mobile `.env.local` or EAS build environment; requires a new app build and distribution-policy review |
 | Global announcements | `announcementsEnabled` | `false` | Admin → App config |
 | Private support | `supportEnabled` | `false` | Admin → App config |
 | Purchase verification and restore | `purchasesEnabled` | `false` | Admin → App config |
@@ -109,6 +111,7 @@ Firestore, Auth, and their free quotas are shared.
 | Feature | 100 users | 1,000 users | 10,000 users | 50,000 users | Main reason |
 | --- | ---: | ---: | ---: | ---: | --- |
 | Offline mobile product | $0 | $0 | $0 | $0 | No server or paid API |
+| Optional creator-tip link | $0 fixed | $0 fixed | $0 fixed | $0 fixed | Voluntary incoming contributions only; no usage-based Spark expense |
 | Cloud foundation while idle | $0–$0.10 | $0–$0.10 | $0–$0.10 | $0–$0.10 | Scale-to-zero; possible container storage above 0.5 GiB |
 | Remote config and announcements | $0 | $0 | $0 | $0–$1 | 3,000 to 1.5M small requests/month; shared config is cached |
 | Private support | $0 | $0 | $0 | $0–$1 | About 5 to 2,500 participating users; bounded reads/writes |
@@ -189,6 +192,7 @@ Official pricing:
 - [Google Cloud Observability](https://cloud.google.com/products/observability)
 - [Expo plans](https://expo.dev/pricing)
 - [Google Play service fees](https://support.google.com/googleplay/android-developer/answer/112622)
+- [Buy Me a Coffee fees](https://help.buymeacoffee.com/en/articles/8105744-how-to-calculate-charges-on-your-payment)
 
 ## Cost controls already enforced
 

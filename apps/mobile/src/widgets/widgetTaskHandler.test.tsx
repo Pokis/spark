@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { widgetTaskHandler } from './widgetTaskHandler';
 import {
   FOCUS_WIDGET_SNAPSHOT_KEY,
+  ROUTINE_WIDGET_SNAPSHOT_KEY,
   WIDGET_SNAPSHOT_KEY
 } from './widgetTaskHandler';
 import { SparkCaptureWidget } from './SparkCaptureWidget';
@@ -9,6 +10,7 @@ import { SparkFocusWidget } from './SparkFocusWidget';
 import { SparkTodayWidget } from './SparkTodayWidget';
 import { SparkProgressWidget } from './SparkProgressWidget';
 import { SparkToolkitWidget } from './SparkToolkitWidget';
+import { SparkRoutineWidget } from './SparkRoutineWidget';
 
 jest.mock('react-native-android-widget', () => ({
   FlexWidget: 'FlexWidget',
@@ -80,6 +82,32 @@ describe('native widget task routing', () => {
     const broken = props('SparkFocus', 'WIDGET_RESIZED');
     await widgetTaskHandler(broken);
     expect(broken.renderWidget.mock.calls[0][0].props.snapshot.session).toBeNull();
+  });
+
+  it('loads persisted Routine state and falls back safely on malformed storage', async () => {
+    await AsyncStorage.setItem(
+      ROUTINE_WIDGET_SNAPSHOT_KEY,
+      JSON.stringify({
+        routineId: 'leave',
+        title: 'Leave home',
+        icon: '🚪',
+        currentStep: 'Put on shoes',
+        stepNumber: 2,
+        stepCount: 3,
+        paused: true
+      })
+    );
+    const valid = props('SparkRoutine', 'WIDGET_ADDED');
+    await widgetTaskHandler(valid);
+    expect(valid.renderWidget.mock.calls[0][0].type).toBe(SparkRoutineWidget);
+    expect(valid.renderWidget.mock.calls[0][0].props.snapshot.currentStep).toBe(
+      'Put on shoes'
+    );
+
+    await AsyncStorage.setItem(ROUTINE_WIDGET_SNAPSHOT_KEY, '{broken');
+    const broken = props('SparkRoutine', 'WIDGET_RESIZED');
+    await widgetTaskHandler(broken);
+    expect(broken.renderWidget.mock.calls[0][0].props.snapshot.routineId).toBeNull();
   });
 
   it('loads persisted Today state and ignores unknown widgets/actions', async () => {

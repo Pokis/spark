@@ -24,7 +24,7 @@ export default function ExperimentsScreen() {
   async function startExperiment() {
     if (!habitId) return;
     if (active.some((item) => item.habitId === habitId && item.kind === kind)) {
-      Alert.alert('Already trying this', 'Finish or stop the current experiment first.');
+      Alert.alert('Already trying this', 'Finish or stop the current one-week try first.');
       return;
     }
     const now = new Date();
@@ -54,18 +54,18 @@ export default function ExperimentsScreen() {
   return (
     <Screen>
       <View>
-        <Eyebrow>Local self-knowledge</Eyebrow>
-        <H1>Try one gentle change.</H1>
+        <Eyebrow>Learn what helps you</Eyebrow>
+        <H1>Try a change for one week.</H1>
         <Muted>
-          Spark compares a short before-and-during window neutrally. This is not an engagement
-          A/B system, and nothing leaves the device.
+          Choose one small change. After a week, Spark shows a simple before-and-after count.
+          Only you decide whether it helped, and everything stays on this device.
         </Muted>
       </View>
 
       <TutorialPrompt
         id="experiments"
-        title="See a neutral one-week example first"
-        body="This short tutorial explains what Spark changes, what it compares, and why this is different from an engagement experiment."
+        title="See how a one-week try works"
+        body="This short guide explains what changes, what Spark counts, and how you stay in control."
       />
 
       {active.map((experiment) => {
@@ -78,12 +78,12 @@ export default function ExperimentsScreen() {
         const ready = Date.parse(experiment.endsAt) <= Date.now();
         return (
           <Card key={experiment.id}>
-            <Eyebrow>{ready ? 'Ready to review' : 'Experiment in progress'}</Eyebrow>
+            <Eyebrow>{ready ? 'Ready to review' : 'One-week try in progress'}</Eyebrow>
             <SectionHeading>{habit?.title ?? 'Archived habit'}</SectionHeading>
             <Muted>
               {experiment.kind === 'tiny_week'
                 ? 'Tiny version is presented first for one week.'
-                : 'A gentle afternoon reminder window is used for one week.'}
+                : 'An afternoon reminder window is active for one week.'}
             </Muted>
             <Muted>{comparison.summary}</Muted>
             {experiment.note ? <Muted>Your note: {experiment.note}</Muted> : null}
@@ -93,7 +93,7 @@ export default function ExperimentsScreen() {
               onPress={() => void finish(experiment)}
             />
             <Button
-              label="Stop without a conclusion"
+              label="Stop this one-week try"
               variant="ghost"
               onPress={() => void finish(experiment, true)}
             />
@@ -102,7 +102,7 @@ export default function ExperimentsScreen() {
       })}
 
       <Card>
-        <SectionHeading>New one-week experiment</SectionHeading>
+        <SectionHeading>Start a new one-week try</SectionHeading>
         <View style={styles.choices}>
           <Chip
             label="Try the tiny version"
@@ -128,7 +128,7 @@ export default function ExperimentsScreen() {
         </View>
         <FormField
           label="What do you want to notice?"
-          hint="Optional. Spark will not judge whether the experiment worked."
+          hint="Optional. Spark will show the counts, but you decide whether the change helped."
           placeholder="Maybe afternoons are less rushed…"
           value={note}
           onChangeText={setNote}

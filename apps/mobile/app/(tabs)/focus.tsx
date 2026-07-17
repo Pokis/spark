@@ -442,7 +442,7 @@ export default function FocusScreen() {
           {phase === 'idle'
             ? 'Ready when you are'
             : phase === 'paused'
-              ? 'Paused without penalty'
+              ? 'Paused · resume when ready'
               : phase === 'finished'
                 ? 'That was a real focus block'
                 : session?.title || title.trim() || 'Open focus'}
@@ -457,7 +457,7 @@ export default function FocusScreen() {
                 {launchCountdown}
               </Text>
               <SectionHeading>Beginning is the only job.</SectionHeading>
-              <Muted>You can start now or choose Not yet. There is no penalty.</Muted>
+              <Muted>Start now or choose Not yet to return to the setup.</Muted>
               <Button
                 label="Start now"
                 onPress={() => {

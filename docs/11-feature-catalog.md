@@ -21,55 +21,59 @@ The core strategy is **flexible consistency**:
 - blank days do not reset progress or receive failure labels;
 - every habit has several valid sizes;
 - invitations can be deferred, resized, paused, or ignored without punishment;
-- recommendations adapt presentation to current capacity instead of increasing pressure;
+- recommendations adapt presentation to current energy instead of increasing pressure;
 - rewards are fixed and visible, never randomized;
+- everyday copy leads with completed actions, milestones, and the next useful move instead of
+  repeatedly explaining what was not lost or missed;
 - the useful product does not require an account, subscription, or server.
 
 ## Onboarding and first use
 
 | Feature | Implementation and ADHD strategy | Data/cost |
 | --- | --- | --- |
-| Guided onboarding | Defines Spark as the app, habit as a repeatable intention, action as a selectable size, win as a deliberately logged completion, and Spark points as predictable 1/2/3 feedback before asking the user to create anything. It also introduces privacy and no-guilt boundaries. | Local settings; no cloud. |
-| First-use glossary | A permanent **How Spark works** screen explains every core term, including optional Momentum streaks, what taps do, the optional check-in, One-thing day, and the user’s live counts. It is reachable from Today, Progress, and Settings. | Derived from local data; no cloud. |
+| Guided onboarding | Defines Spark as a habit and focus tracker, habit as a repeatable intention, action as a selectable size, win as a deliberately logged completion, and Spark points as predictable 1/2/3 feedback before asking the user to create anything. The opening promise is that every completed action builds visible progress. | Local settings; no cloud. |
+| Victory-first interface language | Onboarding, Today, Progress, routines, weekly planning, tutorials, widgets, reminders, and streak cards lead with wins, completed actions, personal bests, and clear next actions. Deferral, pauses, and streak protection use concise mechanical confirmations such as **Scheduled for tomorrow** instead of repeating “nothing lost,” “no missed-day score,” or “gentle restart” reassurance. A source-level regression test protects this vocabulary. | Bundled copy and tests only; no analytics, network, or cloud cost. |
+| First-use glossary | A permanent **How Spark works** screen explains every core term, including optional streaks, what taps do, the optional suggestion adjustment, One-action view, and the user’s live counts. It is reachable from Today, Progress, and Settings. | Derived from local data; no cloud. |
 | Early-use coaching | Until three wins are logged, Today offers a concise start-here tutorial prompt. It has an immediate **Dismiss** action, disappears when dismissed, and remains replayable from the tutorial hub. | Derived locally from lifetime completion totals plus a local dismissed-tip ID; $0 at every user count. |
-| Replayable feature tutorial hub | Eleven short, step-based guides cover first use, habit sizes, Momentum, Focus, Capture, routines, weekly/departure planning, personal experiments, progress sharing, Android widgets, reminders, privacy, and backups. A guide can be skipped without changing preferences, dismissed to hide its contextual prompt, completed, replayed, or restored. Relevant guides end with a direct action into the feature, so learning does not lead to another menu search. Personal experiments also has its own contextual tutorial doorway. | Bundled copy and local dismissed-tip IDs only; no CMS, analytics, experimentation platform, or cloud. $0 for 1, 10k, or 1M users. |
+| Replayable feature tutorial hub | Eleven short, step-based guides are grouped by purpose: **Start here**, **Daily tools**, **Planning & progress**, and **Widgets, reminders & privacy**. A guide can be closed without changing preferences, dismissed to hide its contextual prompt, completed, replayed, or restored. Returning from a guide preserves the catalog's expanded groups and scroll position, making several guides easy to review in sequence. Relevant guides end with a direct action into the feature, so learning does not lead to another menu search. The one-week change tool also has its own contextual guide. | Bundled copy and local dismissed-tip IDs only; no CMS, analytics, experimentation platform, or cloud. $0 for 1, 10k, or 1M users. |
 | Starter habits | Seeds editable examples so the user can act before designing a system from scratch. | Encrypted SQLite. |
 | Starter routines | Seeds literal, one-step-at-a-time transition support. | Encrypted SQLite. |
 | Optional display name | Personalizes Today without requiring identity or an account. | Local setting only. |
-| One-thing day | Reduces Today to one intentionally tiny action and explicitly says that the other habits are merely hidden, not deleted or missed. It can be enabled from Today, Help, or Settings and does not lower rewards after the fact. | Local setting only. |
-| Simple mode | Keeps Today to one suggested action plus explicit Quick Capture, two-minute Focus, Help, and resume-running-routine doorways. Progress is hidden from the tab bar while Simple mode is on, but no data or capability is deleted. | Local setting only; no cloud. |
+| One-action view | Highlights one intentionally tiny action until the user turns the view off. It can be enabled from Today, Help, or Settings and does not alter rewards or completed-action history. | Local setting only. |
+| Simple mode | Keeps Today to one suggested action plus explicit Quick Capture, two-minute Focus, Help, and a running-routine option. Progress is hidden from the tab bar while Simple mode is on, but no data or capability is deleted. | Local setting only; no cloud. |
 | Contextual Help me now | Lets a user name the immediate barrier—cannot start, overwhelmed, drifting, remembering, leaving, or sensory overload—and offers one relevant local action instead of a generic help article. | UI and existing local settings/routes only. |
-| Progressive help doorway | Optionally keeps a calm “I’m stuck” entry point on Today. It can be disabled without losing Help itself. | Local setting only. |
+| Progressive help option | Optionally keeps a practical **Help me choose** entry point on Today. It can be disabled without removing Help itself. | Local setting only. |
+| Purpose-based, reversible menus | Settings, Progress, tutorials, and Today’s suggestion adjustment use clearly named sections with visible **Show/Hide** controls. Settings opens fully collapsed; Today shows a one-line Energy/Time/Place summary; Progress keeps history, habits, routines, streaks, and planning available without displaying every detail at once. | Local UI state only; $0 at every user count. |
 | Popular-language catalog | Adds system-language selection plus English, Spanish, Brazilian Portuguese, French, German, Italian, Polish, Ukrainian, Russian, Lithuanian, Japanese, Korean, Simplified Chinese, Hindi, and Arabic. Navigation and the main support-tool labels switch immediately; any legacy string not yet translated falls back to English instead of becoming blank. | Local setting plus bundled strings; no translation API or network. |
 
 ## Today: choosing and starting
 
 | Feature | Implementation and ADHD strategy | Data/cost |
 | --- | --- | --- |
-| Capacity check-in | Empty, steady, or ready capacity changes the maximum recommended habit size. High available time never overrides low capacity. | Daily local check-in. |
-| Time-room check-in | Offers 2, 5, 10, 20 minutes, or no clock. It filters feasible actions without treating unavailable time as failure. | Daily local check-in. |
+| Energy check-in | Low, okay, or ready energy changes the maximum recommended habit size. High available time never overrides low energy. | Daily local check-in. |
+| Available-time check-in | Offers 2, 5, 10, 20 minutes, or any amount. It filters feasible actions without treating unavailable time as failure. | Daily local check-in. |
 | Context check-in | Home, work, outside, or phone helps rank eligible habits. | Daily local check-in. |
-| Compact remembered check-in | Once capacity and time are chosen, the controls collapse to a short editable summary so actions reach the top faster. | Local UI state plus daily check-in. |
-| Same as yesterday | Copies yesterday’s capacity, time, and context with one explicit action. | Local database only. |
-| Visible selection feedback | Capacity, time, context, One-thing day, picking, and deferral actions publish a plain-language live notice explaining what changed. | Ephemeral UI state; no cloud. |
+| Compact remembered check-in | The optional controls start collapsed as **Adjust today’s suggestions**, with a plain Energy/Time/Place summary and explicit Show, Hide, and Done adjusting controls. | Local UI state plus daily check-in. |
+| Same as yesterday | Copies yesterday’s energy, time, and place with one explicit action. | Local database only. |
+| Visible selection feedback | Energy, time, place, One-action view, picking, and later actions publish a plain-language live notice explaining what changed. | Ephemeral UI state; no cloud. |
 | Time-of-day context memory | Optionally remembers common morning, afternoon, and evening contexts. No location permission or server is used. | Local settings only. |
-| Short recommendation menu | Scheduling, pauses, capacity, time, context, priority, and recent activity produce at most a few visible invitations. | Shared local domain logic. |
+| Short recommendation menu | Scheduling, pauses, energy, time, context, priority, and recent activity produce at most a few visible invitations. | Shared local domain logic. |
 | Pick for me | Deterministically chooses one already-eligible Today action and explains why it fit. It changes presentation, not points or eligibility. | No additional persisted data. |
-| Explicit Log controls | Every suggested action has a visible **Log** label and describes its action size, time, and fixed point value before the user taps. A separate **Log tiny** shortcut remains available. | Local completion only after an explicit tap. |
+| Explicit Done controls | Every suggested action has a visible **Done** label and describes its action size, time, and fixed point value before the user taps. A separate **Tiny done** shortcut remains available. | Local completion only after an explicit tap. |
 | Two-minute launch | Opens Focus with the habit action and two-minute duration prefilled. | Local navigation; focus session is persisted when started. |
 | Start with recommended timer | Habit actions can open Focus with title and duration already filled in. | Local only. |
 | Neutral deferral | **Not now**, **Later today**, **Tomorrow**, and **Quiet today** temporarily remove an invitation without creating a completion, failure, pause, or rhythm penalty. | Local deferral table; included in backups. |
-| Return card | After several blank days, offers a previously successful tiny action as a quiet return. It does not summarize missed days. | Derived locally from history. |
-| Show one tiny action | Switches Today into One-thing day and immediately confirms that only the display changed. | Local setting only. |
-| Enough state | When nothing is eligible, Spark says there is nothing overdue and explicitly permits rest. | Derived locally. |
-| Weekly visibility plan | A gentle weekly reset selects up to three habits to keep visible. Selected habits are locally prioritized without turning unselected habits into failures. | `weekly_plans` local table; backup included. |
+| Return card | Offers a previously completed tiny action as **A win worth repeating**, making a proven starting point immediately available. | Derived locally from history. |
+| Show one tiny action | Switches Today into One-action view and immediately confirms that only the display changed. | Local setting only. |
+| Clear-list state | When no suggestion is eligible, Today highlights the completed-action list and offers direct routes to review wins, repeat an action, or add a habit. | Derived locally. |
+| Weekly visibility plan | Weekly planning selects up to three habits to keep visible and sets up tomorrow’s first action. Selected habits are locally prioritized. | `weekly_plans` local table; backup included. |
 | Tomorrow context and tiny action | Weekly reset can name tomorrow’s likely context and one tiny action. The next day, Today uses that context and puts that tiny version first. | Local weekly plan; date-scoped derivation. |
 
 ## Completion trust and feedback
 
 | Feature | Implementation and ADHD strategy | Data/cost |
 | --- | --- | --- |
-| Explicit completion semantics | Widget and notification labels say **Log tiny win**. The widget opens a confirmation screen before writing. | No silent writes. |
+| Explicit completion semantics | Widget and notification actions use plain **Done** language. The widget opens a confirmation screen before writing. | No silent writes. |
 | Rapid-tap guard | A per-habit/variant lock rejects duplicate taps inside a 1.5-second window, while other actions remain usable. | In-memory guard plus button busy state. |
 | Saving state | Completion buttons become disabled and expose accessibility busy/disabled state while saving. | UI state only. |
 | Accessible undo | The latest completion shows a live-region message and a labeled Undo control with no short auto-expiry. | Deletes the local completion if chosen. |
@@ -96,7 +100,7 @@ The core strategy is **flexible consistency**:
 | Draft preservation | New and edited habit form state is debounced into local draft storage and restored after background/process loss. It is cleared after a successful save. | AsyncStorage; no cloud. |
 | Color-safe labels | Habit/routine color controls have human-readable accessibility names and selected check marks; state is not communicated by color alone. | UI/accessibility only. |
 | Friction toolkit | A habit can record environment setup, materials, literal first physical step, likely obstacle, fallback, and a note to future self. The useful starting fields appear inside the expanded Today card and never affect scoring. | `friction_json` in encrypted SQLite; schema validation and backup included. |
-| Optional Momentum setup | Each habit independently opts in or out and chooses daily windows or forgiving two-day “every other day” windows. The habit editor explains that the ordinary suggestion schedule and optional Momentum cadence are separate. Today labels enabled habits and Progress contains the full review/actions. | `momentum_json` in encrypted SQLite schema 7; included in validated backups; no cloud. |
+| Optional reward-only streak setup | Each habit independently opts in or out and chooses daily periods or forgiving two-day “every other day” periods. The habit editor explains that the ordinary suggestion schedule and optional streak schedule are separate. Today labels enabled habits and Progress contains the full review/actions. | Internally stored as `momentum_json` in encrypted SQLite schema 7; included in validated backups; no cloud. |
 
 ## Reminders
 
@@ -164,7 +168,7 @@ The core strategy is **flexible consistency**:
 | Skip step | Advances without failure wording and records the skipped step only in the active run state. | Saved run state. |
 | Pause routine | Keeps the exact step, tiny state, skipped steps, and start time across app restart. | Routine-run table; backup included. |
 | Resume indicator | Progress shows when a routine has a saved position and which step is waiting. | Derived locally. |
-| Gentle finish estimate | Sums remaining unskipped estimates and shows an approximate clock time, never a speed score. | Derived locally. |
+| Finish estimate | Sums remaining unskipped estimates and shows an approximate duration and clock time. | Derived locally. |
 | Linked habit | A step can open an explicitly linked habit editor/history entry point. | Optional local relationship. |
 | Linked focus block | A step can define its own focus duration; every step also offers a two-minute launch fallback. | Optional local field. |
 | Draft preservation | New and edited routines, including steps and links, survive process loss until saved. | AsyncStorage. |
@@ -173,23 +177,23 @@ The core strategy is **flexible consistency**:
 
 | Feature | Implementation and ADHD strategy | Data/cost |
 | --- | --- | --- |
-| Always-available rolling rhythms | Rolling opportunities and active days remain the default progress view. They never reset, even when optional Momentum is off or resting. | Shared local domain logic. |
-| Optional reward-first Momentum streaks | One logged win completes a daily window, or any one win within a two-day window completes an every-other-day window. Several wins in one window never inflate the chain. A closed blank window starts a neutral new chain, while the personal best and all ordinary history/points remain visible. Progress loads compact distinct completion dates across the habit’s full local lifetime rather than truncating an old best. | Pure local domain calculation over local completions; no account, analytics event, or cloud cost. |
-| Flex passes | Every Momentum habit starts with 2 passes, earns 1 for every 5 completed windows, and can hold up to 3. A pass can bridge the most recent closed blank window. It preserves continuity but does not create a completion, increase the chain count, or add Spark points. Passes are free and cannot be purchased. | Protection marker in `momentum_json`; deterministic local derivation; $0 at every user count. |
-| Planned Momentum delay | **Delay this Momentum window** marks the current open window as planned rest. It uses no Flex pass and adds no win. Existing habit pauses also bridge affected Momentum windows automatically. | Local protection/pause state only; no reminder or server side effect. |
-| Momentum milestones | Progress recognizes transparent completed-window thresholds (3, 7, 14, 30, 60, and 100) and shows the current chain, personal best, total won windows, available passes, window status, and next start. Milestones add no opaque/random currency. | Derived locally; no cloud. |
+| Always-available rolling rhythms | Rolling opportunities and active days remain the default progress view. They never reset, even when an optional streak is off or resting. | Shared local domain logic. |
+| Optional reward-first streaks | One completed action continues a daily streak, or any one completed action within a two-day period continues an every-other-day streak. Several actions in one period never inflate it. A blank period starts a neutral new streak, while the personal best and all ordinary history/points remain visible. Progress loads compact distinct completion dates across the habit’s full local lifetime rather than truncating an old best. | Pure local domain calculation over local completions; no account, analytics event, or cloud cost. |
+| Streak saves | Every streak-enabled habit starts with 2 saves, earns 1 for every 5 completed periods, and can hold up to 3. A save can bridge the most recent closed blank period. It preserves continuity but does not create a completion, increase the chain count, or add Spark points. Saves are free and cannot be purchased. | Protection marker in `momentum_json`; deterministic local derivation; $0 at every user count. |
+| Planned streak break | **Take a planned break for this period** marks the current open period as planned rest. It uses no streak save and adds no completed action. Existing habit pauses also bridge affected streak periods automatically. | Local protection/pause state only; no reminder or server side effect. |
+| Streak milestones | Progress recognizes transparent completed-period thresholds (3, 7, 14, 30, 60, and 100) and shows the current streak, personal best, total completed periods, available saves, period status, and next start. Milestones add no opaque/random currency. | Derived locally; no cloud. |
 | Comeback recognition | Returning after a gap is described positively; several wins on one day do not fake several active days. | Derived locally. |
 | Fourteen-day activity | Shows completed actions and active days. Blank days are not red or labeled missed. | Materialized local summaries. |
 | Weekly reflection | Summarizes attention and useful tiny sizes without a deficit score. | Derived locally. |
 | Supportive observations | Can note frequent tiny use, helpful context, and better-fitting focus durations. Requires enough local evidence. | On-device derivation only. |
 | Hide or disable observations | Each observation can be hidden; all observations can be disabled; hidden observations can be restored in Settings. | Local settings. |
 | Optional points/percentages | Spark totals, levels, and rhythm percentages can each be hidden when they create pressure. | Local settings. |
-| Point provenance ledger | Progress lists recent wins with the habit/action label, timestamp, and exact points added. Each row opens that habit’s full history, so points never appear without an inspectable source. | Derived locally from completions. |
-| Reviewable score card | Today’s Spark-points card states the fixed 1/2/3 scale and opens Progress, where totals, recent wins, habits, history, routines, and charts can be reviewed. | Local navigation and materialized totals. |
-| Gentle weekly reset | Combines a short reflection, up to three visible habits, tomorrow context, and one tiny next action. It contains no missed-day counts or red deficit state. | Encrypted local weekly-plan record. |
-| Personal experiments | Runs a user-chosen one-week “tiny version first” or “afternoon reminder” experiment. Spark compares local before/during counts with neutral language, never assigns users to variants, and never optimizes engagement. | `personal_experiments` table; no analytics SDK, account, or server. |
-| Deliberate progress sharing | The user selects up to five recent wins, previews a local card, then explicitly shares a PNG or plain text through the system share sheet. Nothing is sent automatically and no accountability account is connected. | Temporary device image/text only; no cloud upload by Spark. |
-| Departure mode | Works backward from a chosen leave time using an explicit buffer and optional routine estimate, saves the plan locally, and can start the routine or a two-minute runway. | `departure_plans` table; no location tracking. |
+| Point provenance ledger | Progress lists recent completed actions with the habit/action label, timestamp, and exact points added. Each row opens that habit’s full history, so points never appear without an inspectable source. | Derived locally from completions. |
+| Reviewable score card | Today’s Spark-points card states the fixed 1/2/3 scale and opens Progress, where totals, recent completed actions, habits, history, routines, and charts can be reviewed. | Local navigation and materialized totals. |
+| Weekly plan | Combines a short reflection, up to three visible habits, tomorrow context, and one tiny next action under direct **Weekly planning** language. | Encrypted local weekly-plan record. |
+| Try a change for one week | Runs a user-chosen one-week “tiny version first” or “afternoon reminder” change. Spark compares local before/during counts with neutral language and never changes anything automatically to keep the user engaged. | Internally stored in the `personal_experiments` table; no analytics SDK, account, or server. |
+| Deliberate progress sharing | The user selects up to five recent completed actions, previews a local card, then explicitly shares a PNG or plain text through the system share sheet. Nothing is sent automatically and no accountability account is connected. | Temporary device image/text only; no cloud upload by Spark. |
+| Leave-on-time plan | Works backward from a chosen leave time using explicit preparation time and an optional routine estimate, saves the plan locally, and can start the routine or a two-minute focus session. | Internally stored in the `departure_plans` table; no location tracking. |
 | Departure calendar bridge | Opens the system calendar with only the chosen departure block, buffer, and optional routine title. Spark does not read the calendar. | System-provided calendar UI; no Spark cloud. |
 
 ## Sensory, visual, and accessibility behavior
@@ -204,7 +208,7 @@ The core strategy is **flexible consistency**:
 | Touch targets and semantics | Primary controls use minimum heights, labels, roles, selected/checked state, busy/disabled state, and live regions. | Accessibility metadata. |
 | System-bar-safe layouts | Shared screens respect both top and bottom safe-area insets so Android gesture/three-button navigation cannot cover primary controls. | Local layout behavior. |
 | Keyboard-reachable forms | Shared screens scroll, grow to the viewport, preserve taps, and use Android height/iOS padding keyboard avoidance so focused onboarding and editor fields remain reachable. | Local layout behavior. |
-| Progressive-disclosure sections | Settings is divided into independently expanding groups with a useful collapsed summary; secondary Progress observations, charts, Momentum, and planning tools also collapse so the screen can preserve context without presenting every control at once. | UI state only; no persistence or service cost. |
+| Progressive-disclosure sections | Settings is divided into independently expanding groups with a useful collapsed summary; secondary Progress observations, charts, streaks, and planning tools also collapse so the screen can preserve context without presenting every control at once. | UI state only; no persistence or service cost. |
 | Safe heading actions | Add-habit and add-routine controls reserve a fixed 48×48 area while adjacent headings can shrink/wrap, preventing long copy and larger text from pushing the plus icon off-screen. | Shared layout behavior; no cost. |
 | History-aware back behavior | Save, cancel, close, and error-state actions return to the actual prior screen when navigation history exists. Widget/deep-link entries use an explicit meaningful fallback instead of an empty or unrelated screen. Ordinary guide links use push navigation so Back returns to the guide. | Local router history only; no cloud. |
 | Button states | Pressed, disabled, and loading states are consistent; loading exposes text plus a progress indicator. | UI only. |
@@ -242,16 +246,23 @@ treatments update immediately.
 If supporter access is not active, the app safely falls back to the standard theme, Spark
 companion, burst celebration, and muted soundscape.
 
+An optional, low-visibility Buy Me a Coffee footer is implemented separately from Premium. It is
+off by default through `EXPO_PUBLIC_SPARK_CREATOR_TIP_LINK_ENABLED`, opens one fixed HTTPS page
+only after a deliberate tap, transmits no Spark data or entitlement, and must remain off in store
+builds unless the exact external-payment program and regional rules have been satisfied. Spark's
+fixed cloud cost is $0 at 100, 1,000, 10,000, or 50,000 users; contributions and the payment
+provider's percentage/processing fees are voluntary transaction flows, not app runtime spend.
+
 ## Local data, backups, and reliability
 
 | Feature | Implementation | Notes |
 | --- | --- | --- |
 | Encrypted database | SQLCipher-backed Expo SQLite in native builds. Spark refuses private-data use in a native build when encryption cannot be verified. | Expo Go is explicitly labeled an unencrypted preview. |
-| Current database schema | Version 6 with forward migrations for every released version. | Migration manifest is tested as contiguous. |
+| Current database schema | Version 7 with forward migrations for every released version. | Migration manifest is tested as contiguous. |
 | Migration safety copies | Before a database migration, Spark creates an encrypted database copy and retains at most three. | Skipped in Expo Go preview. |
 | Restore safety copies | Before JSON restore, Spark writes a private local JSON safety copy and retains at most three. | User can delete all automatic safety copies in Settings. |
 | SQLite integrity check | `PRAGMA quick_check` runs after migration/open and is shown as a plain-language diagnostics result. | Failure is visible in Settings. |
-| Versioned JSON backup | Schema 4 validates IDs, dates, references, pauses, friction plans, linked habits, deferrals, routine run state, weekly/departure plans, personal experiments, settings, tags, and contexts. | Maximum imported plaintext size is 10 MB. |
+| Versioned JSON backup | Schema 4 validates IDs, dates, references, pauses, friction plans, linked habits, deferrals, routine run state, weekly/leave-on-time plans, one-week changes, settings, tags, and contexts. | Maximum imported plaintext size is 10 MB. Internal backup keys retain their stable historical names for compatibility. |
 | Legacy backup migration | Backup schemas 1, 2, and 3 migrate into schema 4 with safe defaults. | Automated tests cover every released backup schema. |
 | Portable CSV | Exports habit and completion history, including context and completion tags. | Spreadsheet-formula prefixes are neutralized. |
 | Restore preview | Shows file name and entity counts before confirmation. | Current data is replaced only after explicit confirmation. |
@@ -259,6 +270,7 @@ companion, burst celebration, and muted soundscape.
 | Recovery code | Generates a high-entropy human-readable code in device secure storage, reveals it behind device authentication when available, and lets the user explicitly share/print it. Spark has no server-side recovery. | SecureStore only. |
 | Automatic Android folder backup | The user grants access to one folder through Android’s Storage Access Framework. Spark writes at most once per day when opened and changed, keeps seven newest encrypted files, and never requests broad storage permission. | Local/user-selected provider. If the user chooses a third-party cloud-drive folder, that provider’s own plan/network usage is outside Spark. |
 | Device-specific restore safety | Portable backups intentionally clear Quiet now, app lock, automatic-backup folder URI, automatic-backup enabled state, and last-backup time so a restore cannot carry stale device permissions or lock a new device. | Import/export safety rule. |
+| Android Auto Backup disabled | The release manifest sets `allowBackup=false`; Spark does not silently copy its private app sandbox into an OS-managed backup. Users retain explicit manual/password-encrypted export choices. | Native privacy boundary; no cloud runtime. |
 | Draft storage | Habit, routine, focus, main Capture, and quick-capture unfinished text/state is debounced locally. | Cleared after successful submission. |
 | Materialized progress | Long histories use totals and daily summaries rather than loading every completion for the normal app shell. | Habit history queries are bounded. |
 | Native SQLite path compatibility | Android can expose the private SQLite directory as a raw `/data/data/...` path. Spark converts it to a `file://` URI only for Expo FileSystem listing while retaining the raw path for SQLite backup/deletion, preventing startup failure during migration safety-copy pruning. | Local path normalization; native regression-tested; no permission or cloud access. |
@@ -289,8 +301,9 @@ All of these user-facing local entities are represented in JSON export/import wh
 | Today widget | Displays one eligible action and a clearly labeled Log tiny entry point. Opening it requires confirmation before logging. | Native development/release build required. |
 | Quick Capture widget | Opens the minimal quick-capture route. | Native development/release build required. |
 | Focus widget | Shows local timer state and opens reliable pause/resume action routes. The displayed remaining time is derived from timestamps on every OS widget render; launchers still control periodic refresh frequency. | Native development/release build and launcher QA required. |
+| Routine widget | Shows the current persisted routine step, step count, and paused state, or a calm create-routine empty state. Tapping only opens the routine; it never advances or completes a step. | Native Android build required; local SQLite/AsyncStorage snapshot only; $0 runtime at every user count. |
 | Progress widget | Shows lifetime wins, fixed Spark points, and today’s win count from the same small local snapshot as Today, then opens Progress. It creates no streak deadline and sends no data. | Native Android build required; AsyncStorage snapshot only; $0 runtime at every user count. |
-| Toolkit widget | A compact four-action surface opens Quick Capture, two-minute Focus, Departure mode, or Help me now. No habit/note text is placed in shortcut metadata. | Static native Android widget; $0 runtime at every user count. |
+| Toolkit widget | A compact four-action surface opens Quick Capture, two-minute Focus, leave-on-time planning, or Help me now. No habit/note text is placed in shortcut metadata. | Static native Android widget; $0 runtime at every user count. |
 | Static launcher shortcuts | Long-pressing Spark exposes Quick capture, 2-minute focus, Rescue my day, and Resume routine. Shortcut metadata contains no habit or note content. | Generated native Android resources; launcher QA required. |
 | Share target | Receives shared text/URLs into Capture. | Android is enabled first; no storage/contact/location permission. |
 | Local notifications | Schedules occurrence-aware reminders and actions. | Native development build needed for reliable action QA. |
@@ -344,7 +357,7 @@ permissions disproportionate to current value:
 - location tracking;
 - app blocking or accessibility-service control;
 - random rewards, paid/recurring streak insurance, or loss-framed notifications (Spark’s free
-  local Flex passes and planned rest are transparent continuity tools, not monetized repair);
+  local streak saves and planned breaks are transparent continuity tools, not monetized repair);
 - mandatory analytics, advertising SDKs, or session replay;
 - microphone recording;
 - health-platform data access;
@@ -358,9 +371,9 @@ permissions disproportionate to current value:
 All actionable local-first UX items in
 [10-experience-roadmap.md](./10-experience-roadmap.md), including its **Helpful next layer**, plus
 the subsequent assistive expansion (Simple mode, contextual help, weekly reset, friction toolkit,
-departure planning, privacy controls, encrypted folder backup, shortcuts, diagnostics,
-localization, deliberate sharing, calendar export, personal experiments, the focus widget, and
-optional non-punitive Momentum streaks)
+leave-on-time planning, privacy controls, encrypted folder backup, shortcuts, diagnostics,
+localization, deliberate sharing, calendar export, one-week changes, the focus widget, and
+optional non-punitive streaks)
 are implemented in code. What remains falls into four explicit groups:
 
 1. **Deliberately rejected/deferred product ideas:** the items above, plus optional aggregate
@@ -377,20 +390,20 @@ are implemented in code. What remains falls into four explicit groups:
 
 The original notes' casino-style variable rewards and paid/loss-framed streak insurance were not
 copied. They are replaced with fixed rewards, transparent progress, tiny versions, neutral blank
-days, comeback support, and optional local Momentum continuity tools that cannot be purchased.
+days, comeback support, and optional local streak continuity tools that cannot be purchased.
 The original “growing avatar” widget concept was also
 not copied literally: Spark uses an actionable Today widget and a Quick Capture widget, while
 companions live in Focus where they do not pressure home-screen engagement.
 
 ## Automated coverage
 
-The repository includes **238 automated tests** and a root coverage gate:
+The repository includes **257 automated tests** and a root coverage gate:
 
 ```powershell
 npm.cmd run test:coverage
 ```
 
-Current measured coverage is 51.32% statements across every mobile route/source file, 99.58% in
+Current measured coverage is 52.61% statements across every mobile route/source file, 99.58% in
 the domain package, 88.53% in the control-plane HTTP application, and 73.76% across admin source.
 The mobile figure intentionally counts large screen/editor files that are still primarily covered
 by device QA; service and local-helper coverage is substantially higher.
@@ -407,18 +420,18 @@ Focused checks cover:
   limits, retention, restore safety copies, CSV injection protection, reference validation,
   context, and routine recovery state;
 - schema-4 plans/experiments/friction migration and reference validation;
-- optional Momentum opt-in, daily/two-day window math, duplicate-win resistance, gaps, future
-  starts, pauses, planned delay, Flex restoration/earning, milestones, local persistence, and
+- optional streak opt-in, daily/two-day period math, duplicate-completion resistance, gaps, future
+  starts, pauses, planned breaks, streak-save restoration/earning, milestones, local persistence, and
   backup validation;
 - contiguous database migration versions, native SQLCipher refusal, and integrity reporting;
 - central provider persistence for completions, capture, focus, routines, plans, settings,
   entitlement, deferrals, notification actions, widget synchronization, and automatic backup;
-- personal-experiment application and neutral comparison;
-- departure calculations, calendar handoff, deliberate progress sharing, and Quiet now;
+- one-week-change application and neutral comparison;
+- leave-on-time calculations, calendar handoff, deliberate progress sharing, and Quiet now;
 - Lithuanian localization plus English fallback behavior;
 - timestamp-derived focus-widget state and pause/resume route actions;
 - diagnostics redaction, corrupt diagnostic recovery, error boundary fallback, and themes;
-- capacity and settings accessibility components;
+- energy and settings accessibility components;
 - control-plane health/readiness/auth, privacy, support lifecycle, purchase states, entitlement
   expiry, bounded admin lists, roles, grants, promo inventory, audit filters, and RTDN;
 - admin shell setup/session behavior plus configuration, user grants, private support, official
@@ -440,11 +453,11 @@ system kills the process.
 | Today and Progress | `apps/mobile/app/(tabs)/index.tsx`, `journey.tsx` |
 | First-use glossary | `apps/mobile/app/guide.tsx`, `onboarding.tsx` |
 | Focus and soundscape | `apps/mobile/app/(tabs)/focus.tsx`, `src/services/soundscapes.ts` |
-| Help, weekly reset, departure, experiments | `apps/mobile/app/help.tsx`, `weekly-reset.tsx`, `departure.tsx`, `experiments.tsx` |
+| Help, weekly reset, leave-on-time planning, one-week changes | `apps/mobile/app/help.tsx`, `weekly-reset.tsx`, `departure.tsx`, `experiments.tsx` |
 | Progress-card sharing and calendar bridge | `apps/mobile/app/share-progress.tsx`, `src/services/calendarBridge.ts` |
 | Capture and Android share | `apps/mobile/app/(tabs)/capture.tsx`, `src/state/SparkProvider.tsx` |
 | Habit editing/history | `src/components/HabitEditor.tsx`, `app/habit/[id]/history.tsx` |
-| Momentum streak domain/UI | `packages/domain/src/momentum.ts`, `src/components/MomentumCard.tsx`, `app/(tabs)/journey.tsx` |
+| Optional streak domain/UI (internal `momentum` name) | `packages/domain/src/momentum.ts`, `src/components/MomentumCard.tsx`, `app/(tabs)/journey.tsx` |
 | Routine editing/running | `src/components/RoutineEditor.tsx`, `app/routine/[id].tsx` |
 | Notifications | `apps/mobile/src/services/notifications.ts` |
 | Android widgets | `apps/mobile/src/widgets/`, `apps/mobile/app.config.ts` |

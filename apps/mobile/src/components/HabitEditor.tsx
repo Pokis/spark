@@ -454,7 +454,7 @@ export function HabitEditor({
 
       <Card>
         <SectionHeading>Three valid sizes</SectionHeading>
-        <Muted>Each version is a win. Points are fixed and transparent—not randomized.</Muted>
+        <Muted>Each version becomes a win when completed. Tiny earns 1 point, standard 2, and stretch 3.</Muted>
         <View style={styles.variantRow}>
           <View style={styles.variantInput}>
             <FormField label="Tiny version" value={tiny} onChangeText={setTiny} maxLength={100} />
@@ -512,8 +512,8 @@ export function HabitEditor({
       <Card>
         <SectionHeading>Friction toolkit</SectionHeading>
         <Muted>
-          Optional prompts for making the action easier before motivation is required. Spark
-          stores these locally and never turns them into a score.
+          Record setup cues, materials, the first physical step, and a fallback. Spark stores
+          these prompts locally for future starts.
         </Muted>
         <FormField
           label="Environment setup"
@@ -562,7 +562,7 @@ export function HabitEditor({
       </Card>
 
       <Card>
-        <SectionHeading>Flexible rhythm</SectionHeading>
+        <SectionHeading>How often should Spark suggest this?</SectionHeading>
         <View style={styles.choices}>
           {(
             [
@@ -614,20 +614,19 @@ export function HabitEditor({
       </Card>
 
       <Card>
-        <SectionHeading>Optional Momentum streak</SectionHeading>
+        <SectionHeading>Optional streak</SectionHeading>
         <Muted>
-          A streak can be encouraging without becoming a debt. Momentum celebrates completed
-          windows, keeps your personal best, and never removes Spark points or habit history.
+          Celebrate completed periods with a current streak, completed-period total, and personal best.
         </Muted>
         <SettingRow
-          title="Track a Momentum streak"
-          description="Off by default for every habit. You can turn it off again without deleting its history."
+          title="Track a streak for this habit"
+          description="Turn on daily or every-other-day streak tracking for this habit."
           value={momentumEnabled}
           onValueChange={setMomentumEnabled}
         />
         {momentumEnabled ? (
           <>
-            <Muted>How often should one logged win continue Momentum?</Muted>
+            <Muted>How often should one completed action continue the streak?</Muted>
             <View style={styles.choices}>
               <Chip
                 label="Every day"
@@ -642,23 +641,23 @@ export function HabitEditor({
             </View>
             <Body>
               {momentumCadence === 'daily'
-                ? 'One win during each calendar day continues it.'
-                : 'One win anywhere in each two-day window continues it.'}
+                ? 'One completed action during each calendar day continues it.'
+                : 'One completed action anywhere in each two-day period continues it.'}
             </Body>
             <Muted>
-              You begin with 2 Flex passes and earn another for every 5 completed windows (up to
-              3 held). Flex passes and planned delays preserve continuity but never add a fake
-              win. Manage them in Progress.
+              You begin with 2 streak saves and earn another for every 5 completed periods (up to
+              3 held). Streak saves and planned breaks preserve continuity for selected periods.
+              Completed-action history continues to come from Done taps. Manage saves in Progress.
             </Muted>
             <Muted>
-              Your Flexible rhythm above still decides when Spark suggests this habit. Momentum
-              only controls this optional celebration.
+              Your schedule above still decides when Spark suggests this habit. The streak only
+              adds an optional reward.
             </Muted>
             {habit?.momentum && habit.momentum.cadence !== momentumCadence ? (
               <Muted>
-                Changing cadence recalculates windows from the original Momentum start. Any old
-                protection marker that is no longer on a window boundary is removed; completed
-                wins and Spark points remain untouched.
+                Changing how often recalculates periods from the original streak start. Any old
+                protection that no longer fits is removed; completed actions and points remain
+                untouched.
               </Muted>
             ) : null}
           </>
@@ -689,14 +688,14 @@ export function HabitEditor({
           ))}
         </View>
         <SettingRow
-          title="Gentle local reminder"
+          title="Local reminder"
           description="Scheduled by this device. No cloud required."
           value={reminderEnabled}
           onValueChange={setReminderEnabled}
         />
         {reminderEnabled ? (
           <View style={styles.timePicker}>
-            <Muted>Choose a forgiving window or an exact local time.</Muted>
+            <Muted>Choose a time-of-day window or an exact local time.</Muted>
             <View style={styles.choices}>
               {(
                 [
@@ -741,7 +740,7 @@ export function HabitEditor({
               </>
             ) : (
               <Muted>
-                Spark will place the invitation gently within the {reminderWindow} window.
+                Spark will schedule the reminder within the {reminderWindow} window.
               </Muted>
             )}
             {reminderWindow === 'exact' && showTimePicker && Platform.OS === 'ios' ? (
@@ -759,11 +758,11 @@ export function HabitEditor({
                   `${icon} A small Spark?`,
                   `${tiny}\n\nTiming: ${
                     reminderWindow === 'exact' ? preferredTime : reminderWindow
-                  }\nReminder feedback: silent sound, one gentle device vibration\nCompletion feedback: ${
+                  }\nReminder feedback: silent sound, one device vibration\nCompletion feedback: ${
                     spark.settings.sensoryProfile
                   }, ${
                     spark.settings.hapticsEnabled ? 'haptic enabled' : 'haptic muted'
-                  }\nActions: Log tiny win · Later · Quiet today`
+                  }\nActions: Done · Later · Hide today`
                 )
               }
             />
@@ -776,7 +775,7 @@ export function HabitEditor({
         <Card>
           <Muted>
             Spark will start with a 1-minute tiny version, a 5-minute standard version, a
-            15-minute stretch, and a flexible daily rhythm. Open fine-tuning whenever you want
+            15-minute stretch, and a daily suggestion. Open fine-tuning whenever you want
             different details.
           </Muted>
         </Card>
@@ -792,8 +791,8 @@ export function HabitEditor({
 
       {habit ? (
         <Card>
-          <SectionHeading>Need breathing room?</SectionHeading>
-          <Body>Pausing is planning, not failure. Existing progress stays exactly where it is.</Body>
+          <SectionHeading>Pause this habit</SectionHeading>
+          <Body>Choose a pause length. Completed-action history remains visible in Progress.</Body>
           <View style={styles.pauseActions}>
             <Button
               label="Pause 1 day"

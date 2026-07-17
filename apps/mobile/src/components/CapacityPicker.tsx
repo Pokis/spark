@@ -4,9 +4,9 @@ import { Chip } from './Chip';
 import { Muted, SectionHeading } from './Typography';
 
 const options: { value: Capacity; label: string; description: string }[] = [
-  { value: 'empty', label: '🪫 Running low', description: 'Show the gentlest starts' },
-  { value: 'steady', label: '🌿 Steady', description: 'Keep it practical' },
-  { value: 'ready', label: '⚡ Ready', description: 'Offer a stretch option' }
+  { value: 'empty', label: '🪫 Running low', description: 'Prioritize tiny actions' },
+  { value: 'steady', label: '🌿 Steady', description: 'Prioritize standard actions' },
+  { value: 'ready', label: '⚡ Ready', description: 'Include stretch actions' }
 ];
 
 export function CapacityPicker({
@@ -19,8 +19,8 @@ export function CapacityPicker({
   return (
     <View style={styles.wrapper}>
       <View>
-        <SectionHeading>What kind of day is this?</SectionHeading>
-        <Muted>This changes suggestions, never your worth or your progress.</Muted>
+        <SectionHeading>How much energy do you have?</SectionHeading>
+        <Muted>This only changes the action suggestions shown below.</Muted>
       </View>
       <View style={styles.chips}>
         {options.map((option) => (

@@ -35,8 +35,8 @@ npm installation without changing your machine's execution policy.
 5. Open **Device Manager**, create a recent Pixel virtual device with Google Play, and start it.
 
 Expo SDK 57 currently compiles and targets Android API 36 through its native template. Google Play
-currently requires new apps and updates to target Android 15/API 35 or newer, so Spark is above
-the minimum. Always re-check the
+requires Android 15/API 35 for new apps until August 30, 2026 and has announced Android 16/API 36
+for new apps and updates from August 31, 2026. Spark meets that announced level. Always re-check the
 [live target API requirement](https://developer.android.com/google/play/requirements/target-sdk)
 and [Expo SDK platform table](https://docs.expo.dev/versions/latest/) before release.
 

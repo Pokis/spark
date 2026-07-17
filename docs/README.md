@@ -8,11 +8,12 @@ task below; you do not need to read the repository front to back.
 1. [START-HERE.md](../START-HERE.md) — first commands and the shortest beginner path.
 2. [Run the mobile app](./02-run-mobile.md) — Expo Go, Android emulator/device, and debugging.
 3. [Testing](./testing.md) — automated checks and the device test matrix.
-4. [Android release](./03-android-release.md) — signed build and Play Console walkthrough.
-5. [Release checklist](./release-checklist.md) — final go/no-go list.
+4. [Android release](./03-android-release.md) — beginner, field-by-field build and Play Console walkthrough.
+5. [Release checklist](./release-checklist.md) — staged Internal, Closed, and Production gates.
 
 On Windows, [PowerShell command helper](./12-powershell-tools.md) provides guided commands for
-setup, running, testing, Android utilities, and optional local services.
+setup, running, testing, Android utilities, EAS releases, guarded Firebase/Google Cloud deployment,
+and optional local services.
 
 Cloud is optional. Read the [cost register](./08-cost-controls.md) before the
 [Google Cloud guide](./04-google-cloud.md).
@@ -43,10 +44,13 @@ folder backup permissions, billing, accessibility, SQLCipher, sound, and Android
 ### I want to release the free Android app
 
 1. [Android release guide](./03-android-release.md)
-2. [Privacy and Google Play policy preparation](./09-data-privacy-and-play-policy.md)
-3. [Privacy-policy template](./privacy-policy.md)
-4. [Release checklist](./release-checklist.md)
+2. [Release checklist](./release-checklist.md)
+3. [Privacy-policy template](./privacy-policy.md) when the guide tells you to fill it
+4. [Privacy and Google Play policy reference](./09-data-privacy-and-play-policy.md) only when
+   completing Play's declarations
 
+Start with the Android guide's **recommended first release** and stop after its Internal-testing
+steps. It explains every identity file, policy placeholder, store field, command, and example.
 The first free release can remain completely offline and have a $0 cloud runtime.
 
 ### I want support, grants, purchases, or the admin dashboard
@@ -91,8 +95,8 @@ target; iOS-specific StoreKit, widget, native build, and device QA remain future
 | --- | --- |
 | [testing.md](./testing.md) | test commands, device matrix, cloud/purchase QA |
 | [quality-review.md](./quality-review.md) | implemented findings and remaining manual gates |
-| [03-android-release.md](./03-android-release.md) | Android signing, AAB, tracks, and rollout |
-| [release-checklist.md](./release-checklist.md) | final go/no-go gate |
+| [03-android-release.md](./03-android-release.md) | beginner package-ID, privacy, signing, AAB, Play fields, tracks, and rollout walkthrough |
+| [release-checklist.md](./release-checklist.md) | staged first-upload, Closed-test, and Production gates plus complete evidence list |
 | [09-data-privacy-and-play-policy.md](./09-data-privacy-and-play-policy.md) | Data safety, health, content, and privacy declarations |
 | [privacy-policy.md](./privacy-policy.md) | operator-fillable privacy policy |
 | [07-ios-later.md](./07-ios-later.md) | later iPhone work |
@@ -130,7 +134,7 @@ target; iOS-specific StoreKit, widget, native build, and device QA remain future
 
 Use the [feature catalog](./11-feature-catalog.md) for exact behavior and data boundaries. The
 [experience roadmap](./10-experience-roadmap.md) explains why Spark uses Simple mode, contextual
-help, weekly planning, friction support, Departure mode, personal experiments, deliberate
+help, weekly planning, friction support, Leave on time, one-week changes, deliberate
 sharing, and explicit calendar bridges. The [cost register](./08-cost-controls.md) confirms that
 all of those features, encrypted folder backups, localization, diagnostics, shortcuts, and the
 Focus widget have $0 Spark cloud runtime cost.

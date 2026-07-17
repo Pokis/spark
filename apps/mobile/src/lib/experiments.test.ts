@@ -113,7 +113,7 @@ describe('personal experiments', () => {
       'UTC'
     );
     expect(result.baselineDays).toBe(1);
-    expect(result.summary).toContain('No clear difference');
+    expect(result.summary).toContain('The counts matched');
   });
 
   it('describes both higher and lower local comparisons without claiming causation', () => {
@@ -134,7 +134,7 @@ describe('personal experiments', () => {
       source: 'today'
     };
     expect(compareExperiment(tinyExperiment, [during], 'UTC').summary).toContain(
-      'may have fit better'
+      'completed-action count increased'
     );
     const before = {
       ...during,
@@ -144,7 +144,7 @@ describe('personal experiments', () => {
       localDate: '2026-07-04'
     };
     expect(compareExperiment(tinyExperiment, [before], 'UTC').summary).toContain(
-      'may not have helped'
+      'choose what to try next'
     );
   });
 });

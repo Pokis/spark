@@ -14,21 +14,21 @@ You do not need previous mobile-development experience to run Spark.
 Open PowerShell in this folder and run:
 
 ```powershell
-npm.cmd install
-npm.cmd run doctor
-npm.cmd run start
+.\spark.cmd install
+.\spark.cmd doctor
+.\spark.cmd start
 ```
 
-On Windows, you can use the guided helper instead:
+For native Android development, use the guided setup and launch commands:
 
 ```powershell
 .\spark.cmd
 .\spark.cmd setup-android -Persist
-.\spark.cmd start -Target Web
+.\spark.cmd android -Select
 ```
 
 Every helper command explains its parameters with `-Help`, for example
-`.\spark.cmd test -Help`.
+`.\spark.cmd test -Help`, `.\spark.cmd release -Help`, or `.\spark.cmd deploy -Help`.
 
 PowerShell on this machine may block `npm.ps1`; using `npm.cmd` avoids that problem.
 
@@ -39,11 +39,11 @@ development build, first install Android Studio by following
 ## The five commands you will use most
 
 ```powershell
-npm.cmd run doctor        # Explains anything missing on your computer
-npm.cmd run start         # Starts the mobile development server
-npm.cmd run android       # Builds/runs the Android app when Android Studio is installed
-npm.cmd run test:ci       # Runs the automated test suite once
-npm.cmd run release:check # Checks whether a release is ready
+.\spark.cmd doctor                  # Explains anything missing on your computer
+.\spark.cmd start                   # Starts the installed development client
+.\spark.cmd android -Select         # Builds/runs on a selected Android device
+.\spark.cmd test                    # Runs the automated test suite once
+.\spark.cmd release -Action Inspect # Shows release identity/readiness without network access
 ```
 
 Choose the path that matches what you are doing:
@@ -55,6 +55,10 @@ Choose the path that matches what you are doing:
   [release checklist](./docs/release-checklist.md).
 - Optional cloud: read [costed features and switches](./docs/08-cost-controls.md)
   before [Google Cloud setup](./docs/04-google-cloud.md).
+
+When you reach either later path, the local starting points are
+`.\spark.cmd release -Help` and `.\spark.cmd deploy -Action Status`. Cloud status is read-only,
+and Spark does not deploy cloud resources merely because you run or release the offline app.
 
 The purpose-based map for every document is [docs/README.md](./docs/README.md).
 

@@ -22,17 +22,17 @@ const terms = [
   {
     icon: 'checkmark-circle-outline' as const,
     title: 'Win',
-    body: 'An action you completed and deliberately logged. Blank days and deferred actions are not failures.'
+    body: 'An action you completed and deliberately logged. Each win appears in your progress.'
   },
   {
     icon: 'sparkles-outline' as const,
     title: 'Spark points',
-    body: 'Optional, predictable progress points: tiny earns 1, standard earns 2, and stretch earns 3. They never expire or buy anything.'
+    body: 'Optional, fixed progress points: tiny earns 1, standard earns 2, and stretch earns 3. Your total shows the action sizes you completed.'
   },
   {
     icon: 'flame-outline' as const,
-    title: 'Momentum streak',
-    body: 'An optional per-habit chain of completed daily or two-day windows. Flex passes and planned delays can preserve continuity without adding fake wins; your best and ordinary progress are never erased.'
+    title: 'Optional streak',
+    body: 'A daily or every-other-day streak you can turn on for a habit. Streak saves and planned breaks maintain continuity, while completed actions and personal bests remain visible.'
   }
 ];
 
@@ -48,8 +48,8 @@ export default function GuideScreen() {
         <Eyebrow>Quick guide</Eyebrow>
         <H1>How Spark works</H1>
         <Body>
-          Spark is the app. It turns habits into smaller actions and remembers the actions you
-          choose to log—without a missed-day score.
+          Spark turns habits into clear action sizes and keeps a progress record of every action
+          you choose to mark Done.
         </Body>
       </View>
 
@@ -64,7 +64,7 @@ export default function GuideScreen() {
             <Text style={[styles.summaryNumber, { color: theme.text }]}>
               {spark.completionTotals.totalWins}
             </Text>
-            <Muted>logged wins</Muted>
+            <Muted>completed actions</Muted>
           </View>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryNumber, { color: theme.text }]}>
@@ -112,11 +112,11 @@ export default function GuideScreen() {
           optional.
         </Muted>
         <Muted>
-          2. Tapping Log records that action immediately as a win and adds its fixed point value.
+          2. Tapping Done records that action immediately and adds its fixed point value.
         </Muted>
         <Muted>
-          3. Later moves an action out of the way. One-thing day temporarily shows only one tiny
-          action. Neither records a failure.
+          3. Later reschedules an action. One-action view highlights a single tiny action. Your
+          completed-action record grows whenever you tap Done.
         </Muted>
       </Card>
 

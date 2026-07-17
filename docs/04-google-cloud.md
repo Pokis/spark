@@ -46,10 +46,10 @@ local dashboard into making emulator/API requests; it remains `false` in the com
 Start Auth/Firestore/Hosting, wait for readiness, then seed and run the apps:
 
 ```powershell
-npm.cmd run emulators
-npm.cmd run emulators:seed
-npm.cmd run api
-npm.cmd run admin
+.\spark.cmd emulators
+.\spark.cmd seed
+.\spark.cmd api
+.\spark.cmd admin
 ```
 
 The local account is `owner@spark.local` / `SparkLocalOnly123!`. The seeder accepts only a
@@ -69,13 +69,12 @@ Install:
 Then:
 
 ```powershell
-gcloud.cmd auth login
-gcloud.cmd auth application-default login
-gcloud.cmd config set project YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Login -Provider Google -ProjectId YOUR_PROJECT_ID
 ```
 
-On Windows, `gcloud.cmd` avoids the same PowerShell script-policy problem that can affect
-`npm.ps1`.
+The wrapper runs both Google Cloud CLI and Application Default Credentials authentication, then
+selects the exact project. On Windows it uses `gcloud.cmd`, avoiding the script-policy problem
+that can affect PowerShell shims.
 
 Copy Terraform variables:
 
@@ -102,14 +101,20 @@ Do not set the master switch back to `false` after real data exists without care
 the destruction plan; normal on/off control happens through the individual app-config switches.
 
 ```powershell
-Set-Location infra\terraform
-terraform init
-terraform fmt -check
-terraform validate
-terraform plan
-terraform apply
-Set-Location ..\..
+.\spark.cmd deploy -Action Status
+.\spark.cmd deploy -Action Plan
 ```
+
+`Status` is read-only. `Plan` initializes Terraform, checks formatting, validates configuration,
+saves `infra/terraform/spark.tfplan`, and prints it. It does not apply changes. Review the complete
+plan, especially every create/destroy marker and the cost-bearing flags, then run:
+
+```powershell
+.\spark.cmd deploy -Action Apply
+```
+
+Apply shows the saved plan again, rejects it if Terraform inputs changed afterward, and requires
+typing `APPLY <project-id>`. Passing `-Yes` is intended only for controlled automation.
 
 If the project was already added to Firebase or already has Firestore, import those resources
 into Terraform instead of creating duplicates. Never delete a production Firestore database to
@@ -154,19 +159,18 @@ client rules.
 From the repository root:
 
 ```powershell
-$project = "YOUR_PROJECT_ID"
-$region = "europe-central2"
-$image = "$region-docker.pkg.dev/$project/spark/control-plane:0.1.0"
-
-gcloud.cmd builds submit --config cloudbuild.yaml --substitutions "_IMAGE=$image" .
+.\spark.cmd deploy -Action Image -ProjectId YOUR_PROJECT_ID
 ```
 
-Put the resulting image URI in `terraform.tfvars`, then apply again:
+The wrapper tests/builds the API locally, prints the full image URI, warns about Cloud Build and
+Artifact Registry cost, and requires typing `BUILD IMAGE <project-id>`. It uses the mobile version
+as the tag unless `-ImageTag` is supplied.
+
+Put the resulting image URI in `terraform.tfvars`, then create and review a new plan:
 
 ```powershell
-Set-Location infra\terraform
-terraform apply
-Set-Location ..\..
+.\spark.cmd deploy -Action Plan
+.\spark.cmd deploy -Action Apply
 ```
 
 Terraform outputs the Cloud Run URL. Add it to `apps/admin/.env.local` and
@@ -192,13 +196,17 @@ The allowlist is an environment variable, not a long-term role database.
 
 ## 6. Deploy Firestore rules, indexes, admin, and privacy page
 
-Copy `.firebaserc.example` to `.firebaserc` and replace the project ID:
+Authenticate once, then deploy to an explicit project ID:
 
 ```powershell
-npm.cmd run build --workspace @spark/admin
-npx.cmd firebase-tools login
-npx.cmd firebase-tools deploy --only hosting,firestore:rules,firestore:indexes
+.\spark.cmd deploy -Action Login -Provider Firebase
+.\spark.cmd deploy -Action Firebase -ProjectId YOUR_PROJECT_ID
 ```
+
+The Firebase action runs the release/privacy check and admin build first, then deploys only
+Hosting, Firestore rules, and Firestore indexes after typed confirmation. Use `-Action Hosting`
+instead when you only want the static privacy/admin site and do not want to deploy Firestore
+configuration.
 
 Use the resulting Hosting URL in `allowed_origins`, apply Terraform, and confirm the dashboard can
 load.

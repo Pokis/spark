@@ -13,9 +13,15 @@ import {
 } from './SparkFocusWidget';
 import { SparkProgressWidget } from './SparkProgressWidget';
 import { SparkToolkitWidget } from './SparkToolkitWidget';
+import {
+  emptyRoutineSnapshot,
+  SparkRoutineWidget,
+  type SparkRoutineSnapshot
+} from './SparkRoutineWidget';
 
 export const WIDGET_SNAPSHOT_KEY = 'spark.widget.snapshot.v1';
 export const FOCUS_WIDGET_SNAPSHOT_KEY = 'spark.focus-widget.snapshot.v1';
+export const ROUTINE_WIDGET_SNAPSHOT_KEY = 'spark.routine-widget.snapshot.v1';
 
 async function snapshot(): Promise<SparkWidgetSnapshot> {
   try {
@@ -35,7 +41,26 @@ async function focusSnapshot(): Promise<SparkFocusSnapshot> {
   }
 }
 
+async function routineSnapshot(): Promise<SparkRoutineSnapshot> {
+  try {
+    const raw = await AsyncStorage.getItem(ROUTINE_WIDGET_SNAPSHOT_KEY);
+    return raw ? (JSON.parse(raw) as SparkRoutineSnapshot) : emptyRoutineSnapshot;
+  } catch {
+    return emptyRoutineSnapshot;
+  }
+}
+
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
+  if (props.widgetInfo.widgetName === 'SparkRoutine') {
+    if (
+      props.widgetAction === 'WIDGET_ADDED' ||
+      props.widgetAction === 'WIDGET_UPDATE' ||
+      props.widgetAction === 'WIDGET_RESIZED'
+    ) {
+      props.renderWidget(<SparkRoutineWidget snapshot={await routineSnapshot()} />);
+    }
+    return;
+  }
   if (props.widgetInfo.widgetName === 'SparkToolkit') {
     if (
       props.widgetAction === 'WIDGET_ADDED' ||

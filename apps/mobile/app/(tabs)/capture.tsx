@@ -79,8 +79,8 @@ export default function CaptureScreen() {
         <Eyebrow>External memory</Eyebrow>
         <H1>Get it out of your head.</H1>
         <Muted>
-          No categories required. Capture first; decide later—or never. Text shared from other
-          Android apps lands here locally.
+          Capture a thought now and organize it later if useful. Text shared from other Android
+          apps lands here locally.
         </Muted>
       </View>
       <Card style={[styles.captureCard, { borderColor: theme.purple }]}>
@@ -241,7 +241,7 @@ export default function CaptureScreen() {
         <Card style={styles.empty}>
           <Text style={styles.emptyEmoji}>🫧</Text>
           <SectionHeading>
-            {query ? 'No parked thought matches that search.' : 'Your head has some breathing room.'}
+            {query ? 'Try another search.' : 'Your capture list is clear.'}
           </SectionHeading>
           <Muted>Anything parked during a focus session will appear here too.</Muted>
         </Card>
@@ -250,7 +250,7 @@ export default function CaptureScreen() {
       {resolved.length ? (
         <View style={styles.released}>
           <SectionHeading>Released</SectionHeading>
-          <Muted>Blanked out of the way, not graded.</Muted>
+          <Muted>Items you moved out of the active list.</Muted>
           {resolved.slice(0, 8).map((item) => (
             <Card key={item.id} style={styles.releasedItem}>
               <Text style={[styles.releasedText, { color: theme.textMuted }]}>{item.text}</Text>

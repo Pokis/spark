@@ -77,6 +77,28 @@ Reconnect or re-pair wireless debugging if the device disappears, confirm it wit
 Then rerun the printed `android -Device ...` command. Keep the terminal open: after installation,
 Metro remains running and launches the installed Spark development app.
 
+## Ctrl+C does not stop the development command
+
+Current `spark.cmd start` and `spark.cmd android` launches bypass nested npm shells and explicitly
+clean up Expo's Metro/Gradle child processes. Normally one `Ctrl+C` stops the local command. During
+a brief Metro startup transition, wait for the QR/status display and press it again.
+
+If the terminal or IDE does not deliver Ctrl+C, open a second PowerShell in the repository and use
+the recorded-process fallback:
+
+```powershell
+.\spark.cmd stop
+```
+
+This validates the recorded Node process ID and start time before terminating its child tree, so a
+stale PID file cannot kill an unrelated process. It does not delete app data. The Android app is a
+separate device process and may remain visible after Metro stops; close it normally, or explicitly
+force-stop it with:
+
+```powershell
+.\spark.cmd stop -Device 25113PN0EG
+```
+
 ## Native build became inconsistent after plugin changes
 
 Regenerate Android native files:

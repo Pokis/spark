@@ -36,7 +36,7 @@ export default function DepartureScreen() {
     const id = savedId ?? createId('departure');
     await spark.saveDeparturePlan({
       id,
-      title: title.trim() || 'Departure',
+      title: title.trim() || 'Leave on time',
       targetAt: targetAt.toISOString(),
       bufferMinutes: buffer,
       routineId,
@@ -79,9 +79,9 @@ export default function DepartureScreen() {
   return (
     <Screen>
       <View>
-        <Eyebrow>Time-blindness support</Eyebrow>
-        <H1>Work backward from “out the door.”</H1>
-        <Muted>The buffer is real time, not a penalty. Spark never reads your calendar.</Muted>
+        <Eyebrow>Leave on time</Eyebrow>
+        <H1>Work backward from when you need to leave.</H1>
+        <Muted>Extra preparation time builds a realistic buffer. Calendar export creates one event for you to review.</Muted>
       </View>
 
       <Card>
@@ -127,7 +127,7 @@ export default function DepartureScreen() {
       </Card>
 
       <Card>
-        <SectionHeading>Include a forgiving buffer</SectionHeading>
+        <SectionHeading>Add extra preparation time</SectionHeading>
         <View style={styles.choices}>
           {[0, 10, 15, 20, 30].map((minutes) => (
             <Chip
@@ -155,7 +155,7 @@ export default function DepartureScreen() {
       </Card>
 
       <Card>
-        <Eyebrow>Your runway</Eyebrow>
+        <Eyebrow>Your suggested start time</Eyebrow>
         <SectionHeading>
           Begin around{' '}
           {startAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -166,13 +166,13 @@ export default function DepartureScreen() {
         </Muted>
       </Card>
 
-      <Button label="Start departure runway" onPress={() => void begin()} />
+      <Button label="Start getting ready" onPress={() => void begin()} />
       <Button label="Add this block to my calendar" variant="secondary" onPress={() => void exportCalendar()} />
       <Button
         label="Save without starting"
         variant="ghost"
         onPress={() =>
-          void save().then(() => Alert.alert('Saved', 'Your departure plan is stored locally.'))
+          void save().then(() => Alert.alert('Saved', 'Your leave-on-time plan is stored on this device.'))
         }
       />
     </Screen>

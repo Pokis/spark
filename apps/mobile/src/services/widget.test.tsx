@@ -1,13 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { FocusSession, Habit } from '@spark/domain';
+import type { FocusSession, Habit, Routine } from '@spark/domain';
 import { Platform } from 'react-native';
 import {
   requestNativeWidgetRefresh,
   syncFocusWidget,
+  syncRoutineWidget,
   syncTodayWidget
 } from './widget';
 import {
   FOCUS_WIDGET_SNAPSHOT_KEY,
+  ROUTINE_WIDGET_SNAPSHOT_KEY,
   WIDGET_SNAPSHOT_KEY
 } from '../widgets/widgetTaskHandler';
 
@@ -43,6 +45,18 @@ const focus: FocusSession = {
   pausedSeconds: 0,
   completed: false,
   interruptionCount: 0
+};
+
+const routine: Routine = {
+  id: 'routine',
+  title: 'Leave home',
+  icon: '🚪',
+  color: '#8367E8',
+  createdAt: '2026-07-01T00:00:00.000Z',
+  steps: [
+    { id: 'bag', title: 'Pack bag', estimateMinutes: 2, sortOrder: 0 },
+    { id: 'shoes', title: 'Put on shoes', estimateMinutes: 1, sortOrder: 1 }
+  ]
 };
 
 describe('Android widget synchronization', () => {
@@ -87,7 +101,7 @@ describe('Android widget synchronization', () => {
     expect(stored.tinyLabel).toContain('One line');
   });
 
-  it('persists a calm rest state when no habit is due', async () => {
+  it('persists a progress-focused state when no habit is due', async () => {
     await syncTodayWidget({
       habits: [],
       completions: [],
@@ -98,7 +112,7 @@ describe('Android widget synchronization', () => {
       JSON.parse((await AsyncStorage.getItem(WIDGET_SNAPSHOT_KEY))!)
     ).toMatchObject({
       habitId: null,
-      title: 'Enough for today',
+      title: 'Today’s progress',
       brandMark: '✧'
     });
   });
@@ -139,12 +153,49 @@ describe('Android widget synchronization', () => {
     ).toBe('focus');
   });
 
+  it('persists the current routine step and its paused state', async () => {
+    await syncRoutineWidget([routine], [
+      {
+        routineId: routine.id,
+        stepIndex: 1,
+        tiny: false,
+        paused: true,
+        skippedStepIds: [],
+        startedAt: '2026-07-16T07:55:00.000Z',
+        updatedAt: '2026-07-16T08:00:00.000Z'
+      }
+    ]);
+    expect(
+      JSON.parse((await AsyncStorage.getItem(ROUTINE_WIDGET_SNAPSHOT_KEY))!)
+    ).toMatchObject({
+      routineId: 'routine',
+      title: 'Leave home',
+      currentStep: 'Put on shoes',
+      stepNumber: 2,
+      stepCount: 2,
+      paused: true
+    });
+  });
+
+  it('stores a calm routine creation prompt when there are no routines', async () => {
+    await syncRoutineWidget([], []);
+    expect(
+      JSON.parse((await AsyncStorage.getItem(ROUTINE_WIDGET_SNAPSHOT_KEY))!)
+    ).toMatchObject({
+      routineId: null,
+      title: 'Create a routine',
+      stepNumber: 0
+    });
+  });
+
   it('does nothing on iOS because these widgets are Android-specific', async () => {
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
     await syncTodayWidget({ habits: [habit], completions: [], timeZone: 'UTC' });
     await syncFocusWidget([focus]);
+    await syncRoutineWidget([routine], []);
     expect(await AsyncStorage.getItem(WIDGET_SNAPSHOT_KEY)).toBeNull();
     expect(await AsyncStorage.getItem(FOCUS_WIDGET_SNAPSHOT_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(ROUTINE_WIDGET_SNAPSHOT_KEY)).toBeNull();
   });
 
   it('calls the native widget module when present and fails softly in Expo Go', async () => {

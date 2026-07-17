@@ -30,7 +30,7 @@ export default function HelpScreen() {
   return (
     <Screen>
       <View>
-        <Eyebrow>Contextual help</Eyebrow>
+        <Eyebrow>Help right now</Eyebrow>
         <H1>What is hard right now?</H1>
         <Muted>Pick the closest answer. You do not need to explain or create an account.</Muted>
       </View>
@@ -51,10 +51,10 @@ export default function HelpScreen() {
           <SectionHeading>Make contact with the first object.</SectionHeading>
           <Muted>
             Open the file, touch the shoes, place the cup by the sink, or read one sentence.
-            Stopping after that still counts as starting.
+            That first contact gives you a clear action to complete.
           </Muted>
           <Button
-            label="Turn on One-thing day"
+            label="Show one tiny action"
             onPress={() =>
               void spark
                 .updateSetting('minimumViableDay', true)
@@ -73,7 +73,7 @@ export default function HelpScreen() {
 
       {need === 'overwhelmed' ? (
         <Card style={{ borderColor: theme.purple }}>
-          <SectionHeading>Reduce the number of doors.</SectionHeading>
+          <SectionHeading>Show fewer choices.</SectionHeading>
           <Muted>
             Simple mode keeps one Today action plus Capture, Focus, and any routine already in
             progress. You can turn it off whenever you want.
@@ -94,10 +94,10 @@ export default function HelpScreen() {
 
       {need === 'focus' ? (
         <Card>
-          <SectionHeading>Borrow a body double for two minutes.</SectionHeading>
+          <SectionHeading>Use a quiet companion for two minutes.</SectionHeading>
           <Muted>
-            The timer is restart-safe, and interruptions can be parked without leaving the
-            session.
+            An on-screen companion stays with you. Pause and resume the timer, or park a
+            distracting thought while the session continues.
           </Muted>
           <Button
             label="Start a 2-minute focus"
@@ -110,7 +110,7 @@ export default function HelpScreen() {
 
       {need === 'remember' ? (
         <Card>
-          <SectionHeading>Get it out of working memory.</SectionHeading>
+          <SectionHeading>Write it down before it disappears.</SectionHeading>
           <Muted>No category, due date, or project is required.</Muted>
           <Button
             label="Open quick capture"
@@ -124,7 +124,7 @@ export default function HelpScreen() {
         <Card>
           <SectionHeading>Work backward from the real departure time.</SectionHeading>
           <Muted>Add a buffer and, if useful, pair the plan with a leave-the-house routine.</Muted>
-          <Button label="Open Departure mode" onPress={() => router.push('/departure')} />
+          <Button label="Make a leave-on-time plan" onPress={() => router.push('/departure')} />
         </Card>
       ) : null}
 

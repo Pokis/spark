@@ -35,14 +35,16 @@ describe('feature tutorial hub', () => {
     mockedSpark.mockReturnValue(value);
     const view = await render(<TutorialsScreen />);
 
-    expect(view.getByText('Personal experiments')).toBeTruthy();
-    expect(view.getByText('Home-screen widgets')).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Expand Planning & progress' }));
+    expect(view.getByText('Try a change for a week')).toBeTruthy();
     await fireEvent.press(
-      view.getByRole('button', { name: 'Open tutorial: Personal experiments' })
+      view.getByRole('button', { name: 'Open guide: Try a change for a week' })
     );
     expect(view.getByText('Ask a small question')).toBeTruthy();
-    await fireEvent.press(view.getByRole('button', { name: 'Skip for now' }));
-    expect(view.getByText('Feature tutorials')).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Close this guide' }));
+    expect(view.getByText('Learn how features work')).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Collapse Planning & progress' })).toBeTruthy();
+    expect(view.getByText('Try a change for a week')).toBeTruthy();
     expect(value.updateSetting).not.toHaveBeenCalled();
   });
 
@@ -53,19 +55,27 @@ describe('feature tutorial hub', () => {
     const view = await render(<TutorialsScreen />);
 
     await fireEvent.press(view.getByRole('button', { name: 'Next' }));
-    expect(view.getByText('Spark does not experiment on you')).toBeTruthy();
-    await fireEvent.press(view.getByRole('button', { name: 'Dismiss this tip' }));
+    expect(view.getByText('Choose the exact change')).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Don’t show this tip again' }));
     await waitFor(() =>
       expect(value.updateSetting).toHaveBeenCalledWith('dismissedTutorialIds', ['experiments'])
     );
-    expect(view.getByRole('button', { name: 'Open tutorial: Personal experiments' })).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Expand Planning & progress' }));
+    expect(view.getByRole('button', { name: 'Open guide: Try a change for a week' })).toBeTruthy();
   });
 
   it('always offers replay and can restore contextual tips', async () => {
     const value = spark(['widgets']);
     mockedSpark.mockReturnValue(value);
     const view = await render(<TutorialsScreen />);
-    expect(view.getByRole('button', { name: 'Replay tutorial: Home-screen widgets' })).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Expand Widgets, reminders & privacy' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Replay guide: Home-screen widgets' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Next' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Next' }));
+    expect(view.getByText('Refreshes are intentionally light')).toBeTruthy();
+    expect(view.queryByRole('button', { name: 'Next' })).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Done' }));
+    expect(view.getByRole('button', { name: 'Replay guide: Home-screen widgets' })).toBeTruthy();
     await fireEvent.press(view.getByRole('button', { name: 'Restore all contextual tips' }));
     expect(value.updateSetting).toHaveBeenCalledWith('dismissedTutorialIds', []);
   });
@@ -77,7 +87,7 @@ describe('feature tutorial hub', () => {
     const view = await render(<TutorialsScreen />);
     await fireEvent.press(view.getByRole('button', { name: 'Next' }));
     await fireEvent.press(view.getByRole('button', { name: 'Next' }));
-    await fireEvent.press(view.getByRole('button', { name: 'Open personal experiments' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Try a change' }));
     await waitFor(() => expect(mockedRouter.push).toHaveBeenCalledWith('/experiments'));
     expect(value.updateSetting).toHaveBeenCalledWith('dismissedTutorialIds', ['experiments']);
   });

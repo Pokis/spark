@@ -30,7 +30,7 @@ export function SparkFocusWidget({ snapshot }: { snapshot: SparkFocusSnapshot })
   if (!session || session.endedAt) {
     return (
       <FlexWidget
-        accessibilityLabel="No focus session running. Start a two minute focus session."
+        accessibilityLabel="Start a two minute focus session."
         clickAction="OPEN_URI"
         clickActionData={{ uri: 'spark://focus-launch?minutes=2' }}
         style={{

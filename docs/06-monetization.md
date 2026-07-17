@@ -41,6 +41,20 @@ AI coaching, or any future feature until it exists in the exact released build.
 Avoid advertisements, data brokerage, recurring “streak insurance,” loot boxes, paid reminders,
 and fake urgency.
 
+## Optional creator tip
+
+A low-visibility Settings footer can open `https://buymeacoffee.com/djpokis` for someone who does
+not want Premium but still wants to support the creator. It is deliberately separate from the
+entitlement system: no feature, badge, account state, Spark points, or support priority changes
+after a tip. Spark does not receive payment confirmation or supporter identity.
+
+The build flag `EXPO_PUBLIC_SPARK_CREATOR_TIP_LINK_ENABLED` defaults to `false`. Keep it off for
+Google Play and App Store binaries unless the exact release qualifies for an applicable
+external-payment program and its regional/reporting requirements are implemented. This is not
+treated as the tax-exempt-donation exception. See
+[09-data-privacy-and-play-policy.md](./09-data-privacy-and-play-policy.md) and
+[08-cost-controls.md](./08-cost-controls.md).
+
 ## Why lifetime first
 
 A subscription adds recurring billing expectations, restore complexity, churn pressure, and a

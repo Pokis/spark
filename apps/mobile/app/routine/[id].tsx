@@ -118,13 +118,13 @@ export default function RoutineScreen() {
       <Screen contentStyle={styles.screen}>
         <View>
           <Eyebrow>{routine.icon} {routine.title}</Eyebrow>
-          <H1>Paused without losing your place.</H1>
-          <Muted>Step {stepIndex + 1} is waiting locally. There is no timer or penalty.</Muted>
+          <H1>Routine paused at step {stepIndex + 1}.</H1>
+          <Muted>Your current step is saved on this device.</Muted>
         </View>
         <Card style={styles.center}>
           <Text style={styles.pauseIcon}>Ⅱ</Text>
           <SectionHeading>{step?.title ?? 'Your next step'}</SectionHeading>
-          <Muted>Resume now or leave Spark. The routine will still be here.</Muted>
+          <Muted>Resume this step now or leave it paused for later.</Muted>
         </Card>
         <View style={styles.actions}>
           <Button label="Resume routine" onPress={() => void resumeRoutine()} />
@@ -141,7 +141,7 @@ export default function RoutineScreen() {
           <Eyebrow>{routine.icon} {routine.title}</Eyebrow>
           <H1>{finished ? 'Routine complete.' : `Step ${stepIndex + 1} of ${ordered.length}`}</H1>
           {!finished ? (
-            <Muted>Gentle estimate: about {remainingMinutes} min · around {finishAt}</Muted>
+            <Muted>Estimated time: about {remainingMinutes} min · around {finishAt}</Muted>
           ) : null}
         </View>
         <Pressable
@@ -155,10 +155,10 @@ export default function RoutineScreen() {
       {finished ? (
         <Card style={styles.center}>
           <Text style={styles.finishIcon}>✦</Text>
-          <SectionHeading>You carried yourself through.</SectionHeading>
-          <Muted>No speed score. No perfect execution. The transition happened.</Muted>
+          <SectionHeading>Routine finished.</SectionHeading>
+          <Muted>You reached the end and completed {ordered.length - skippedStepIds.length} of {ordered.length} steps.</Muted>
           {skippedStepIds.length ? (
-            <Muted>{skippedStepIds.length} step{skippedStepIds.length === 1 ? '' : 's'} skipped without penalty.</Muted>
+            <Muted>{skippedStepIds.length} step{skippedStepIds.length === 1 ? ' was' : 's were'} skipped.</Muted>
           ) : null}
         </Card>
       ) : step ? (

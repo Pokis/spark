@@ -1,6 +1,6 @@
 # Spark privacy policy
 
-Effective: July 16, 2026
+Effective: July 17, 2026
 
 Before publishing, replace every `REPLACE_ME` value, have the policy reviewed for the operator's
 jurisdictions, and keep the hosted HTML and this document consistent.
@@ -8,7 +8,7 @@ jurisdictions, and keep the hosted HTML and this document consistent.
 ## Summary
 
 Spark is designed to work without an account or server. Habit names, schedules, optional
-Momentum cadence/protection settings, completion history, capacity check-ins, routines, focus
+streak schedules and streak-save settings, completion history, energy check-ins, routines, focus
 sessions, and captured thoughts stay in an encrypted
 database on the user's device. Spark does not sell personal information or use it for advertising.
 
@@ -25,8 +25,8 @@ Email: `REPLACE_ME@example.com`
 
 Spark stores the information needed to provide its habit, focus, capture, routine, reminder,
 progress, preference, and entitlement-cache features. This data stays on the device unless the
-user deliberately exports a backup, shares selected wins, opens a calendar event draft, or sends
-an optional cloud support message.
+user deliberately exports a backup, shares selected completed actions, opens a calendar event
+draft, or sends an optional cloud support message.
 
 The native app database uses SQLCipher encryption and a key stored through the operating
 system's secure credential storage. No storage mechanism can guarantee security on a compromised
@@ -53,11 +53,11 @@ app lock, or a temporary Quiet now state to a restored device.
 
 ## Deliberate sharing and calendar export
 
-Spark can create a progress-card image or text only from the recent wins the user explicitly
-selects. The system share sheet chooses the destination. Spark has no automatic reporting,
+Spark can create a progress-card image or text only from the recent completed actions the user
+explicitly selects. The system share sheet chooses the destination. Spark has no automatic reporting,
 connected accountability account, public feed, or recipient list.
 
-Spark can open the operating system's create-event screen with one focus or departure block
+Spark can open the operating system's create-event screen with one focus or leave-on-time block
 prefilled. Spark does not list, read, or synchronize the user's calendars and blocks Android
 calendar read/write permissions.
 
@@ -80,8 +80,8 @@ identified cloud feature, Spark may process:
 - Google Play product ID, purchase token, and order metadata required to verify access
 - entitlement status
 
-Spark does not attach local habits, completions, capacity, focus titles, routines, or captured
-thoughts to these requests.
+Spark does not attach local habits, completions, energy check-ins, focus titles, routines, or
+captured thoughts to these requests.
 
 ## Purposes
 

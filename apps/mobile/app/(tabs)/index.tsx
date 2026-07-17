@@ -17,6 +17,7 @@ import { Button } from '../../src/components/Button';
 import { CapacityPicker } from '../../src/components/CapacityPicker';
 import { Card } from '../../src/components/Card';
 import { Chip } from '../../src/components/Chip';
+import { CollapsibleSection } from '../../src/components/CollapsibleSection';
 import { HabitCard } from '../../src/components/HabitCard';
 import { Screen } from '../../src/components/Screen';
 import { SparkBurst } from '../../src/components/SparkBurst';
@@ -40,9 +41,9 @@ const contextOptions = [
   ['phone', 'Phone']
 ] as const;
 const capacityFeedback: Record<Capacity, string> = {
-  empty: 'Running-low selected. Spark is showing gentler action sizes.',
-  steady: 'Steady selected. Spark updated today’s suggestions.',
-  ready: 'Ready selected. Spark can include a stretch option.'
+  empty: 'Low energy selected. Tiny actions are prioritized.',
+  steady: 'Steady energy selected. Standard actions are prioritized.',
+  ready: 'Ready energy selected. Stretch actions can be included.'
 };
 
 function currentPeriod(): 'morning' | 'afternoon' | 'evening' {
@@ -75,7 +76,7 @@ export default function TodayScreen() {
   const [context, setContext] = useState<HabitContext | undefined>(
     checkIn?.context ?? rememberedContext ?? undefined
   );
-  const [checkInExpanded, setCheckInExpanded] = useState(!checkIn);
+  const [checkInExpanded, setCheckInExpanded] = useState(false);
   const [pickedHabitId, setPickedHabitId] = useState<string | null>(null);
   const [savingHabitId, setSavingHabitId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -177,7 +178,6 @@ export default function TodayScreen() {
     setCapacity(value);
     setNotice(capacityFeedback[value]);
     await spark.setCheckIn(value, timeChosen ? minutes ?? null : null, context ?? null);
-    if (timeChosen) setCheckInExpanded(false);
   }
 
   async function chooseMinutes(value: number | undefined) {
@@ -185,11 +185,10 @@ export default function TodayScreen() {
     setTimeChosen(true);
     setNotice(
       value == null
-        ? 'No-clock selected. Spark will not filter actions by time.'
+        ? 'Any amount of time selected. Suggestions will not be filtered by time.'
         : `${value} minutes selected. Today’s suggestions were updated.`
     );
     await spark.setCheckIn(capacity ?? 'steady', value ?? null, context ?? null);
-    if (capacity) setCheckInExpanded(false);
   }
 
   async function chooseContext(value: HabitContext | undefined) {
@@ -219,8 +218,8 @@ export default function TodayScreen() {
     const enabled = !spark.settings.minimumViableDay;
     setNotice(
       enabled
-        ? 'One-thing day is on. Today now shows only one tiny action.'
-        : 'One-thing day is off. Your flexible menu is visible again.'
+        ? 'One-action view is on. Today now shows only one tiny action.'
+        : 'One-action view is off. All suggestions are visible again.'
     );
     await spark.updateSetting('minimumViableDay', enabled);
   }
@@ -274,6 +273,12 @@ export default function TodayScreen() {
   const announcement = spark.remoteConfig.defaults.announcementsEnabled
     ? spark.remoteConfig.announcements.find((item) => item.enabled)
     : undefined;
+  const capacityLabel =
+    capacity === 'empty' ? 'Low' : capacity === 'ready' ? 'Ready' : 'Okay';
+  const timeLabel = timeChosen ? (minutes ? `${minutes} min` : 'Any amount') : 'Any amount';
+  const contextLabel = context
+    ? contextOptions.find(([value]) => value === context)?.[1] ?? context
+    : 'Anywhere';
 
   return (
     <>
@@ -299,7 +304,7 @@ export default function TodayScreen() {
                 : ''}
               {spark.settings.displayName
                 ? `Hi ${spark.settings.displayName}`
-                : 'What feels possible?'}
+                : 'Choose your next win.'}
             </H1>
             {spark.entitlement.premium && spark.settings.supporterBadgeVisible ? (
               <Eyebrow>✦ Spark supporter</Eyebrow>
@@ -318,7 +323,8 @@ export default function TodayScreen() {
         {spark.settings.simpleMode ? (
           <Card style={{ borderColor: theme.purple }}>
             <Eyebrow>Simple mode</Eyebrow>
-            <SectionHeading>Only the next useful doorways.</SectionHeading>
+            <SectionHeading>A shorter Today screen</SectionHeading>
+            <Muted>Only one suggested action and a few quick tools are shown.</Muted>
             <View style={styles.quickActions}>
               <Button
                 label="Quick capture"
@@ -363,30 +369,19 @@ export default function TodayScreen() {
           >
             <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
               <View style={styles.scoreDetails}>
-                <Text style={[styles.score, { color: theme.text }]}>{rewards.totalSparks}</Text>
-                <Muted>Spark points · level {rewards.level}</Muted>
-                <Muted>Tiny 1 · standard 2 · stretch 3</Muted>
+                <Eyebrow>Today so far</Eyebrow>
+                <Text style={[styles.score, { color: theme.text }]}>
+                  {winsToday.length} {winsToday.length === 1 ? 'completed action' : 'completed actions'}
+                </Text>
+                <Muted>{rewards.totalSparks} total Spark points</Muted>
               </View>
               <View style={styles.todayScore}>
-                <Text style={[styles.todayWins, { color: theme.primary }]}>{winsToday.length}</Text>
-                <Muted>wins today</Muted>
                 <Text style={[styles.textAction, { color: theme.primary }]}>View Progress →</Text>
               </View>
             </Card>
           </Pressable>
         ) : winsToday.length ? (
-          <Muted>{winsToday.length} gentle {winsToday.length === 1 ? 'win' : 'wins'} today</Muted>
-        ) : null}
-
-        {spark.settings.minimumViableDay ? (
-          <Card style={{ borderColor: theme.success }}>
-            <Eyebrow>One-thing day is on</Eyebrow>
-            <SectionHeading>Spark is showing only one tiny action.</SectionHeading>
-            <Muted>
-              You turned on this temporary view. It hides the rest of today’s menu; it does not
-              delete habits or record missed actions.
-            </Muted>
-          </Card>
+          <Muted>{winsToday.length} {winsToday.length === 1 ? 'win' : 'wins'} today</Muted>
         ) : null}
 
         {announcement ? (
@@ -397,23 +392,23 @@ export default function TodayScreen() {
           </Card>
         ) : null}
 
-        {checkInExpanded ? (
-          <Card>
+        <CollapsibleSection
+          title="Adjust today’s suggestions"
+          summary={`Energy: ${capacityLabel} · Time: ${timeLabel} · Place: ${contextLabel}`}
+          expanded={checkInExpanded}
+          onExpandedChange={setCheckInExpanded}
+        >
             <View style={styles.summaryHeading}>
-              <SectionHeading>Shape today’s menu</SectionHeading>
+              <Muted>Use energy, time, and place to tune the suggestions below.</Muted>
               {yesterdayCheckIn ? (
                 <Pressable accessibilityRole="button" onPress={() => void useYesterday()}>
                   <Text style={[styles.textAction, { color: theme.primary }]}>Same as yesterday</Text>
                 </Pressable>
               ) : null}
             </View>
-            <Muted>
-              Optional: these answers only change which action sizes appear below. They do not
-              affect your score or mark anything missed.
-            </Muted>
             <CapacityPicker value={capacity} onChange={(value) => void chooseCapacity(value)} />
             <View style={styles.timeArea}>
-              <Muted>How much room do you have?</Muted>
+              <SectionHeading>How much time do you have?</SectionHeading>
               <View style={styles.chips}>
                 {timeOptions.map((value) => (
                   <Chip
@@ -424,14 +419,14 @@ export default function TodayScreen() {
                   />
                 ))}
                 <Chip
-                  label="No clock"
+                  label="Any amount"
                   selected={timeChosen && minutes == null}
                   onPress={() => void chooseMinutes(undefined)}
                 />
               </View>
             </View>
             <View style={styles.timeArea}>
-              <Muted>What context are you in?</Muted>
+              <SectionHeading>Where are you?</SectionHeading>
               <View style={styles.chips}>
                 {contextOptions.map(([value, label]) => (
                   <Chip
@@ -443,59 +438,65 @@ export default function TodayScreen() {
                     }
                   />
                 ))}
+                <Chip
+                  label="Anywhere"
+                  selected={!context}
+                  onPress={() => void chooseContext(undefined)}
+                />
               </View>
             </View>
-          </Card>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Edit today's capacity, time, and context"
-            onPress={() => setCheckInExpanded(true)}
-          >
-            <Card style={styles.compactCheckIn}>
-              <View>
-                <Eyebrow>Today’s shape</Eyebrow>
-                <Muted>
-                  {capacity ?? 'steady'} · {minutes ? `${minutes} min` : 'no clock'}
-                  {context ? ` · ${context}` : ''}
-                </Muted>
-              </View>
-              <Ionicons name="create-outline" size={20} color={theme.primary} />
-            </Card>
-          </Pressable>
-        )}
-
-        <Button
-          label={
-            spark.settings.minimumViableDay
-              ? 'Turn off One-thing day'
-              : 'Show only one tiny action'
-          }
-          variant="secondary"
-          onPress={() => void toggleOneThingDay()}
-        />
-
-        {spark.settings.progressiveHelpEnabled && !spark.settings.simpleMode ? (
           <Button
-            label="I’m stuck — help me choose what to do"
-            variant="ghost"
-            onPress={() => router.push('/help')}
+            label="Done adjusting"
+            variant="secondary"
+            onPress={() => setCheckInExpanded(false)}
           />
+        </CollapsibleSection>
+
+        {!spark.settings.simpleMode ? (
+          <CollapsibleSection
+            title={spark.settings.minimumViableDay ? 'One-action view is on' : 'Need fewer choices?'}
+            summary={
+              spark.settings.minimumViableDay
+                ? 'Only one tiny action is shown. Tap Show to change this.'
+                : 'Show one tiny action or get help choosing.'
+            }
+          >
+            <Muted>
+              One-action view highlights one tiny suggestion until you turn it off.
+            </Muted>
+            <Button
+              label={
+                spark.settings.minimumViableDay
+                  ? 'Show all suggestions'
+                  : 'Show only one tiny action'
+              }
+              variant="secondary"
+              onPress={() => void toggleOneThingDay()}
+            />
+            {spark.settings.progressiveHelpEnabled ? (
+              <Button
+                label="Help me choose what to do"
+                variant="ghost"
+                onPress={() => router.push('/help')}
+              />
+            ) : null}
+          </CollapsibleSection>
         ) : null}
 
         <View style={styles.sectionTitle}>
           <View style={styles.sectionTitleText}>
-            <SectionHeading>Choose an action</SectionHeading>
-            <Muted>Tap Log only when you want to record a win. Nothing becomes overdue.</Muted>
+            <SectionHeading>Suggested next actions</SectionHeading>
+            <Muted>Choose one that fits. Tap Done only after you do it.</Muted>
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add a habit"
             hitSlop={10}
             onPress={() => router.push('/habit/new')}
-            style={styles.addHabit}
+            style={[styles.addHabit, { backgroundColor: theme.surfaceAlt }]}
           >
-            <Ionicons name="add-circle" size={34} color={theme.primary} />
+            <Ionicons name="add" size={20} color={theme.primary} />
+            <Text style={[styles.addHabitText, { color: theme.primary }]}>Add</Text>
           </Pressable>
         </View>
 
@@ -525,13 +526,13 @@ export default function TodayScreen() {
 
         {returnSuggestion ? (
           <Card style={{ borderColor: theme.success }}>
-            <Eyebrow>A quiet return</Eyebrow>
-            <SectionHeading>{returnSuggestion.habit.title} is not a debt.</SectionHeading>
+            <Eyebrow>A win worth repeating</Eyebrow>
+            <SectionHeading>Start {returnSuggestion.habit.title} with a proven tiny action.</SectionHeading>
             <Muted>
-              A tiny version helped before. It is here if today is a useful day to return.
+              You completed this tiny version before. The same starting point is ready now.
             </Muted>
             <Button
-              label={`Log tiny: ${
+              label={`Mark tiny step done: ${
                 returnSuggestion.habit.variants.find((variant) => variant.kind === 'tiny')
                   ?.label ?? returnSuggestion.variant.label
               }`}
@@ -575,10 +576,12 @@ export default function TodayScreen() {
                   void spark.deferHabit(suggestion.habit.id, kind);
                   setNotice(
                     kind === 'tomorrow'
-                      ? 'Moved to tomorrow. Nothing was marked missed.'
+                      ? 'Scheduled for tomorrow.'
                       : kind === 'quiet_today'
-                        ? 'Quiet for today. Your rhythm is unchanged.'
-                        : 'Moved out of the way for now. Nothing was marked missed.'
+                        ? 'Hidden for today.'
+                        : kind === 'later_today'
+                          ? 'Scheduled for later today.'
+                          : 'Moved out of today’s suggestions.'
                   );
                 }}
               />
@@ -586,22 +589,21 @@ export default function TodayScreen() {
           })
         ) : returnSuggestion ? null : (
           <Card style={styles.enough}>
-            <Text style={styles.enoughEmoji}>🌙</Text>
-            <SectionHeading>Enough is a valid finish line.</SectionHeading>
+            <Text style={styles.enoughEmoji}>✓</Text>
+            <SectionHeading>Your action list is clear.</SectionHeading>
             <Muted>
-              There is nothing overdue here. You can rest, repeat something because it feels
-              good, or add a new Spark another day.
+              Review today’s wins, repeat an action that worked, or add another habit.
             </Muted>
           </Card>
         )}
 
         {capacity === 'empty' && (visiblePlan[0] ?? returnSuggestion) ? (
           <Card>
-            <Eyebrow>Can’t start?</Eyebrow>
-            <SectionHeading>Borrow five seconds of momentum.</SectionHeading>
+            <Eyebrow>Build momentum</Eyebrow>
+            <SectionHeading>Create a five-second first win.</SectionHeading>
             <Muted>
-              Put your hand on the first object involved. That is the whole step. If momentum
-              appears, keep it; if not, you still started.
+              Open the file, touch the shoes, or put the cup by the sink. Complete that first
+              contact, then mark the tiny action Done.
             </Muted>
             {(() => {
               const suggestion = visiblePlan[0] ?? returnSuggestion!;
@@ -610,7 +612,7 @@ export default function TodayScreen() {
                 suggestion.variant;
               return (
                 <Button
-                  label={`Log tiny: ${tiny.label}`}
+                  label={`Mark tiny step done: ${tiny.label}`}
                   variant="secondary"
                   onPress={() =>
                     void complete(suggestion.habit.title, tiny, suggestion.habit.id)
@@ -622,9 +624,11 @@ export default function TodayScreen() {
         ) : null}
 
         <Button
-          label="Open a routine"
+          label={spark.routines.length ? 'View my routines' : 'Create a routine'}
           variant="ghost"
-          onPress={() => router.push('/(tabs)/journey')}
+          onPress={() =>
+            spark.routines.length ? router.push('/(tabs)/journey') : router.push('/routine/new')
+          }
           icon={<Ionicons name="list-outline" size={20} color={theme.text} />}
         />
       </Screen>
@@ -646,7 +650,7 @@ export default function TodayScreen() {
           accessibilityLabel="Win logged. Undo is available."
           style={[styles.undo, { backgroundColor: '#0B1020' }]}
         >
-          <Text style={styles.undoText}>Logged. Tiny still counts.</Text>
+          <Text style={styles.undoText}>Win logged.</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Undo the most recent completion"
@@ -679,23 +683,27 @@ const styles = StyleSheet.create({
   },
   scoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   scoreDetails: { flex: 1, gap: 1 },
-  score: { fontSize: 30, fontWeight: '800' },
+  score: { fontSize: 20, lineHeight: 26, fontWeight: '800' },
   todayScore: { alignItems: 'flex-end' },
   todayWins: { fontSize: 24, fontWeight: '800' },
   timeArea: { gap: 9 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   summaryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   textAction: { fontSize: 13, fontWeight: '800' },
-  compactCheckIn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   sectionTitleText: { flex: 1, minWidth: 0, gap: 2 },
   addHabit: {
-    width: 48,
+    minWidth: 68,
     height: 48,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    flexDirection: 'row',
+    gap: 3,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0
   },
+  addHabitText: { fontSize: 13, fontWeight: '800' },
   quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   notice: { fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
   enough: { alignItems: 'center', paddingVertical: 26 },

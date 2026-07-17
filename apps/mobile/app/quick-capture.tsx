@@ -19,7 +19,7 @@ export default function QuickCaptureScreen() {
       <Card>
         <Eyebrow>External memory</Eyebrow>
         <H1>Park it quickly.</H1>
-        <Muted>No category or decision required.</Muted>
+        <Muted>Write it down now and organize it later if useful.</Muted>
         <FormField
           label="Thought"
           placeholder="Remember to…"

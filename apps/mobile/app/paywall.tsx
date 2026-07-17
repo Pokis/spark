@@ -20,7 +20,7 @@ import { useTheme } from '../src/theme';
 
 const freeFeatures = [
   'Unlimited habits with three effort sizes',
-  'No-guilt rhythms and all local insights',
+  'Flexible rhythms and all local insights',
   'Focus companion and brain-dump capture',
   'Local reminders and device backups'
 ];
@@ -92,8 +92,8 @@ export default function PaywallScreen() {
         <Eyebrow>Ethical monetization</Eyebrow>
         <H1>{spark.entitlement.premium ? 'Premium is active.' : 'Support Spark once.'}</H1>
         <Body>
-          Core ADHD support stays free. Premium is a lifetime supporter purchase, not a
-          subscription or a pressure loop.
+          Core ADHD support stays free. Premium is a one-time lifetime supporter purchase for
+          additional themes, companions, celebrations, and soundscapes.
         </Body>
       </View>
 

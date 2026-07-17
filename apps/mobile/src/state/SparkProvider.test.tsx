@@ -10,7 +10,11 @@ import {
 } from '../data/models';
 import { writeAutomaticEncryptedBackup } from '../services/backup';
 import { rescheduleHabitNotifications, snoozeHabit } from '../services/notifications';
-import { syncFocusWidget, syncTodayWidget } from '../services/widget';
+import {
+  syncFocusWidget,
+  syncRoutineWidget,
+  syncTodayWidget
+} from '../services/widget';
 import { SparkProvider, useSpark } from './SparkProvider';
 
 const mockHabit: Habit = {
@@ -105,7 +109,8 @@ jest.mock('../services/notifications', () => ({
 
 jest.mock('../services/widget', () => ({
   syncTodayWidget: jest.fn(async () => undefined),
-  syncFocusWidget: jest.fn(async () => undefined)
+  syncFocusWidget: jest.fn(async () => undefined),
+  syncRoutineWidget: jest.fn(async () => undefined)
 }));
 
 jest.mock('expo-notifications', () => ({
@@ -167,7 +172,7 @@ describe('SparkProvider persistence and orchestration', () => {
 
   afterEach(() => jest.useRealTimers());
 
-  it('loads local data and synchronizes reminders and both widgets', async () => {
+  it('loads local data and synchronizes reminders and all data-backed widgets', async () => {
     await renderProvider();
     expect(Database.purgeExpiredHabitDeferrals).toHaveBeenCalled();
     expect(Database.loadAppData).toHaveBeenCalled();
@@ -185,6 +190,7 @@ describe('SparkProvider persistence and orchestration', () => {
     );
     expect(syncTodayWidget).toHaveBeenCalled();
     expect(syncFocusWidget).toHaveBeenCalledWith([]);
+    expect(syncRoutineWidget).toHaveBeenCalledWith([mockRoutine], []);
     expect(latest.habits[0]?.id).toBe('habit');
   });
 

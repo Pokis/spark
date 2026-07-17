@@ -37,13 +37,75 @@ const child = spawn(process.execPath, [cli, ...expoArgs, ...extraArgs], {
   stdio: 'inherit'
 });
 
+let stopping = false;
+
+function stopChildProcessTree(signal) {
+  if (stopping) return;
+  stopping = true;
+
+  console.log('\nStopping Spark development processes...');
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) {
+    process.exitCode = 0;
+    return;
+  }
+
+  if (process.platform === 'win32') {
+    // Expo can have Metro, Gradle, adb, and shell wrappers beneath it. Killing
+    // only the immediate Node child leaves one of those processes running on
+    // Windows, so terminate the child tree owned by this launcher.
+    const killer = spawn(
+      'taskkill.exe',
+      ['/pid', String(child.pid), '/t', '/f'],
+      { stdio: 'ignore', windowsHide: true }
+    );
+    const timeout = setTimeout(() => {
+      try {
+        child.kill(signal);
+      } catch {
+        // The child may already have stopped while taskkill was running.
+      }
+      process.exit(0);
+    }, 3000);
+    killer.once('error', () => {
+      clearTimeout(timeout);
+      try {
+        child.kill(signal);
+      } catch {
+        // The Expo process may already have received Ctrl+C directly.
+      }
+      process.exit(0);
+    });
+    killer.once('exit', () => {
+      clearTimeout(timeout);
+      process.exit(0);
+    });
+    return;
+  }
+
+  child.kill(signal);
+  const timeout = setTimeout(() => child.kill('SIGKILL'), 3000);
+  timeout.unref();
+}
+
+process.once('SIGINT', () => stopChildProcessTree('SIGINT'));
+process.once('SIGTERM', () => stopChildProcessTree('SIGTERM'));
+if (process.platform === 'win32') {
+  process.once('SIGBREAK', () => stopChildProcessTree('SIGBREAK'));
+}
+
 child.on('error', (error) => {
   console.error(`Could not start Expo: ${error.message}`);
   process.exitCode = 1;
 });
 child.on('exit', (code, signal) => {
+  if (stopping) {
+    process.exitCode = 0;
+    return;
+  }
   if (signal) {
-    process.kill(process.pid, signal);
+    // SIGINT is the normal Expo Ctrl+C exit. Do not re-signal this wrapper:
+    // nested npm.cmd/PowerShell launchers can otherwise remain at the prompt.
+    process.exitCode = signal === 'SIGINT' ? 0 : 1;
     return;
   }
   if (requestedCommand === 'android' && code) {

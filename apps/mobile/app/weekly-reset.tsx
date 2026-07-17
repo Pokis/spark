@@ -40,7 +40,7 @@ export default function WeeklyResetScreen() {
     setSelected((current) => {
       if (current.includes(id)) return current.filter((item) => item !== id);
       if (current.length >= 3) {
-        Alert.alert('Keep the week small', 'Choose up to three habits. The others are not failures.');
+        Alert.alert('Three habits selected', 'Choose up to three so each weekly focus stays visible.');
         return current;
       }
       return [...current, id];
@@ -70,10 +70,10 @@ export default function WeeklyResetScreen() {
   return (
     <Screen>
       <View>
-        <Eyebrow>Gentle weekly reset</Eyebrow>
-        <H1>Choose what deserves visibility.</H1>
+        <Eyebrow>Weekly planning</Eyebrow>
+        <H1>Choose this week’s focus.</H1>
         <Muted>
-          This is planning, not a report card. Blank days and paused habits do not need an excuse.
+          Highlight up to three habits, record what you learned, and set up tomorrow’s first action.
         </Muted>
       </View>
 
@@ -105,7 +105,7 @@ export default function WeeklyResetScreen() {
       </Card>
 
       <Card>
-        <SectionHeading>Make tomorrow easier</SectionHeading>
+        <SectionHeading>Set up tomorrow’s first win</SectionHeading>
         <Muted>Likely context</Muted>
         <View style={styles.choices}>
           {contexts.map((item) => (
@@ -135,7 +135,7 @@ export default function WeeklyResetScreen() {
         </View>
       </Card>
 
-      <Button label="Save this gentle plan" loading={saving} onPress={() => void save()} />
+      <Button label="Save weekly plan" loading={saving} onPress={() => void save()} />
       <Button
         label="Manage pauses and habits"
         variant="ghost"

@@ -10,7 +10,7 @@ export default function PrivacyScreen() {
       <Card>
         <SectionHeading>Always kept on this device</SectionHeading>
         <Body>
-          Habit names and history, capacity check-ins, routines, focus sessions, and brain-dump
+          Habit names and history, energy check-ins, routines, focus sessions, and captured
           text are stored in Spark’s encrypted local SQLite database.
         </Body>
       </Card>
@@ -24,7 +24,7 @@ export default function PrivacyScreen() {
       <Card>
         <SectionHeading>Never sent by Spark</SectionHeading>
         <Body>
-          Your habit content, completion calendar, focus titles, capacity, routines, and captured
+          Your habit content, completion calendar, focus titles, energy check-ins, routines, and captured
           thoughts are not included in support, purchase verification, or admin tools.
         </Body>
       </Card>

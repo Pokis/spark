@@ -53,19 +53,19 @@ export function MomentumCard({ habit }: { habit: Habit }) {
 
   const windowEnd = addCalendarDays(summary.activeWindowStart, summary.cadenceDays - 1);
   const milestone = momentumMilestone(summary.current);
-  const cadenceLabel = summary.cadence === 'daily' ? 'daily' : 'every-other-day';
+  const cadenceLabel = summary.cadence === 'daily' ? 'Daily streak' : 'Every-other-day streak';
   const statusText =
     summary.status === 'on-track'
-      ? `This window is complete. The next one starts ${friendlyDate(summary.nextWindowStart)}.`
+      ? `You completed this period. The next chance starts ${friendlyDate(summary.nextWindowStart)}.`
       : summary.status === 'resting'
-        ? `This window is protected. Nothing needs catching up; the next one starts ${friendlyDate(summary.nextWindowStart)}.`
+        ? `Protected period. Your next streak window starts ${friendlyDate(summary.nextWindowStart)}.`
         : summary.status === 'not-started'
-          ? `Momentum begins ${friendlyDate(summary.nextWindowStart)}.`
+          ? `Your streak can begin ${friendlyDate(summary.nextWindowStart)}.`
           : summary.current > 0
-            ? `Any logged version by ${friendlyDate(windowEnd)} continues it.`
+            ? `Complete any version by ${friendlyDate(windowEnd)} to continue the streak.`
             : summary.best > 0
-              ? `A new chain can begin in this window. Your best of ${summary.best} is still yours.`
-              : `Any logged version by ${friendlyDate(windowEnd)} begins it.`;
+              ? `Start a new streak in this period and build toward your personal best of ${summary.best}.`
+              : `Complete any version by ${friendlyDate(windowEnd)} to begin a streak.`;
 
   async function protect(windowStart: string, kind: MomentumProtectionKind) {
     if (!habit.momentum) return;
@@ -83,7 +83,7 @@ export function MomentumCard({ habit }: { habit: Habit }) {
         momentum: { ...habit.momentum, protections }
       });
     } catch (reason) {
-      setError('That protection could not be saved. Your existing Momentum is unchanged.');
+      setError('Spark could not save that streak protection. Your existing streak is unchanged.');
       await reportError(`momentum.${kind}`, reason);
     } finally {
       setSavingKind(null);
@@ -97,20 +97,20 @@ export function MomentumCard({ habit }: { habit: Habit }) {
           <Text style={styles.emoji}>{habit.icon}</Text>
         </View>
         <View style={styles.headingText}>
-          <Eyebrow>{cadenceLabel} Momentum streak</Eyebrow>
+          <Eyebrow>{cadenceLabel}</Eyebrow>
           <SectionHeading>{habit.title}</SectionHeading>
         </View>
       </View>
 
       <View
         accessible
-        accessibilityLabel={`${summary.current} completed windows in the current Momentum streak; personal best ${summary.best}`}
+        accessibilityLabel={`Current streak ${summary.current}; personal best ${summary.best}`}
         style={styles.scoreRow}
       >
         <Text style={[styles.current, { color: habit.color }]}>{summary.current}</Text>
         <View style={styles.scoreCopy}>
-          <Body>{summary.current === 1 ? 'completed window' : 'completed windows'} together</Body>
-          <Muted>Personal best {summary.best} · {summary.completedWindows} total windows won</Muted>
+          <Body>{summary.current === 1 ? 'period in the current streak' : 'periods in the current streak'}</Body>
+          <Muted>Personal best {summary.best} · {summary.completedWindows} completed periods total</Muted>
         </View>
       </View>
 
@@ -127,21 +127,21 @@ export function MomentumCard({ habit }: { habit: Habit }) {
           <Text style={[styles.flexNumber, { color: theme.primary }]}>
             {summary.flexPassesAvailable}
           </Text>
-          <Muted>Flex {summary.flexPassesAvailable === 1 ? 'pass' : 'passes'} ready</Muted>
+          <Muted>streak {summary.flexPassesAvailable === 1 ? 'save' : 'saves'} available</Muted>
         </View>
         <Muted style={styles.flexExplanation}>
-          Start with 2; earn 1 per 5 won windows; hold up to 3. A pass bridges one missed
-          window without adding a win.
+          You start with 2 and earn another after 5 completed periods, up to 3. Use one to
+          preserve streak continuity for a past period; completed-action history comes from Done taps.
         </Muted>
       </View>
 
       {summary.mostRecentMissedWindow && summary.flexPassesAvailable > 0 ? (
         <Button
-          label={`Use Flex pass for ${friendlyDate(summary.mostRecentMissedWindow)}`}
+          label={`Use a streak save for ${friendlyDate(summary.mostRecentMissedWindow)}`}
           variant="secondary"
           loading={savingKind === 'flex'}
           disabled={savingKind !== null}
-          accessibilityHint="Restores continuity across that window but does not add a completed win"
+          accessibilityHint="Preserves streak continuity for that period"
           onPress={() =>
             void protect(summary.mostRecentMissedWindow!, 'flex')
           }
@@ -149,17 +149,17 @@ export function MomentumCard({ habit }: { habit: Habit }) {
       ) : null}
       {summary.status === 'due' ? (
         <Button
-          label="Delay this Momentum window"
+          label="Take a planned break for this period"
           variant="ghost"
           loading={savingKind === 'delay'}
           disabled={savingKind !== null}
-          accessibilityHint="Marks this current window as planned rest; no completed win is added"
+          accessibilityHint="Marks this streak period as a planned break"
           onPress={() => void protect(summary.activeWindowStart, 'delay')}
         />
       ) : null}
       {error ? <Muted accessibilityLiveRegion="assertive">{error}</Muted> : null}
       <Button
-        label="Edit Momentum settings"
+        label="Edit streak settings"
         variant="ghost"
         disabled={savingKind !== null}
         onPress={() => router.push(`/habit/${habit.id}`)}

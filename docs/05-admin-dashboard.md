@@ -18,7 +18,7 @@ This is a privacy feature, not missing analytics. The dashboard cannot review:
 - habits or completions
 - focus history
 - routines
-- capacity check-ins
+- energy check-ins
 - captured thoughts
 
 Store statistics in Play Console provide install and purchase totals without copying behavior
@@ -129,12 +129,14 @@ retention timestamp and the nightly maintenance job removes expired entries.
 The dashboard compiles to static files:
 
 ```powershell
-npm.cmd run build --workspace @spark/admin
-npx.cmd firebase-tools deploy --only hosting
+.\spark.cmd deploy -Action Login -Provider Firebase
+.\spark.cmd deploy -Action Hosting -ProjectId YOUR_FIREBASE_PROJECT_ID
 ```
 
 Firebase Hosting also publishes `privacy.html`. The dashboard's HTML is public, but all useful API
-data remains behind Firebase authentication and server role checks.
+data remains behind Firebase authentication and server role checks. This hosting-only command does
+not deploy Cloud Run or create the optional Spark API. It runs the required placeholder/build
+checks and asks for a project-specific typed confirmation before deployment.
 
 ## Operational routine
 

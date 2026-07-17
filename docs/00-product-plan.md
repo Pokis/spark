@@ -46,7 +46,7 @@ optional cosmetic themes—not casino mechanics.
 - five-second activation prompt
 - pause and archive without deleting history
 - rolling rhythm percentages and comeback recognition
-- optional per-habit daily/every-other-day Momentum streaks with earned Flex passes, planned rest,
+- optional per-habit daily/every-other-day streaks with earned streak saves, planned breaks,
   preserved personal bests, and no point penalties
 
 ### Phase 3 — ADHD-supportive tools
@@ -95,10 +95,10 @@ optional cosmetic themes—not casino mechanics.
 - Simple mode and contextual Help me now
 - gentle weekly reset with tomorrow context/tiny planning
 - per-habit friction toolkit
-- Departure mode with optional routine and real buffer
+- Leave on time with optional routine and real buffer
 - explicit focus/departure calendar handoff without calendar reads
 - user-selected progress-card image/text sharing without connected accounts
-- one-week personal experiments with neutral local comparison
+- one-week changes with neutral local comparison
 - one-action sensory Quiet now
 - optional device-authentication lock, recent-app/screenshot protection, and notification privacy
 - password/recovery-code encrypted backup plus bounded automatic Android folder backup
@@ -117,7 +117,7 @@ These should be evaluated with real users instead of being enabled speculatively
 - blocking other apps; it requires sensitive device permissions and strong policy justification
 - location-triggered reminders; they add permission and battery burden
 - randomized rewards, loss aversion, streak repair purchases, ads, and attention-selling analytics
-  (free local Momentum protections are allowed because they are transparent and non-monetized)
+  (free local streak saves are allowed because they are transparent and non-monetized)
 
 ## Completed experience and reliability pass
 
@@ -130,7 +130,7 @@ reporting, and unfinished-form drafts.
 The subsequent Phase 7 expansion is also complete in code. The remaining work is manual
 validation or deliberately deferred scope:
 
-1. Test all three Android widgets and four shortcuts across Pixel, Samsung, and Xiaomi launchers.
+1. Test all six Android widgets and four shortcuts across Pixel, Samsung, and Xiaomi launchers.
 2. Test larger fonts, TalkBack, switch access, reduced motion, notification actions, share
    receiving, app lock, preview protection, calendar handoff, folder backup, sound output,
    localization/RTL, and color-blind use on real devices.

@@ -18,6 +18,12 @@ policy. Each command also supports -Help.
 
 .EXAMPLE
 .\spark.cmd check -Level Full
+
+.EXAMPLE
+.\spark.cmd release -Action Inspect
+
+.EXAMPLE
+.\spark.cmd deploy -Action Status
 #>
 [CmdletBinding()]
 param(
@@ -29,6 +35,7 @@ param(
     'setup-android',
     'start',
     'android',
+    'stop',
     'emulator',
     'devices',
     'logs',
@@ -42,6 +49,7 @@ param(
     'emulators',
     'seed',
     'release',
+    'deploy',
     'clean'
   )]
   [string]$Command = 'help',
@@ -55,9 +63,29 @@ param(
   [ValidateSet('Quick', 'Full', 'Release')]
   [string]$Level = 'Quick',
 
+  [string]$Action,
+
+  [ValidateSet('development', 'preview', 'production')]
+  [string]$Profile = 'production',
+
+  [ValidateSet('internal', 'alpha', 'beta', 'production')]
+  [string]$Track = 'internal',
+
   [string]$Topic,
   [string]$Device,
   [string]$Avd,
+  [string]$BuildId,
+  [string]$OutputDirectory = 'artifacts\eas',
+  [string]$Message,
+  [string]$ProjectId,
+  [string]$Region = 'europe-central2',
+  [string]$ImageTag,
+  [string]$VarFile = 'terraform.tfvars',
+  [string]$PlanFile = 'spark.tfplan',
+  [ValidateSet('Firebase', 'Google')]
+  [string]$Provider = 'Firebase',
+  [ValidateRange(1, 50)]
+  [int]$Limit = 10,
   [int]$Port = 0,
   [switch]$Clear,
   [switch]$Offline,
@@ -66,6 +94,8 @@ param(
   [switch]$Select,
   [switch]$List,
   [switch]$Yes,
+  [switch]$NoWait,
+  [switch]$ClearCache,
   [switch]$Help
 )
 
@@ -74,6 +104,7 @@ $ErrorActionPreference = 'Stop'
 
 $script:Root = $PSScriptRoot
 $script:PackageName = 'com.sparkhabits.app'
+$script:MobileProcessFile = Join-Path $script:Root '.expo\spark-mobile-process.json'
 
 function Write-Heading {
   param([string]$Text)
@@ -154,6 +185,22 @@ android
     .\spark.cmd android -Select
     .\spark.cmd android -Device 25113PN0EG
     .\spark.cmd android -Device "adb-d64c77ee-example._adb-tls-connect._tcp"
+'@ | Write-Host
+    }
+    'stop' {
+      @'
+stop
+  Stops the Spark-owned local Expo/Metro/Android build process tree recorded by
+  the most recent start or android command. Run it from a second PowerShell if
+  Ctrl+C is unavailable. With -Device, it also force-stops the installed Spark
+  app on that Android target without deleting its data.
+
+  Parameters:
+    -Device <name-or-id>   Also stop Spark on one connected Android device.
+
+  Examples:
+    .\spark.cmd stop
+    .\spark.cmd stop -Device 25113PN0EG
 '@ | Write-Host
     }
     'emulator' {
@@ -309,11 +356,79 @@ seed
     'release' {
       @'
 release
-  Checks required release files and reports unresolved manual/legal gates.
-  For the complete automated sequence, use check -Level Release.
+  Inspects release readiness and wraps EAS Android build/submission utilities.
+  Running without -Action preserves the old fast release check.
 
-  Example:
+  Actions:
+    Inspect    Fast local identity/version/flag/privacy summary; no network.
+    Check      Required-file, identity, and privacy-placeholder check (default).
+    Verify     Full doctor, types, tests, coverage, builds, and release check.
+    Setup      Sign in to Expo/EAS and create or link the EAS project.
+    Project    Show the current Expo account and linked EAS project.
+    Credentials  Open the interactive Android signing-credentials manager.
+    Build      Validate locally, then start an Android EAS build.
+    List       List recent Android EAS builds.
+    Download   Download one exact EAS build ID into an ignored local folder.
+    Submit     Submit a build after the required first manual Play upload.
+
+  Parameters:
+    -Profile development|preview|production   Build profile; default: production.
+    -Track internal|alpha|beta|production     Submit profile/Play track; default: internal.
+    -BuildId <id>                             Required exact build for Download/Submit.
+    -OutputDirectory <path>                   Download folder; default: artifacts\eas.
+    -Message <text>                           Optional EAS build message.
+    -Limit 1..50                              List count; default: 10.
+    -NoWait                                   Queue build/submit without waiting.
+    -ClearCache                               Clear the EAS build cache.
+    -Yes                                      Skip Build/Submit typed confirmation.
+
+  Examples:
     .\spark.cmd release
+    .\spark.cmd release -Action Inspect
+    .\spark.cmd release -Action Verify
+    .\spark.cmd release -Action Setup
+    .\spark.cmd release -Action Credentials
+    .\spark.cmd release -Action Build -Profile production -Message "Internal 0.1.0"
+    .\spark.cmd release -Action List
+    .\spark.cmd release -Action Download -BuildId <EAS_BUILD_ID>
+    .\spark.cmd release -Action Submit -Track internal -BuildId <EAS_BUILD_ID>
+'@ | Write-Host
+    }
+    'deploy' {
+      @'
+deploy
+  Provides guarded Firebase and Google Cloud deployment utilities. Status is
+  read-only. Hosting, Firebase, Image, and Apply can create costs or external
+  state and require typed confirmation unless -Yes is supplied.
+
+  Actions:
+    Status     Show local deployment tools, IDs, flags, and missing files (default).
+    Login      Authenticate Firebase or Google Cloud CLI.
+    Hosting    Build/deploy static admin + privacy hosting only.
+    Firebase   Build/deploy Hosting plus Firestore rules and indexes.
+    Image      Build/push the control-plane image with Google Cloud Build.
+    Plan       Init/format/validate Terraform and save/show an exact plan.
+    Apply      Show and apply an existing saved Terraform plan.
+    Outputs    Print current Terraform outputs after deployment.
+
+  Parameters:
+    -ProjectId <id>             Required for Hosting/Firebase/Image; checked
+                                against terraform.tfvars for Apply when supplied.
+    -Provider Firebase|Google   Login provider; default: Firebase.
+    -Region <region>            Image registry region; default: europe-central2.
+    -ImageTag <tag>             Image tag; defaults to the mobile app version.
+    -VarFile <name>             File inside infra\terraform; default: terraform.tfvars.
+    -PlanFile <name>            Saved plan inside infra\terraform; default: spark.tfplan.
+    -Yes                        Skip the typed external-change confirmation.
+
+  Examples:
+    .\spark.cmd deploy
+    .\spark.cmd deploy -Action Login -Provider Firebase
+    .\spark.cmd deploy -Action Hosting -ProjectId my-spark-project
+    .\spark.cmd deploy -Action Plan
+    .\spark.cmd deploy -Action Apply
+    .\spark.cmd deploy -Action Image -ProjectId my-spark-project
+    .\spark.cmd deploy -Action Outputs
 '@ | Write-Host
     }
     'clean' {
@@ -343,6 +458,7 @@ First-time path:
 Development:
   start          Start Expo for DevClient, Expo Go, or Web
   android        Build/install the native Android development app
+  stop           Stop Spark's recorded local process tree; optionally the app
   emulator       List or start Android virtual devices
   devices        List Android devices and emulators
   logs           Stream React Native Android logs
@@ -358,7 +474,8 @@ Quality:
   check          Run Quick, Full, or Release validation
   build          Build all or a selected workspace
   e2e            Run the Maestro Android flow
-  release        Run release placeholder/file checks
+  release        Inspect, verify, build, download, or submit Android releases
+  deploy         Inspect or run guarded Firebase/GCP/Terraform deployments
   clean          Remove generated outputs
 
 Setup:
@@ -392,6 +509,192 @@ function Invoke-External {
 function Invoke-Npm {
   param([string[]]$Arguments)
   Invoke-External -Executable 'npm.cmd' -Arguments $Arguments
+}
+
+function Stop-ExternalProcessTree {
+  param([Parameter(Mandatory = $true)][int]$ProcessId)
+
+  if (-not (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) { return }
+  if ($env:OS -eq 'Windows_NT') {
+    & taskkill.exe '/pid' ([string]$ProcessId) '/t' '/f' 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0 -and (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) {
+      throw "Could not stop process tree $ProcessId (taskkill exit code $LASTEXITCODE)."
+    }
+    return
+  }
+  Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
+}
+
+function Remove-MobileProcessRecord {
+  param([int]$ExpectedProcessId = 0)
+
+  if (-not (Test-Path -LiteralPath $script:MobileProcessFile)) { return }
+  if ($ExpectedProcessId -gt 0) {
+    try {
+      $record = Get-Content -LiteralPath $script:MobileProcessFile -Raw | ConvertFrom-Json
+      if ([int]$record.processId -ne $ExpectedProcessId) { return }
+    } catch {
+      return
+    }
+  }
+  Remove-Item -LiteralPath $script:MobileProcessFile -Force -ErrorAction SilentlyContinue
+}
+
+function Write-MobileProcessRecord {
+  param([Parameter(Mandatory = $true)][System.Diagnostics.Process]$Process)
+
+  $directory = Split-Path -Parent $script:MobileProcessFile
+  [void][System.IO.Directory]::CreateDirectory($directory)
+  [ordered]@{
+    processId = $Process.Id
+    processName = $Process.ProcessName
+    startedAtUtc = $Process.StartTime.ToUniversalTime().ToString('o')
+    stopRequested = $false
+  } |
+    ConvertTo-Json |
+    Set-Content -LiteralPath $script:MobileProcessFile -Encoding UTF8
+}
+
+function Stop-RecordedMobileProcess {
+  if (-not (Test-Path -LiteralPath $script:MobileProcessFile)) {
+    Write-Host 'No recorded Spark Expo/Android process is running.'
+    return
+  }
+
+  try {
+    $record = Get-Content -LiteralPath $script:MobileProcessFile -Raw | ConvertFrom-Json
+    $recordedId = [int]$record.processId
+    $recordedStart = [DateTime]::Parse(
+      [string]$record.startedAtUtc,
+      [Globalization.CultureInfo]::InvariantCulture,
+      [Globalization.DateTimeStyles]::RoundtripKind
+    )
+    $process = Get-Process -Id $recordedId -ErrorAction Stop
+    $startDifference = [Math]::Abs(
+      ($process.StartTime.ToUniversalTime() - $recordedStart.ToUniversalTime()).TotalSeconds
+    )
+    if ($process.ProcessName -ne 'node' -or $startDifference -gt 2) {
+      throw 'The recorded PID now belongs to another process.'
+    }
+  } catch {
+    Remove-MobileProcessRecord
+    Write-Warning 'The saved Spark process was stale, so no process was terminated.'
+    return
+  }
+
+  $record | Add-Member -NotePropertyName 'stopRequested' -NotePropertyValue $true -Force
+  $record | ConvertTo-Json | Set-Content -LiteralPath $script:MobileProcessFile -Encoding UTF8
+  Write-Host "Stopping Spark development process tree (PID $recordedId)..." -ForegroundColor Yellow
+  Stop-ExternalProcessTree -ProcessId $recordedId
+  Write-Host 'Stopped the local Spark development process tree.' -ForegroundColor Green
+}
+
+function ConvertTo-NativeArgument {
+  param([AllowEmptyString()][string]$Argument)
+
+  if ($Argument.Length -gt 0 -and $Argument -notmatch '[\s"]') {
+    return $Argument
+  }
+
+  $builder = New-Object System.Text.StringBuilder
+  [void]$builder.Append('"')
+  $backslashes = 0
+  foreach ($character in $Argument.ToCharArray()) {
+    if ($character -eq '\') {
+      $backslashes++
+      continue
+    }
+    if ($character -eq '"') {
+      [void]$builder.Append(('\' * (($backslashes * 2) + 1)))
+      [void]$builder.Append('"')
+      $backslashes = 0
+      continue
+    }
+    if ($backslashes -gt 0) {
+      [void]$builder.Append(('\' * $backslashes))
+      $backslashes = 0
+    }
+    [void]$builder.Append($character)
+  }
+  if ($backslashes -gt 0) {
+    [void]$builder.Append(('\' * ($backslashes * 2)))
+  }
+  [void]$builder.Append('"')
+  return $builder.ToString()
+}
+
+function Invoke-InterruptibleExternal {
+  param(
+    [Parameter(Mandatory = $true)][string]$Executable,
+    [string[]]$Arguments = @(),
+    [switch]$RecordAsMobileProcess
+  )
+
+  Write-Host ""
+  Write-Host ("> {0} {1}" -f $Executable, ($Arguments -join ' ')) -ForegroundColor DarkGray
+  $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+  $startInfo.FileName = $Executable
+  $startInfo.Arguments = (($Arguments | ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' ')
+  $startInfo.WorkingDirectory = $script:Root
+  $startInfo.UseShellExecute = $false
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $startInfo
+  [void]$process.Start()
+  $stopWasRequested = $false
+  if ($RecordAsMobileProcess) {
+    Write-MobileProcessRecord -Process $process
+  }
+
+  try {
+    $process | Wait-Process
+  } finally {
+    $process.Refresh()
+    if ($RecordAsMobileProcess) {
+      if (Test-Path -LiteralPath $script:MobileProcessFile) {
+        try {
+          $record = Get-Content -LiteralPath $script:MobileProcessFile -Raw | ConvertFrom-Json
+          $stopWasRequested =
+            [int]$record.processId -eq $process.Id -and $record.stopRequested -eq $true
+        } catch {
+          $stopWasRequested = $false
+        }
+      } else {
+        $stopWasRequested = $false
+      }
+    }
+    if (-not $process.HasExited) {
+      Write-Host ""
+      Write-Host 'Stopping Spark development processes...' -ForegroundColor Yellow
+      Stop-ExternalProcessTree -ProcessId $process.Id
+    }
+    if ($RecordAsMobileProcess) {
+      Remove-MobileProcessRecord -ExpectedProcessId $process.Id
+    }
+  }
+
+  $process.Refresh()
+  if ($process.ExitCode -ne 0 -and -not $stopWasRequested) {
+    throw "$Executable exited with code $($process.ExitCode)."
+  }
+  if ($stopWasRequested) {
+    Write-Host 'Spark development processes stopped.' -ForegroundColor Green
+  }
+}
+
+function Invoke-MobileCommand {
+  param(
+    [Parameter(Mandatory = $true)][ValidateSet('start', 'android', 'ios')][string]$Mode,
+    [string[]]$Arguments = @()
+  )
+
+  $node = Get-Command 'node.exe' -ErrorAction SilentlyContinue
+  if (-not $node) {
+    throw 'Node.js was not found. Install the current Node.js LTS release and reopen PowerShell.'
+  }
+  Invoke-InterruptibleExternal `
+    -Executable $node.Source `
+    -Arguments (@((Join-Path $script:Root 'scripts\mobile-command.mjs'), $Mode) + $Arguments) `
+    -RecordAsMobileProcess
 }
 
 function Add-ProcessPath {
@@ -675,6 +978,8 @@ function Invoke-Build {
   }
 }
 
+. (Join-Path $script:Root 'scripts\spark-ops.ps1')
+
 if ($Help -or $Command -eq 'help') {
   Write-CommandHelp $(if ($Help) { $Command } elseif ($Topic) { $Topic } else { 'help' })
   exit 0
@@ -702,7 +1007,7 @@ try {
       Invoke-External -Executable $adb -Arguments @('devices', '-l')
     }
     'start' {
-      $arguments = @('run', 'start', '--')
+      $arguments = @()
       switch ($Target) {
         'DevClient' {
           Write-Host 'The QR code opens the installed Spark development app, not Expo Go.' -ForegroundColor Cyan
@@ -717,14 +1022,14 @@ try {
       if ($Clear) { $arguments += '--clear' }
       if ($Offline) { $arguments += '--offline' }
       if ($Port -gt 0) { $arguments += @('--port', [string]$Port) }
-      Invoke-Npm $arguments
+      Invoke-MobileCommand -Mode 'start' -Arguments $arguments
     }
     'android' {
       $environment = Initialize-AndroidEnvironment
       if (-not $environment.JavaHome -or -not $environment.AndroidHome) {
         throw 'Android Java/SDK is incomplete. Run ".\spark.cmd setup-android -Persist".'
       }
-      $arguments = @('run', 'android', '--')
+      $arguments = @()
       if ($Select -and $Device) {
         throw 'Use either -Select or -Device, not both.'
       }
@@ -733,7 +1038,23 @@ try {
       } elseif ($Device) {
         $arguments += @('--device', (Resolve-ExpoDeviceName $Device))
       }
-      Invoke-Npm $arguments
+      Invoke-MobileCommand -Mode 'android' -Arguments $arguments
+    }
+    'stop' {
+      Stop-RecordedMobileProcess
+      if ($Device) {
+        Initialize-AndroidEnvironment | Out-Null
+        $adbDevice = Resolve-AdbDeviceId $Device
+        Invoke-External -Executable (Assert-Adb) -Arguments @(
+          '-s',
+          $adbDevice,
+          'shell',
+          'am',
+          'force-stop',
+          $script:PackageName
+        )
+        Write-Host "Stopped Spark on Android device '$adbDevice' without clearing its data." -ForegroundColor Green
+      }
     }
     'emulator' {
       $environment = Initialize-AndroidEnvironment
@@ -845,7 +1166,28 @@ try {
       Invoke-Npm @('run', 'emulators:seed')
     }
     'release' {
-      Invoke-Npm @('run', 'release:check')
+      Invoke-SparkRelease `
+        -RequestedAction $Action `
+        -BuildProfile $Profile `
+        -SubmitTrack $Track `
+        -ExactBuildId $BuildId `
+        -DownloadDirectory $OutputDirectory `
+        -BuildMessage $Message `
+        -ListLimit $Limit `
+        -QueueOnly:$NoWait `
+        -ResetBuildCache:$ClearCache `
+        -SkipConfirmation:$Yes
+    }
+    'deploy' {
+      Invoke-SparkDeploy `
+        -RequestedAction $Action `
+        -TargetProjectId $ProjectId `
+        -LoginProvider $Provider `
+        -TargetRegion $Region `
+        -TargetImageTag $ImageTag `
+        -TerraformVarFile $VarFile `
+        -TerraformPlanFile $PlanFile `
+        -SkipConfirmation:$Yes
     }
     'clean' {
       Invoke-Npm @('run', 'clean')

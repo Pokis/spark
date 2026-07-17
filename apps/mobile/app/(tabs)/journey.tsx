@@ -52,12 +52,12 @@ export default function JourneyScreen() {
         <Eyebrow>Review progress</Eyebrow>
         <H1>Your progress & habits</H1>
         <Muted>
-          See where every point came from, review your habits, and edit anything that no longer
-          helps. Blank days erase nothing.
+          Celebrate completed actions, see where every point came from, and shape your habits
+          around what works.
         </Muted>
       </View>
 
-      <Button label="What do these words mean?" variant="ghost" onPress={() => router.push('/guide')} />
+      <Button label="Explain progress and points" variant="ghost" onPress={() => router.push('/guide')} />
 
       {spark.settings.showRewards ? (
       <Card style={[styles.levelCard, { backgroundColor: theme.surfaceAlt }]}>
@@ -87,9 +87,11 @@ export default function JourneyScreen() {
       </Card>
       ) : null}
 
-      <Card>
-        <SectionHeading>Where your points came from</SectionHeading>
-        <Muted>Each row is an action you deliberately logged as a win.</Muted>
+      <CollapsibleSection
+        title="Recent completed actions"
+        summary={`${recentCompletions.length} most recent ${recentCompletions.length === 1 ? 'action' : 'actions'}`}
+      >
+        <Muted>Each row is an action you deliberately marked Done.</Muted>
         {recentCompletions.length ? (
           recentCompletions.map((completion) => {
             const habit = spark.habits.find((item) => item.id === completion.habitId);
@@ -118,9 +120,9 @@ export default function JourneyScreen() {
             );
           })
         ) : (
-          <Muted>No wins logged yet. Your point total starts at zero.</Muted>
+          <Muted>Your first completed action will appear here.</Muted>
         )}
-      </Card>
+      </CollapsibleSection>
 
       <CollapsibleSection
         title="Last 14 days"
@@ -157,29 +159,29 @@ export default function JourneyScreen() {
       </CollapsibleSection>
 
       <Card style={{ borderColor: theme.purple }}>
-        <Eyebrow>Gentle weekly reflection</Eyebrow>
+        <Eyebrow>Last 7 days</Eyebrow>
         <SectionHeading>
           {recentWins.length
-            ? `${recentWins.length} moments moved forward.`
-            : 'There is room for a kind restart.'}
+            ? `${recentWins.length} completed ${recentWins.length === 1 ? 'action' : 'actions'}.`
+            : 'Your next win starts here.'}
         </SectionHeading>
         <Body>
           {recentWins.length
-            ? `${new Set(recentWins.map((completion) => completion.habitId)).size} intentions received attention. ${
+            ? `You completed actions for ${new Set(recentWins.map((completion) => completion.habitId)).size} ${new Set(recentWins.map((completion) => completion.habitId)).size === 1 ? 'habit' : 'habits'}. ${
                 tinyWins
                   ? `${tinyWins} tiny ${tinyWins === 1 ? 'step was' : 'steps were'} enough to count.`
-                  : 'Your wins took the size that worked for you.'
+                  : 'You used the action sizes that worked for you.'
               }`
-            : 'No missed-day score is waiting here. Choose one action small enough to begin when you are ready.'}
+            : 'Choose one clear action, complete it, and mark it Done to begin your progress.'}
         </Body>
       </Card>
 
       {spark.settings.insightsEnabled && insights.length ? (
         <CollapsibleSection
-          title="Things Spark noticed locally"
-          summary={`${insights.length} neutral local observation${insights.length === 1 ? '' : 's'}`}
+          title="Patterns you may want to know"
+          summary={`${insights.length} private observation${insights.length === 1 ? '' : 's'} from your activity`}
         >
-          <Muted>Observations, not grades. Nothing leaves this device.</Muted>
+          <Muted>Patterns from your completed actions and focus sessions, stored on this device.</Muted>
           {insights.map((insight) => (
             <Card key={insight.id}>
               <View style={styles.insightHeading}>
@@ -207,12 +209,12 @@ export default function JourneyScreen() {
 
       {momentumHabits.length ? (
         <CollapsibleSection
-          title="Momentum streaks"
-          summary={`${momentumHabits.length} optional reward-first ${momentumHabits.length === 1 ? 'rhythm' : 'rhythms'}`}
+          title="Optional streaks"
+          summary={`${momentumHabits.length} ${momentumHabits.length === 1 ? 'habit has' : 'habits have'} a streak turned on`}
         >
           <Muted>
-            Delays and Flex passes preserve continuity without inventing wins; personal bests
-            and ordinary progress never disappear.
+            Streak saves and planned breaks maintain streak continuity. Completed periods and
+            personal bests remain visible here.
           </Muted>
           {momentumHabits.map((habit) => (
             <MomentumCard key={habit.id} habit={habit} />
@@ -220,21 +222,16 @@ export default function JourneyScreen() {
         </CollapsibleSection>
       ) : null}
 
-      <View style={styles.sectionHeading}>
-        <View style={styles.sectionHeadingText}>
-          <SectionHeading>Your habits</SectionHeading>
-          <Muted>Tap a habit to edit it, pause it, or review its full history.</Muted>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add a habit"
-          hitSlop={10}
-          onPress={() => router.push('/habit/new')}
-          style={styles.addButton}
-        >
-          <Ionicons name="add-circle" size={34} color={theme.primary} />
-        </Pressable>
-      </View>
+      <CollapsibleSection
+        title="My habits"
+        summary={`${activeHabits.length} active ${activeHabits.length === 1 ? 'habit' : 'habits'} · tap Show to manage`}
+      >
+      <Muted>Tap a habit to edit it, pause it, or review its full history.</Muted>
+      <Button
+        label="Add a habit"
+        variant="secondary"
+        onPress={() => router.push('/habit/new')}
+      />
       {activeHabits.map((habit) => {
         const rhythm = rhythmForHabit(
           habit,
@@ -277,22 +274,17 @@ export default function JourneyScreen() {
           </Pressable>
         );
       })}
+      </CollapsibleSection>
 
-      <View style={styles.sectionHeading}>
-        <View style={styles.sectionHeadingText}>
-          <SectionHeading>Launch routines</SectionHeading>
-          <Muted>One visible step at a time.</Muted>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add a routine"
-          hitSlop={10}
-          onPress={() => router.push('/routine/new')}
-          style={styles.addButton}
-        >
-          <Ionicons name="add-circle" size={34} color={theme.primary} />
-        </Pressable>
-      </View>
+      <CollapsibleSection
+        title="My routines"
+        summary={`${activeRoutines.length} active ${activeRoutines.length === 1 ? 'routine' : 'routines'} · one step at a time`}
+      >
+      <Button
+        label="Create a routine"
+        variant="secondary"
+        onPress={() => router.push('/routine/new')}
+      />
       {activeRoutines.map((routine) => {
         const run = spark.routineRuns.find((item) => item.routineId === routine.id);
         return (
@@ -342,32 +334,26 @@ export default function JourneyScreen() {
           ))}
         </Card>
       ) : null}
+      </CollapsibleSection>
 
-      <Card style={{ borderColor: theme.success }}>
-        <Eyebrow>What Spark does not do</Eyebrow>
-        <Body>
-          It does not punish missed days, sell your habit history, or use random rewards to keep
-          you compulsively checking. Dopamine here celebrates a choice you already made.
-        </Body>
-      </Card>
       <Button label="Manage settings" variant="ghost" onPress={() => router.push('/settings')} />
       <CollapsibleSection
-        title="Plan and share deliberately"
-        summary="Weekly reset, personal experiments, and selected-win sharing"
+        title="Plan or share"
+        summary="Plan the week, try one change, or share only the wins you choose"
       >
         <Muted>These tools stay local unless you explicitly open the system share sheet or calendar.</Muted>
         <Button
-          label="Gentle weekly reset"
+          label="Plan my week"
           variant="secondary"
           onPress={() => router.push('/weekly-reset')}
         />
         <Button
-          label="Personal experiments"
+          label="Try a change for one week"
           variant="secondary"
           onPress={() => router.push('/experiments')}
         />
         <Button
-          label="Share selected wins"
+          label="Choose wins to share"
           variant="ghost"
           onPress={() => router.push('/share-progress')}
         />

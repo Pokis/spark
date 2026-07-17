@@ -64,7 +64,7 @@ describe('focus widget timer state', () => {
 
   it('renders safe idle, running, paused, and complete actions', () => {
     const idle: any = SparkFocusWidget({ snapshot: emptyFocusSnapshot });
-    expect(idle.props.accessibilityLabel).toContain('No focus session');
+    expect(idle.props.accessibilityLabel).toContain('Start a two minute focus session');
     expect(idle.props.clickActionData.uri).toContain('minutes=2');
 
     jest.spyOn(Date, 'now').mockReturnValue(

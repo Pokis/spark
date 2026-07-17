@@ -28,9 +28,24 @@
     }
   },
   "submit": {
-    "production": {
+    "internal": {
       "android": {
         "track": "internal"
+      }
+    },
+    "alpha": {
+      "android": {
+        "track": "alpha"
+      }
+    },
+    "beta": {
+      "android": {
+        "track": "beta"
+      }
+    },
+    "production": {
+      "android": {
+        "track": "production"
       }
     }
   }

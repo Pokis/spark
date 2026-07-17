@@ -34,7 +34,7 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Log a win for Drink water: One sip, 1 minute, earns 1 Spark point'
+        name: 'Mark Drink water done: One sip, 1 minute, earns 1 Spark point'
       })
     );
     expect(onComplete).toHaveBeenCalledWith(suggestion.variant);
@@ -44,7 +44,7 @@ describe('HabitCard', () => {
     const view = await render(
       <HabitCard suggestion={suggestion} onComplete={jest.fn()} onEdit={jest.fn()} />
     );
-    await fireEvent.press(view.getByRole('button', { name: 'Show all effort options' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Show all action sizes' }));
     expect(view.getByText('One glass')).toBeTruthy();
     expect(view.getByText('Stretch action · 5 min · earns 3 Spark points')).toBeTruthy();
   });
@@ -61,7 +61,7 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Log a win for Drink water: One sip, 1 minute, earns 1 Spark point'
+        name: 'Mark Drink water done: One sip, 1 minute, earns 1 Spark point'
       })
     );
     expect(onComplete).not.toHaveBeenCalled();
@@ -81,16 +81,16 @@ describe('HabitCard', () => {
         onDefer={onDefer}
       />
     );
-    await fireEvent.press(view.getByRole('button', { name: 'Log the tiny version of Drink water' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Mark the tiny version of Drink water done' }));
     await fireEvent.press(
       view.getByRole('button', { name: 'Start a two minute focus session for Drink water' })
     );
     await fireEvent.press(
-      view.getByRole('button', { name: 'Show neutral deferral choices for Drink water' })
+      view.getByRole('button', { name: 'Show later choices for Drink water' })
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Tomorrow for Drink water; this does not record a failure'
+        name: 'Tomorrow for Drink water; reschedule this suggestion'
       })
     );
     expect(onTiny).toHaveBeenCalledTimes(1);
@@ -98,7 +98,7 @@ describe('HabitCard', () => {
     expect(onDefer).toHaveBeenCalledWith('tomorrow');
   });
 
-  it('makes an enabled optional Momentum streak discoverable from Today', async () => {
+  it('makes an enabled optional streak discoverable from Today', async () => {
     const view = await render(
       <HabitCard
         suggestion={{
@@ -117,6 +117,6 @@ describe('HabitCard', () => {
         onEdit={jest.fn()}
       />
     );
-    expect(view.getByText('✦ Momentum on · review in Progress')).toBeTruthy();
+    expect(view.getByText('✦ Optional streak on · view in Progress')).toBeTruthy();
   });
 });

@@ -8,6 +8,6 @@ describe('CapacityPicker', () => {
     const view = await render(<CapacityPicker value={null} onChange={onChange} />);
     await fireEvent.press(view.getByRole('button', { name: /Running low/ }));
     expect(onChange).toHaveBeenCalledWith('empty');
-    expect(view.getByText(/never your worth/)).toBeTruthy();
+    expect(view.getByText(/only changes the action suggestions/)).toBeTruthy();
   });
 });

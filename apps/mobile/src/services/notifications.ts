@@ -59,13 +59,13 @@ function reminderChannelId(
   privacy: AppSettings['notificationPrivacy'],
   quiet = false
 ): string {
-  return `gentle-reminders-${privacy}${quiet ? '-quiet' : ''}`;
+  return `habit-reminders-${privacy}${quiet ? '-quiet' : ''}`;
 }
 
 export async function configureNotifications(): Promise<void> {
   if (Platform.OS === 'android') {
     await Promise.all([
-      Notifications.setNotificationChannelAsync('gentle-reminders', {
+      Notifications.setNotificationChannelAsync('spark-timers', {
         name: 'General Spark timers',
         description: 'Focus timers and private Spark status notifications.',
         importance: Notifications.AndroidImportance.DEFAULT,
@@ -78,12 +78,12 @@ export async function configureNotifications(): Promise<void> {
         Notifications.setNotificationChannelAsync(reminderChannelId(privacy, quiet), {
           name: `${
             privacy === 'full'
-              ? 'Gentle reminders'
+              ? 'Habit reminders'
               : privacy === 'private'
-                ? 'Private gentle reminders'
-                : 'Hidden gentle reminders'
+                ? 'Private habit reminders'
+                : 'Hidden habit reminders'
           }${quiet ? ' (quiet)' : ''}`,
-          description: 'Low-pressure invitations for habits you chose.',
+          description: 'Reminders for habits you selected.',
           importance: Notifications.AndroidImportance.DEFAULT,
           vibrationPattern: quiet ? null : [0, 70],
           lightColor: '#FF6B5F',
@@ -384,7 +384,7 @@ export async function rescheduleHabitNotifications(
         title:
           privacy === 'full'
             ? `${item.habit.icon} A small Spark?`
-            : 'A gentle Spark is ready',
+            : 'A Spark action is ready',
         body:
           privacy === 'full'
             ? tiny?.label ?? item.habit.title
@@ -419,11 +419,11 @@ export async function snoozeHabit(
 ): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: privacy === 'full' ? 'Your Spark is still here' : 'Gentle reminder',
+      title: privacy === 'full' ? 'Your next Spark action' : 'Habit reminder',
       body:
         privacy === 'full'
-          ? 'No rush. The tiny version still counts.'
-          : 'Open Spark when you are ready.',
+          ? 'Open Spark to view the tiny version.'
+          : 'Open Spark to view the action.',
       data: { sparkNotificationType: 'habit', habitId },
       categoryIdentifier: HABIT_CATEGORY,
       sound: false

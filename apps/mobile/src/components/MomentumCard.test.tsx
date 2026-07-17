@@ -65,19 +65,19 @@ describe('MomentumCard', () => {
 
   afterEach(() => jest.useRealTimers());
 
-  it('shows an intact personal best, a comeback invitation, and transparent passes', async () => {
+  it('shows an intact personal best, a comeback invitation, and clear streak saves', async () => {
     const view = await render(<MomentumCard habit={habit} />);
     await waitFor(() => expect(mockedLoad).toHaveBeenCalledWith('read'));
-    expect(view.getByText('Personal best 2 · 2 total windows won')).toBeTruthy();
-    expect(view.getByText(/A new chain can begin/)).toBeTruthy();
+    expect(view.getByText('Personal best 2 · 2 completed periods total')).toBeTruthy();
+    expect(view.getByText(/Start a new streak/)).toBeTruthy();
     expect(view.getByText('2')).toBeTruthy();
-    expect(view.getByText(/Start with 2; earn 1 per 5 won windows/)).toBeTruthy();
+    expect(view.getByText(/start with 2 and earn another after 5 completed periods/i)).toBeTruthy();
   });
 
   it('uses a Flex pass on the most recent closed gap without inserting a win', async () => {
     const view = await render(<MomentumCard habit={habit} />);
     await fireEvent.press(
-      view.getByRole('button', { name: /Use Flex pass for (Jul 16|16 Jul)/ })
+      view.getByRole('button', { name: /Use a streak save for (Jul 16|16 Jul)/ })
     );
     await waitFor(() => expect(saveHabit).toHaveBeenCalledTimes(1));
     expect(saveHabit).toHaveBeenCalledWith({
@@ -92,7 +92,7 @@ describe('MomentumCard', () => {
   it('delays the open window as planned rest without spending a Flex pass', async () => {
     const view = await render(<MomentumCard habit={habit} />);
     await fireEvent.press(
-      view.getByRole('button', { name: 'Delay this Momentum window' })
+      view.getByRole('button', { name: 'Take a planned break for this period' })
     );
     await waitFor(() => expect(saveHabit).toHaveBeenCalledTimes(1));
     expect(saveHabit).toHaveBeenCalledWith({

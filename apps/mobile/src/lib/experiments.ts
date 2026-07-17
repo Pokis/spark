@@ -103,9 +103,9 @@ export function compareExperiment(
     experimentDays,
     summary:
       baselineDays === experimentDays
-        ? `${label}: ${baselineDays} before and ${experimentDays} during. No clear difference yet.`
+        ? `${label}: ${baselineDays} before and ${experimentDays} during. The counts matched.`
         : experimentDays > baselineDays
-          ? `${label}: ${baselineDays} before and ${experimentDays} during. This may have fit better.`
-          : `${label}: ${baselineDays} before and ${experimentDays} during. This may not have helped, or the week may simply have been different.`
+          ? `${label}: ${baselineDays} before and ${experimentDays} during. The completed-action count increased.`
+          : `${label}: ${baselineDays} before and ${experimentDays} during. Review the week and choose what to try next.`
   };
 }

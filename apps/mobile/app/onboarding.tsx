@@ -17,7 +17,7 @@ const pages = [
   {
     eyebrow: 'Welcome to Spark',
     title: 'One doable action at a time.',
-    body: 'Spark is the name of this app. It helps you choose a small action, remember what worked, and come back without punishment.',
+    body: 'Spark is a habit and focus tracker that helps you choose a clear next action, record each win, and learn what helps you start.',
     icon: 'sparkles-outline' as const
   },
   {
@@ -29,7 +29,7 @@ const pages = [
   {
     eyebrow: 'Predictable progress',
     title: 'A completed action becomes a win.',
-    body: 'A tiny action earns 1 Spark point, standard earns 2, and stretch earns 3. Points never appear randomly, never expire, and can be hidden in Settings.',
+    body: 'A tiny action earns 1 Spark point, standard earns 2, and stretch earns 3. These fixed point values build a clear progress record and can be hidden in Settings.',
     icon: 'checkmark-circle-outline' as const
   },
   {
@@ -40,7 +40,7 @@ const pages = [
   },
   {
     eyebrow: 'Your first habit',
-    title: 'What would you like to make easier?',
+    title: 'What would you like to move forward?',
     body: 'Spark already includes two editable examples: Drink some water and Reset one surface. Add your own habit now, or continue with those examples.',
     icon: 'create-outline' as const
   }
@@ -143,8 +143,8 @@ export default function OnboardingScreen() {
         <Body>{current.body}</Body>
         {page === 0 ? (
           <View style={[styles.promise, { backgroundColor: theme.surfaceAlt }]}>
-            <Text style={styles.promiseIcon}>↻</Text>
-            <Muted>No streak resets. No red failure calendars. No random reward gambling.</Muted>
+            <Text style={styles.promiseIcon}>✓</Text>
+            <Muted>Every completed action builds your progress. Tiny, standard, and stretch wins all count.</Muted>
           </View>
         ) : null}
         {page === 1 ? (
@@ -180,7 +180,7 @@ export default function OnboardingScreen() {
             </View>
             <FormField
               label="My first habit"
-              hint="This is editable later. It is not a promise or an obligation."
+              hint="You can edit this habit and its action sizes at any time."
               placeholder="e.g. Open the document"
               value={firstHabit}
               onChangeText={setFirstHabit}

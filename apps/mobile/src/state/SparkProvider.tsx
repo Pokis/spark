@@ -79,7 +79,7 @@ import {
   rescheduleHabitNotifications,
   snoozeHabit
 } from '../services/notifications';
-import { syncFocusWidget, syncTodayWidget } from '../services/widget';
+import { syncFocusWidget, syncRoutineWidget, syncTodayWidget } from '../services/widget';
 
 interface SparkContextValue extends AppData {
   loading: boolean;
@@ -285,6 +285,14 @@ export function SparkProvider({ children }: PropsWithChildren) {
       runSafely('focus-widget.sync', () => syncFocusWidget(data.focusSessions));
     }
   }, [data.focusSessions, loading]);
+
+  useEffect(() => {
+    if (!loading) {
+      runSafely('routine-widget.sync', () =>
+        syncRoutineWidget(data.routines, data.routineRuns)
+      );
+    }
+  }, [data.routines, data.routineRuns, loading]);
 
   useEffect(() => {
     if (

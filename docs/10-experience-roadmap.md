@@ -21,7 +21,7 @@ Completion summary:
 - Subsequent assistive expansion: **implemented** in code—Simple mode, Help me now, weekly reset,
   friction planning, departure mode, app lock/privacy controls, encrypted folder backups,
   launcher shortcuts, privacy-safe diagnostics, popular-language support including Lithuanian,
-  deliberate progress cards, explicit calendar export, local personal experiments, and an
+  deliberate progress cards, explicit calendar export, local one-week changes, and an
   Android focus widget.
 
 ## Subsequent assistive expansion
@@ -33,17 +33,18 @@ boundary:
 | --- | --- |
 | Lower cognitive load | Simple mode limits Today to one action and keeps only Quick Capture, Focus, Help, and an active routine close by. |
 | In-the-moment support | Help me now routes “cannot start,” overwhelm, drifting, remembering, departure, and sensory overload to one relevant action. |
-| Weekly planning | Weekly reset stores a short reflection, up to three visible habits, tomorrow context, and a tiny action without missed-day scoring. |
+| Weekly planning | Weekly planning stores a short reflection, up to three visible habits, tomorrow context, and a tiny first action. |
 | Friction reduction | Habits can store environment, materials, first contact, obstacle, fallback, and a future-self note. |
-| Time blindness | Departure mode works backward from a leave time using a buffer and routine estimate. |
+| Time blindness | Leave on time works backward from a leave time using a buffer and routine estimate. |
 | Privacy | Optional device-authentication lock, recent-app protection, screenshot protection on Android, and three notification-privacy levels. |
 | Recovery | Password/recovery-code AES-256-GCM backups and bounded automatic Android folder backups. |
 | Fast entry | Four launcher shortcuts plus a timestamp-derived Focus widget with pause/resume controls. |
 | Self-knowledge | User-created one-week experiments compare local before/during counts neutrally. |
-| Safe sharing | Only user-selected wins become an image/text share; no account connection or automatic reports. |
+| Safe sharing | Only user-selected completed actions become an image/text share; no account connection or automatic reports. |
 | Calendar | Spark can hand one focus/departure block to the system calendar without reading calendars. |
 | Localization | Bundled selection for 15 languages, including English and Lithuanian; untranslated legacy strings fall back to English. |
 | Diagnostics/performance | Content-redacted local diagnostics and a packaged Android startup Baseline Profile. |
+| Victory-first language | Everyday screens now lead with completed actions, milestones, repeatable wins, and direct next steps. Deferral and protection controls state what they do without repeatedly emphasizing missed days, failure, or “taking it easy.” |
 
 All rows above have zero Spark cloud runtime cost. Native integrations still require the
 real-device checks listed in the feature catalog and testing guide.
@@ -195,7 +196,7 @@ This order improves trust and daily friction first. It does not require deployin
 
 - Expo SDK 57 currently uses React Native 0.86 and Android compile/target SDK 36:
   [Expo SDK reference](https://docs.expo.dev/versions/latest/).
-- Google Play currently requires new apps and updates to target Android 15/API 35 or higher:
+- Google Play requires API 35 through August 30, 2026 and has announced API 36 from August 31, 2026:
   [target API requirement](https://developer.android.com/google/play/requirements/target-sdk).
 - Play requires an accurate Health apps declaration for closed, open, and production tracks:
   [Health apps declaration](https://support.google.com/googleplay/android-developer/answer/14738291).

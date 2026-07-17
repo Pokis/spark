@@ -6,7 +6,7 @@
 npm.cmd run test:ci
 ```
 
-This runs **238 automated tests**: 171 mobile, 26 domain, 25 control-plane API, and 16 admin
+This runs **257 automated tests**: 190 mobile, 26 domain, 25 control-plane API, and 16 admin
 dashboard tests.
 
 The suites cover:
@@ -33,15 +33,16 @@ Measured on **2026-07-17**:
 
 | Scope | Statements | Branches | Functions | Lines | Enforced minimum |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Mobile: every `app/` and `src/` TypeScript/TSX file | 51.32% | 41.88% | 42.61% | 52.58% | 44 / 33 / 35 / 45 |
+| Mobile: every `app/` and `src/` TypeScript/TSX file | 52.61% | 43.84% | 43.98% | 53.89% | 44 / 33 / 35 / 45 |
 | Shared domain package | 99.58% | 94.08% | 100% | 99.58% | 98 / 90 / 100 / 98 |
 | Control-plane HTTP application (`src/app.ts`) | 88.53% | 78.52% | 97.91% | 88.66% | 85 / 75 / 95 / 85 |
 | Admin source, excluding test/bootstrap files | 73.76% | 49.35% | 67.18% | 75.32% | 70 / 45 / 60 / 70 |
 
 The mobile scope deliberately includes every route and large editor, including files that unit
 tests do not import. That makes the remaining screen-level gap visible. Core mobile services are
-materially higher: local helpers are fully statement-covered, services are 88.95%, backup is
-86.98%, notifications are 93.02%, diagnostics are 94.73%, and `SparkProvider` is 72.72%.
+materially higher: local helpers are fully statement-covered, services are 89.10%, backup is
+86.98%, notifications are 93.02%, diagnostics are 94.73%, widgets are 92.64%, and
+`SparkProvider` is 73.11%.
 
 Coverage is evidence, not a release substitute. Firebase browser sign-in, Android/iOS system
 dialogs, SQLCipher in the shipped native binary, launchers/widgets, notification delivery,
@@ -88,13 +89,13 @@ Build shared packages, API, dashboard, and the Android JavaScript bundle:
 npm.cmd run build
 ```
 
-Validate that native generation includes the shortcuts, five widgets, blocked calendar
+Validate that native generation includes the shortcuts, six widgets, blocked calendar
 permissions, and Baseline Profile:
 
 ```powershell
 Set-Location apps/mobile
 npx.cmd expo prebuild --platform android --no-install
-Select-String -Path android/app/src/main/AndroidManifest.xml -Pattern "SparkFocus|SparkProgress|SparkToolkit|android.app.shortcuts|READ_CALENDAR|WRITE_CALENDAR"
+Select-String -Path android/app/src/main/AndroidManifest.xml -Pattern "SparkFocus|SparkRoutine|SparkProgress|SparkToolkit|android.app.shortcuts|READ_CALENDAR|WRITE_CALENDAR|READ_MEDIA_IMAGES|allowBackup"
 Test-Path android/app/src/main/baseline-prof.txt
 Set-Location ../..
 ```
@@ -169,7 +170,7 @@ timing vary.
     original with the correct password and verify wrong passwords never replace data.
 30. Configure automatic folder backup, verify a daily encrypted file appears, run Back up now,
     and verify only the seven newest Spark automatic files are retained.
-31. Select a few wins and share PNG/text. Verify unselected wins never appear and no recipient or
+31. Select a few completed actions and share PNG/text. Verify unselected actions never appear and no recipient or
     account is remembered.
 32. Run each personal experiment, verify the tiny/reminder behavior is applied only during its
     date window, and check that the comparison language stays neutral.
@@ -179,16 +180,20 @@ timing vary.
     logging; tapping it must open Progress without writing data.
 35. Add the Toolkit widget and verify Capture, two-minute Focus, Departure, and Help each open the
     labeled destination. Test narrow/wide resizing and 200% font/display scaling.
-36. In Settings and Progress, collapse and expand every group. Confirm summaries stay meaningful,
+36. Add the Routine widget. Verify its current step and paused state survive restart, its empty
+    state opens routine creation, and tapping it never advances or completes a step.
+37. In Settings and Progress, collapse and expand every group. Confirm summaries stay meaningful,
     controls keep their values, and larger text never clips add-habit/add-routine buttons.
-37. Open every feature tutorial. Verify Skip returns without dismissal, Dismiss hides its
+38. Open every feature tutorial. Verify Close returns without dismissal while preserving the
+    tutorial catalog's expanded groups and scroll position. Verify Dismiss hides its
     contextual prompt, Replay remains available, Restore all tips makes prompts eligible again,
-    and the first-use prompt can disappear immediately.
-38. Open nested screens from Today, Progress, Settings, a widget, and a cold deep link. Back must
+    and the first-use prompt can disappear immediately. Complete the Home-screen widgets guide
+    and confirm its last page shows Done rather than another Next button.
+39. Open nested screens from Today, Progress, Settings, a widget, and a cold deep link. Back must
     return to the actual prior screen when one exists and to the documented fallback otherwise.
-39. Switch through every bundled language, including Lithuanian and an RTL Arabic device. Verify
+40. Switch through every bundled language, including Lithuanian and an RTL Arabic device. Verify
     navigation never becomes blank and legacy copy falls back to English.
-40. Export diagnostics and inspect the JSON: no habit, focus, routine, Capture, weekly-reflection,
+41. Export diagnostics and inspect the JSON: no habit, focus, routine, Capture, weekly-reflection,
     departure, experiment-note, display-name, file-path, or content-URI text should appear.
 
 ## Cloud security scenarios

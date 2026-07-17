@@ -2,7 +2,7 @@
 
 ## Current dependency audit
 
-The dependency audit was last reviewed on 2026-07-16.
+The dependency audit was last reviewed on 2026-07-17.
 
 `npm audit --omit=dev` reports one moderate advisory repeated across 21 transitive dependency
 instances:
@@ -21,6 +21,12 @@ The installed parent packages do not currently expose a non-breaking audit resol
 Do not use `npm audit fix --force`: it can replace Expo or Firebase packages with incompatible
 major versions. Dependabot is configured to check weekly. Re-run the commands below when those
 parent packages publish compatible updates:
+
+The full development-dependency audit additionally reports three moderate instances of
+`GHSA-8988-4f7v-96qf` in OpenTelemetry Core through `firebase-tools` → Google Cloud Pub/Sub. It is
+development/deployment tooling, not the mobile or deployed control-plane runtime. npm's proposed
+forced resolution is a breaking `firebase-tools` downgrade, so it is also tracked instead of
+forced. There are no high or critical npm advisories in the current lockfile.
 
 ```powershell
 npm.cmd audit --omit=dev
@@ -48,6 +54,8 @@ steps, impact, and any suggested mitigation.
 
 - Native app data uses SQLCipher with a random key stored as
   `WHEN_UNLOCKED_THIS_DEVICE_ONLY`.
+- Android OS Auto Backup is disabled (`allowBackup=false`). User-controlled exports and the
+  explicitly selected encrypted backup folder are the recovery paths.
 - Password/recovery-code backups use PBKDF2-SHA256 (150,000 iterations) and authenticated
   AES-256-GCM with a fresh 16-byte salt and 12-byte nonce. Header metadata is authenticated.
 - Wrong keys, modified authentication tags, unsupported formats, oversized input, invalid
@@ -61,7 +69,10 @@ steps, impact, and any suggested mitigation.
 - App lock delegates authentication to the operating system; Spark never handles biometric
   templates or device credentials. Missing enrollment disables the lock to avoid lockout.
 - Android sensitive-preview protection uses secure-window behavior and therefore also blocks
-  screenshots while enabled. iOS uses app-switcher snapshot protection.
+  screenshots while enabled. iOS uses app-switcher snapshot protection. The release manifest
+  keeps Android's screen-capture detection permission required by the Expo module, but removes
+  its unrelated `READ_MEDIA_IMAGES` declaration; Spark does not subscribe to or upload screenshot
+  events.
 - Calendar integration uses only system create-event UI. Android calendar permissions are
   explicitly removed from the generated manifest.
 - Diagnostics contain only platform/app state, counts, safe setting names, and redacted technical
@@ -69,3 +80,19 @@ steps, impact, and any suggested mitigation.
   display-name, local-path, and content-URI text are excluded.
 - Progress cards render only completions the user checks and are shared through the system sheet;
   Spark stores no recipient or social graph.
+
+## 2026-07-17 repository and native scan
+
+- Expo Doctor passed 20/20 dependency, config, peer, and React Native compatibility checks.
+- A repository scan found no private-key, OpenAI-style secret, Firebase API-key, or service-account
+  private-key patterns outside ignored dependency/generated directories. `gitleaks` and `semgrep`
+  are not installed locally, so CI should add one of them before accepting outside contributors.
+- The generated merged release manifest contains none of `READ_CALENDAR`, `WRITE_CALENDAR`,
+  `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, or
+  `SYSTEM_ALERT_WINDOW`; cleartext traffic is not enabled and `allowBackup=false`.
+- All six Spark widget receivers are non-exported. Exported third-party components are the main
+  deep-link/share activity, a read-only widget-image provider scoped to its dedicated image
+  directory, and AndroidX/Firebase receivers/services protected by their documented platform
+  permissions.
+- Gradle successfully produced the native debug APK after the manifest hardening. Upstream
+  Gradle/Kotlin deprecation warnings remain dependency-maintenance items, not build failures.

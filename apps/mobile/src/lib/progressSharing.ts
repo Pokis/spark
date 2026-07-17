@@ -41,6 +41,6 @@ export function progressShareText(
       )}`
     ),
     '',
-    'Shared deliberately from Spark — no automatic reporting.'
+    'Selected and shared from Spark.'
   ].join('\n');
 }

@@ -47,13 +47,13 @@ export function HabitCard({
             <Text style={[styles.title, { color: theme.text }]}>{habit.title}</Text>
             <Muted numberOfLines={1}>{suggestion.explanation}</Muted>
             {habit.momentum?.enabled ? (
-              <Text style={[styles.momentum, { color: habit.color }]}>✦ Momentum on · review in Progress</Text>
+              <Text style={[styles.momentum, { color: habit.color }]}>✦ Optional streak on · view in Progress</Text>
             ) : null}
           </View>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Show one option' : 'Show all effort options'}
+          accessibilityLabel={expanded ? 'Show one action size' : 'Show all action sizes'}
           onPress={() => setExpanded((value) => !value)}
           hitSlop={10}
         >
@@ -69,7 +69,7 @@ export function HabitCard({
           <Pressable
             key={candidate.id}
             accessibilityRole="button"
-            accessibilityLabel={`Log a win for ${habit.title}: ${candidate.label}, ${candidate.targetMinutes} ${
+            accessibilityLabel={`Mark ${habit.title} done: ${candidate.label}, ${candidate.targetMinutes} ${
               candidate.targetMinutes === 1 ? 'minute' : 'minutes'
             }${showRewards ? `, earns ${candidate.reward} ${candidate.reward === 1 ? 'Spark point' : 'Spark points'}` : ''}`}
             accessibilityState={{ disabled: saving, busy: saving }}
@@ -116,7 +116,7 @@ export function HabitCard({
               ]}
             >
               <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              <Text style={styles.logText}>{saving ? 'Saving' : 'Log'}</Text>
+              <Text style={styles.logText}>{saving ? 'Saving' : 'Done'}</Text>
             </View>
           </Pressable>
         ))}
@@ -146,14 +146,14 @@ export function HabitCard({
         {onTiny ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Log the tiny version of ${habit.title}`}
+          accessibilityLabel={`Mark the tiny version of ${habit.title} done`}
           accessibilityState={{ disabled: saving, busy: saving }}
           disabled={saving}
           onPress={onTiny}
           style={[styles.quickAction, { backgroundColor: theme.surfaceAlt }]}
         >
           <Ionicons name="resize-outline" size={17} color={theme.primary} />
-          <Text style={[styles.quickActionText, { color: theme.text }]}>Log tiny</Text>
+          <Text style={[styles.quickActionText, { color: theme.text }]}>Tiny done</Text>
         </Pressable>
         ) : null}
         {onFocus ? (
@@ -164,13 +164,13 @@ export function HabitCard({
           style={[styles.quickAction, { backgroundColor: theme.surfaceAlt }]}
         >
           <Ionicons name="timer-outline" size={17} color={theme.primary} />
-          <Text style={[styles.quickActionText, { color: theme.text }]}>2-min launch</Text>
+          <Text style={[styles.quickActionText, { color: theme.text }]}>Focus 2 min</Text>
         </Pressable>
         ) : null}
         {onDefer ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Show neutral deferral choices for ${habit.title}`}
+          accessibilityLabel={`Show later choices for ${habit.title}`}
           accessibilityState={{ expanded: showLater }}
           onPress={() => setShowLater((value) => !value)}
           style={[styles.quickAction, { backgroundColor: theme.surfaceAlt }]}
@@ -193,7 +193,7 @@ export function HabitCard({
             <Pressable
               key={kind}
               accessibilityRole="button"
-              accessibilityLabel={`${label} for ${habit.title}; this does not record a failure`}
+              accessibilityLabel={`${label} for ${habit.title}; reschedule this suggestion`}
               onPress={() => onDefer(kind)}
               style={[styles.defer, { borderColor: theme.border }]}
             >

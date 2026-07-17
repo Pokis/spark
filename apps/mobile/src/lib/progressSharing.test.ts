@@ -51,7 +51,7 @@ describe('deliberate progress sharing', () => {
   it('creates explicit text with no recipient or account information', () => {
     const text = progressShareText(['win'], [completion], [habit]);
     expect(text).toContain('• 📚 One line');
-    expect(text).toContain('no automatic reporting');
+    expect(text).toContain('Selected and shared from Spark');
     expect(text).not.toContain('email');
     expect(text).not.toContain('recipient');
   });

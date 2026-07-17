@@ -1,7 +1,7 @@
 # Spark quality and release-readiness review
 
 > Update, 2026-07-17: the local-first experience items that followed this review, including
-> optional reward-first Momentum streaks, have now been
+> optional reward-first streaks, have now been
 > implemented. Use [the feature catalog](./11-feature-catalog.md) for current behavior and
 > [the experience roadmap](./10-experience-roadmap.md) for the original rationale. Manual
 > native-device and store-console gates in this review still apply.
@@ -81,7 +81,7 @@ disabled.
 ### ADHD and cognitive-load experience
 
 - Habit creation starts with a short Basics section and editable starter templates; detailed
-  variants, schedule, optional Momentum cadence, context, priority, and reminders live in optional Fine-tuning.
+  variants, schedule, optional streak timing, context, priority, and reminders live in optional Fine-tuning.
 - Onboarding defines habits, actions, wins, and fixed Spark points before it can create one personal first habit.
 - Calm, balanced, and celebratory sensory profiles control motion and feedback.
 - Points and rhythm percentages can be hidden.
@@ -90,11 +90,12 @@ disabled.
 - Today shows no more than three recommendations and can prioritize the current context: home,
   work, outside, or phone.
 - Every recommendation includes one short explanation.
-- Progress includes a gentle reflection based only on wins and useful tiny steps, plus a recent-win ledger showing where points came from.
+- Progress highlights completed actions, useful patterns, milestones, and a recent-win ledger showing where every point came from.
+- User-facing copy across onboarding, Today, Progress, routines, planning, tutorials, widgets, and reminders is victory-first. A regression test rejects the former repeated “nothing lost,” missed-day, failure-calendar, and “gentle restart” phrases.
 - The Android widget rotates supportive wording without changing the underlying commitment.
 - Social feeds, leaderboards, random rewards, paid/loss-framed streak protection, and engagement
-  notifications remain intentionally excluded. Optional local Momentum uses transparent earned
-  Flex passes and planned rest without creating fake completions or charging for repair.
+  notifications remain intentionally excluded. Optional local streaks use transparent earned
+  streak saves and planned breaks without creating fake completions or charging for repair.
 
 ### Admin and cloud operations
 
@@ -120,8 +121,8 @@ disabled.
 
 ### Automated quality gates
 
-- Domain tests cover capacity, recency, pause history, distinct-day comebacks, and daily/two-day
-  Momentum windows, gaps, pauses, milestones, Flex continuity, and planned rest.
+- Domain tests cover energy, recency, pause history, distinct-day comebacks, and daily/two-day
+  streak periods, gaps, pauses, milestones, streak-save continuity, and planned breaks.
 - Mobile tests cover notification occurrence planning, malformed/legacy/future backups,
   accessible settings, and core components.
 - API tests cover feature shutdowns, purchase idempotency/conflicts/transfers, authenticated RTDN,
@@ -134,23 +135,30 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **238 tests passed**: 171 mobile, 26 domain, 25 API, 16 admin.
+- `npm.cmd run test:ci` — **257 tests passed**: 190 mobile, 26 domain, 25 API, 16 admin.
 - `npm.cmd run test:coverage` — passed the checked-in workspace gates. Measured statement
-  coverage: mobile 51.32% across every route/source file, domain 99.58%, API application 88.53%,
+  coverage: mobile 52.61% across every route/source file, domain 99.58%, API application 88.53%,
   and admin source 73.76%.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.
-- Expo Doctor — passed after aligning `@types/jest` to the Expo SDK recommendation.
+- Expo Doctor — passed all 20 dependency/configuration compatibility checks.
 - Terraform — `fmt` and `validate` passed with a temporary checksum-verified official binary.
 - JSON configuration parsing and the release file inventory passed.
 - `npm audit --omit=dev` reports the upstream moderate `uuid` advisory documented in
   [security.md](security.md). No compatible fix is currently published; a forced major override
   was not applied.
+- The full audit additionally reports a development-only moderate OpenTelemetry advisory through
+  `firebase-tools`; npm's forced path is a breaking downgrade, so it was documented rather than
+  applied. No high or critical advisory is present.
+- Native prebuild and Gradle debug assembly passed. The merged release manifest was inspected:
+  calendar/media/broad-storage/overlay permissions are absent, cleartext is not enabled,
+  Android Auto Backup is disabled, and all six Spark widget receivers are non-exported.
+- A focused repository secret-pattern scan returned no matches; dedicated `gitleaks`/`semgrep`
+  binaries were not installed in this environment.
 
 Not run here:
 
-- native Gradle build, Maestro, TalkBack, widget, or physical-device QA because Java/Android SDK
-  and `adb` are not installed;
+- Maestro, TalkBack, launcher/widget interaction, or other physical-device QA;
 - a project-specific Terraform `plan` or `apply`, because no operator project was selected;
 - Google Play purchase/refund testing because it requires the operator's Play application and
   license testers.
@@ -163,8 +171,8 @@ These cannot be safely guessed or automated:
    and native Android packages before the first upload.
 2. Replace every `REPLACE_ME` value with the real legal operator, contact, address, retention
    decisions, and privacy email.
-3. Publish the privacy policy at a stable public HTTPS URL and put that URL in the app and Play
-   Console.
+3. Publish the privacy policy at a stable public HTTPS URL, put that URL in Play Console, and keep
+   the in-app Settings → Privacy explanation consistent with it.
 4. Complete Data safety, Health apps, content rating, target audience, app access, and other Play
    declarations from the exact release build.
 5. Install Android Studio/SDK/Java and run the device, accessibility, timezone/DST, backup,

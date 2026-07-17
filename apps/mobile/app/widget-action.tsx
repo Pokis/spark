@@ -22,12 +22,12 @@ export default function WidgetActionScreen() {
   return (
     <Screen contentStyle={{ justifyContent: 'center' }}>
       <Card>
-        <Eyebrow>Widget action</Eyebrow>
+        <Eyebrow>From your home screen</Eyebrow>
         <H1>{habit.icon} {habit.title}</H1>
         <SectionHeading>{tiny.label}</SectionHeading>
-        <Muted>Nothing has been logged yet. Choose Log tiny win to create one completion.</Muted>
+        <Muted>Complete this tiny action, then use the button to add the win to Progress.</Muted>
         <Button
-          label="Log tiny win"
+          label="Mark tiny action done"
           loading={saving}
           onPress={() => {
             setSaving(true);
@@ -38,7 +38,7 @@ export default function WidgetActionScreen() {
           }}
         />
         <Button
-          label="Open Today without logging"
+          label="Open Today without recording"
           variant="secondary"
           onPress={() => router.replace('/(tabs)')}
         />

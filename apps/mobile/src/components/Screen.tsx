@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode, Ref } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +18,9 @@ interface ScreenProps extends PropsWithChildren {
   keyboard?: boolean;
   testID?: string;
   refreshControl?: ScrollViewProps['refreshControl'];
+  scrollViewRef?: Ref<ScrollView>;
+  onScroll?: ScrollViewProps['onScroll'];
+  scrollEventThrottle?: ScrollViewProps['scrollEventThrottle'];
 }
 
 export function keyboardAvoidingBehavior(
@@ -35,16 +38,22 @@ export function Screen({
   contentStyle,
   keyboard = true,
   testID,
-  refreshControl
+  refreshControl,
+  scrollViewRef,
+  onScroll,
+  scrollEventThrottle
 }: ScreenProps) {
   const theme = useTheme();
   const body = scroll ? (
     <ScrollView
+      ref={scrollViewRef}
       contentContainerStyle={[styles.content, styles.scrollContent, contentStyle]}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       keyboardShouldPersistTaps="handled"
+      onScroll={onScroll}
       refreshControl={refreshControl}
+      scrollEventThrottle={scrollEventThrottle}
       testID={testID}
     >
       {children}

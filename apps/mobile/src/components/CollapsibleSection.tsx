@@ -8,14 +8,27 @@ export function CollapsibleSection({
   title,
   summary,
   defaultExpanded = false,
+  expanded: controlledExpanded,
+  onExpandedChange,
   children
 }: PropsWithChildren<{
   title: string;
   summary?: string;
   defaultExpanded?: boolean;
+  expanded?: boolean;
+  onExpandedChange?(expanded: boolean): void;
 }>) {
   const theme = useTheme();
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const expanded = controlledExpanded ?? internalExpanded;
+
+  function toggleExpanded() {
+    const nextExpanded = !expanded;
+    if (controlledExpanded === undefined) {
+      setInternalExpanded(nextExpanded);
+    }
+    onExpandedChange?.(nextExpanded);
+  }
 
   return (
     <Card>
@@ -24,7 +37,7 @@ export function CollapsibleSection({
         accessibilityLabel={`${expanded ? 'Collapse' : 'Expand'} ${title}`}
         accessibilityState={{ expanded }}
         hitSlop={8}
-        onPress={() => setExpanded((value) => !value)}
+        onPress={toggleExpanded}
         style={({ pressed }) => [styles.header, { opacity: pressed ? 0.7 : 1 }]}
       >
         <View style={styles.heading}>
@@ -35,7 +48,10 @@ export function CollapsibleSection({
             </Text>
           ) : null}
         </View>
-        <View style={[styles.icon, { backgroundColor: theme.surfaceAlt }]}>
+        <View style={[styles.toggle, { backgroundColor: theme.surfaceAlt }]}>
+          <Text style={[styles.toggleLabel, { color: theme.textMuted }]}>
+            {expanded ? 'Hide' : 'Show'}
+          </Text>
           <Ionicons
             name={expanded ? 'chevron-up' : 'chevron-down'}
             size={20}
@@ -58,13 +74,17 @@ const styles = StyleSheet.create({
   heading: { flex: 1, minWidth: 0, gap: 3 },
   title: { fontSize: 19, lineHeight: 24, fontWeight: '800' },
   summary: { fontSize: 13, lineHeight: 18 },
-  icon: {
-    width: 40,
+  toggle: {
+    minWidth: 72,
     height: 40,
     borderRadius: 14,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    gap: 3,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0
   },
+  toggleLabel: { fontSize: 12, lineHeight: 16, fontWeight: '800' },
   content: { gap: 10 }
 });

@@ -38,11 +38,11 @@ The mobile database stores:
 - focus sessions
 - capture items
 - routines and steps
-- daily capacity check-ins
+- daily energy check-ins (internal field name: `capacity`)
 - habit friction plans
 - weekly plans
-- departure plans
-- personal experiments
+- leave-on-time plans (internal model name: `DeparturePlan`)
+- one-week changes (internal model name: `PersonalExperiment`)
 - preferences
 - a cached entitlement
 

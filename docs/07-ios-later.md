@@ -5,8 +5,8 @@ SecureStore, local notifications, support, and entitlement interfaces. Android i
 release because it can be built and published with the account you already have.
 
 Shared iPhone-compatible code now also includes Simple mode, Help me now, weekly reset, friction
-plans, Departure mode, explicit system-calendar event creation, selected-win sharing, personal
-experiments, Quiet now, Face ID/device-credential app lock, app-switcher snapshot protection,
+plans, Leave on time, explicit system-calendar event creation, selected-progress sharing,
+one-week changes, Quiet now, Face ID/device-credential app lock, app-switcher snapshot protection,
 password-encrypted backup, diagnostics, and the 15-language catalog.
 
 ## What can be done now on Windows

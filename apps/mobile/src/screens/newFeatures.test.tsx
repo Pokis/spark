@@ -113,7 +113,7 @@ describe('new local-first feature screens', () => {
       view.getByRole('button', { name: 'I need to leave on time' })
     );
     await fireEvent.press(
-      view.getByRole('button', { name: 'Open Departure mode' })
+      view.getByRole('button', { name: 'Make a leave-on-time plan' })
     );
     expect(mockedRouter.push).toHaveBeenCalledWith('/departure');
 
@@ -140,7 +140,7 @@ describe('new local-first feature screens', () => {
       );
     }
     expect(alert).toHaveBeenCalledWith(
-      'Keep the week small',
+      'Three habits selected',
       expect.stringContaining('up to three')
     );
     await fireEvent.changeText(
@@ -150,7 +150,7 @@ describe('new local-first feature screens', () => {
     await fireEvent.press(view.getByRole('button', { name: 'Home' }));
     await fireEvent.press(view.getByRole('button', { name: 'Tiny 0' }));
     await fireEvent.press(
-      view.getByRole('button', { name: 'Save this gentle plan' })
+      view.getByRole('button', { name: 'Save weekly plan' })
     );
     await waitFor(() => expect(value.saveWeeklyPlan).toHaveBeenCalled());
     expect(value.saveWeeklyPlan).toHaveBeenCalledWith(
@@ -276,13 +276,13 @@ describe('new local-first feature screens', () => {
         message: expect.stringContaining('• ✦ Tiny 0')
       })
     );
-    expect(share.mock.calls[0]?.[0].message).toContain('no automatic reporting');
+    expect(share.mock.calls[0]?.[0].message).toContain('Selected and shared from Spark');
 
     for (let index = 1; index < 6; index += 1) {
       await fireEvent.press(view.getByText(`✦ Tiny ${index}`));
     }
     expect(alert).toHaveBeenCalledWith(
-      'Choose a few',
+      'Choose up to five',
       expect.stringContaining('up to five')
     );
     await fireEvent.press(view.getByRole('button', { name: 'Share image' }));

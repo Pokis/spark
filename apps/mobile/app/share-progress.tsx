@@ -33,7 +33,7 @@ export default function ShareProgressScreen() {
     setSelected((current) => {
       const result = toggleSharedWin(current, id);
       if (result.atLimit) {
-        Alert.alert('Choose a few', 'Select up to five wins so the card stays calm and readable.');
+        Alert.alert('Choose up to five', 'Select up to five wins so the card stays clear and readable.');
       }
       return result.selected;
     });
@@ -70,8 +70,8 @@ export default function ShareProgressScreen() {
         <Eyebrow>Deliberate sharing</Eyebrow>
         <H1>You choose every win.</H1>
         <Muted>
-          Spark never reports progress automatically and does not connect to another person’s
-          account. Select up to five items, then share an image or plain text.
+          Select up to five completed actions, preview the card, then open your device share
+          sheet for an image or plain text.
         </Muted>
       </View>
 
@@ -107,7 +107,7 @@ export default function ShareProgressScreen() {
             );
           })
         ) : (
-          <Muted>Log a win first, then come back when you deliberately want to share it.</Muted>
+          <Muted>Mark an action Done first, then come back when you deliberately want to share it.</Muted>
         )}
       </Card>
 
@@ -131,7 +131,7 @@ export default function ShareProgressScreen() {
         ) : (
           <Text style={styles.cardEmpty}>Choose a few wins above.</Text>
         )}
-        <Text style={styles.cardFooter}>Flexible consistency · no streak required</Text>
+        <Text style={styles.cardFooter}>Selected wins · shared by you</Text>
       </View>
 
       <Button

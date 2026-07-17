@@ -3,7 +3,7 @@
 **A dopamine-aware, no-guilt habit and focus tracker designed for ADHD brains.**
 
 Spark is an Android-first Expo/React Native application that also targets iPhone. Its core
-experience is offline-first: habits, routines, completions, focus sessions, rewards, capacity
+experience is offline-first: habits, routines, completions, focus sessions, rewards, energy
 check-ins, and captured thoughts stay on the device in encrypted SQLite. No account or server is
 required.
 
@@ -16,7 +16,11 @@ another topic, use the purpose-based [documentation home](./docs/README.md); you
 read this long repository reference from top to bottom.
 
 On Windows, run `.\spark.cmd` for a guided command catalog. It wraps setup, Expo targets, Android
-tools, tests, builds, validation, and optional local services; each command supports `-Help`.
+tools, tests, builds, validation, EAS releases, guarded Firebase/Google Cloud deployment, and
+optional local services; each command supports `-Help`.
+`Ctrl+C` stops mobile development processes; `.\spark.cmd stop` is the safe second-terminal
+fallback, and `.\spark.cmd stop -Device <name-or-id>` also force-stops the phone app without
+clearing its data.
 
 ## Current status
 
@@ -37,7 +41,7 @@ indexes, Terraform, and release documentation.
 Validation snapshot on **2026-07-17**:
 
 - workspace TypeScript checks passed;
-- 238 automated tests passed: 171 mobile, 26 domain, 25 API, and 16 admin;
+- 257 automated tests passed: 190 mobile, 26 domain, 25 API, and 16 admin;
 - coverage gates passed across mobile `app/` and `src/`, the domain package, core API application,
   and admin source;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
@@ -65,9 +69,9 @@ local/cloud data boundary, monetization choice, and remaining native-QA caveat i
 
 - **Tiny counts.** Every habit can have tiny, default, and stretch versions.
 - **Flexible consistency.** Rolling progress is always available; each habit can also opt into a
-  reward-first daily or every-other-day Momentum streak with neutral pauses, delays, and earned
-  Flex passes instead of an all-or-nothing reset.
-- **Capacity before ambition.** The app asks what is realistic now.
+  daily or every-other-day streak with planned breaks and earned streak saves instead of an
+  all-or-nothing reset.
+- **Energy before ambition.** The app asks what is realistic now.
 - **Low friction.** Today presents a short, actionable set rather than an overwhelming backlog.
 - **Immediate, non-exploitative reward.** Completions use color, haptics, motion, and fixed progress
   rewards. Spark does not use casino-style randomized payouts.
@@ -86,7 +90,7 @@ care for ADHD or any other condition.
 ### Offline mobile features
 
 - guided onboarding and starter data;
-- Today recommendations based on schedule, capacity, available time, context, and recent activity;
+- Today recommendations based on schedule, energy, available time, place, and recent activity;
 - compact remembered check-ins, Same as yesterday, time-of-day context memory, Pick for me,
   a one-action Rescue my day mode, quiet return cards, and neutral deferrals;
 - Simple mode, contextual Help me now, a no-grade weekly reset, tomorrow context/tiny planning,
@@ -97,14 +101,14 @@ care for ADHD or any other condition.
   exact or windowed reminder scheduling, preview, and editing;
 - guarded completion taps, accessible undo, tactile completion celebration, and deterministic
   Spark rewards;
-- no-reset rolling rhythms, optional reward-first Momentum streaks, recovery language, and
+- no-reset rolling progress, optional reward-first streaks, recovery language, and
   comeback recognition;
 - quick brain-dump capture with drafts, search, edit, delete/undo, release/restore, multi-select,
   Android Share to Spark, a quick-capture widget, and habit/focus/routine conversion;
 - restart-safe focus/body-double timer with parked interruptions, prefilled two-minute launches,
   optional launch countdown, local offline soundscapes, transition capture, companions, and
   planned-versus-actual feedback;
-- explicit focus/departure calendar export without calendar reads, Departure mode with a real
+- explicit focus/leave-on-time calendar export without calendar reads, a leave-on-time plan with a real
   buffer, and a Focus home-screen widget with pause/resume controls;
 - editable/template-based routines with reorder, duplicate, archive/restore, skip, tiny mode,
   pause/resume after restart, finish estimates, and habit/focus links;
@@ -120,9 +124,10 @@ care for ADHD or any other condition.
   copies, integrity reporting, restore, and portable CSV export;
 - password/recovery-code encrypted backups and bounded automatic backups to one user-selected
   Android folder;
-- deliberate selected-win image/text sharing and neutral one-week personal experiments;
-- five zero-cloud-cost Android widgets: explicit-confirmation Today, Quick Capture, reliable
-  Focus controls, Progress, and a four-action Toolkit, plus four safe launcher shortcuts;
+- deliberate selected-action image/text sharing and user-chosen one-week changes;
+- six zero-cloud-cost Android widgets: explicit-confirmation Today, Quick Capture, reliable
+  Focus controls, the current Routine step, Progress, and a four-action Toolkit, plus four safe
+  launcher shortcuts;
 - collapsible Settings/Progress sections, width-safe add controls, history-aware Back fallbacks,
   and eleven skippable, dismissible, fully replayable feature tutorials;
 - bundled language selection for 15 languages, including Lithuanian, with English fallback;
@@ -192,12 +197,12 @@ More detail: [architecture.md](./docs/architecture.md).
 
 | Data | Stored where | Cloud required | Visible to an admin |
 | --- | --- | --- | --- |
-| Habits, variants, and optional Momentum settings/protections | encrypted device database | No | No |
-| Completions, rolling rhythms, and Momentum calculations | encrypted device database | No | No |
+| Habits, variants, and optional streak schedules/saves | encrypted device database | No | No |
+| Completions, rolling rhythms, and optional streak calculations | encrypted device database | No | No |
 | Focus sessions and parked thoughts | encrypted device database | No | No |
 | Routines and quick capture | encrypted device database | No | No |
-| Capacity and accessibility settings | encrypted device database | No | No |
-| Weekly plans, departure plans, and personal experiments | encrypted device database | No | No |
+| Energy and accessibility settings | encrypted device database | No | No |
+| Weekly plans, leave-on-time plans, and one-week changes | encrypted device database | No | No |
 | Local notification schedule | device operating system | No | No |
 | JSON or encrypted backup | location chosen by the user | No | No |
 | Generated backup recovery code | device secure storage | No | No |
@@ -380,12 +385,12 @@ After a native build is installed:
 
 1. long-press an empty area of the Android home screen;
 2. choose **Widgets**;
-3. find **Spark Today**, **Spark Quick Capture**, **Spark Focus**, **Spark Progress**, or
-   **Spark Toolkit**;
+3. find **Spark Today**, **Spark Quick Capture**, **Spark Focus**, **Spark Routine**,
+   **Spark Progress**, or **Spark Toolkit**;
 4. drag the desired widget to the home screen;
 5. confirm Today requires explicit logging, Quick Capture opens the minimal form, Focus reflects
-   the persisted timer and opens pause/resume actions, Progress opens the local history, and
-   Toolkit opens its four labeled destinations.
+   the persisted timer and opens pause/resume actions, Routine shows the saved/current step,
+   Progress opens the local history, and Toolkit opens its four labeled destinations.
 
 These widgets use only local snapshots and static deep links, so their runtime cloud cost is $0
 regardless of user count. Adding or changing widget definitions requires rebuilding/reinstalling
@@ -412,6 +417,11 @@ Each tool loads configuration from its own project directory:
 
 The root [.env.example](./.env.example) is a consolidated reference. Copy the scoped template for
 the component you are running.
+
+`EXPO_PUBLIC_SPARK_CREATOR_TIP_LINK_ENABLED` controls the low-visibility Buy Me a Coffee link at
+the bottom of Settings. It defaults to `false`, grants no entitlement, and sends no Spark data.
+Keep it off in Google Play/App Store builds unless you have confirmed and implemented an
+applicable external-payment program for every release region; enabling it requires a new build.
 
 ### Mobile
 
@@ -715,22 +725,19 @@ More cases: [troubleshooting.md](./docs/troubleshooting.md).
 ### Local development APK
 
 ```powershell
-npm.cmd run android
+.\spark.cmd android
 ```
 
 This produces and installs a debug development client. It is not a Play Store release artifact.
 
 ### EAS development or preview APK
 
-Follow the official [EAS Build setup](https://docs.expo.dev/build/setup/), then work from the mobile
-project:
+Follow the official [EAS Build setup](https://docs.expo.dev/build/setup/). The Spark helper keeps
+you at the repository root and explains each guarded external action:
 
 ```powershell
-Set-Location apps/mobile
-npx.cmd eas-cli@latest login
-npx.cmd eas-cli@latest init
-npx.cmd eas-cli@latest build --platform android --profile development
-Set-Location ..\..
+.\spark.cmd release -Action Setup
+.\spark.cmd release -Action Build -Profile development -Message "Phone test"
 ```
 
 The `development` and `preview` profiles create installable APKs for testers. Set the EAS project
@@ -739,14 +746,15 @@ owner/project ID and environment values before relying on cloud builds.
 ### Production AAB
 
 ```powershell
-Set-Location apps/mobile
-npx.cmd eas-cli@latest build --platform android --profile production
-Set-Location ..\..
+.\spark.cmd release -Action Verify
+.\spark.cmd release -Action Build -Profile production -Message "Internal test"
 ```
 
 The production profile creates an Android App Bundle and auto-increments the store build version.
 Use Play App Signing. Keep owner access, recovery codes, signing records, and Expo credentials in a
-secure operator account.
+secure operator account. Run `.\spark.cmd release -Help` for build listing, exact-ID download, and
+guarded submission commands. The first Google Play upload must be completed manually in Play
+Console; later builds can use the submission helper.
 
 Official references:
 
@@ -755,107 +763,28 @@ Official references:
 
 ## Android release procedure
 
-Do these in order. The expanded walkthrough is
-[docs/03-android-release.md](./docs/03-android-release.md), and the final sign-off list is
-[docs/release-checklist.md](./docs/release-checklist.md).
+Use the dedicated [beginner Android and Google Play guide](./docs/03-android-release.md). It now
+explains, with examples:
 
-### 1. Freeze identity and ownership
+- the difference between the public app name, permanent Android package ID, Expo slug, EAS project,
+  Google Cloud project, version name, version code, APK, and AAB;
+- exactly which files matter if you keep or change `com.sparkhabits.app`, why each mentions the ID,
+  and how to regenerate the ignored local native Android project safely;
+- which privacy placeholders you must fill, what each value means, and how to host the policy;
+- the free/offline EAS configuration and commands for a signed production AAB;
+- every major Play Console field, starter store copy, graphic dimensions, declarations, testing
+  tracks, and a Play-installed device checklist; and
+- what can wait until later, including Google Cloud, the admin dashboard, purchases, promo grants,
+  RTDN, and automated submission.
 
-- Choose a final reverse-domain package ID that you control.
-- Update `apps/mobile/app.config.ts`, Terraform variables, Play API configuration, tests, and docs.
-- Choose the final app name, support email, operator/legal name, and privacy URL.
-- Confirm Expo project ownership and Google Play owner access.
-- Increment app version/version code for every submitted build.
+Work through the three gates in the [release checklist](./docs/release-checklist.md): first
+Internal testing, then Closed testing, then Production. You do not need to complete the optional
+Monetization or Cloud sections for the first offline release.
 
-Do this before the first Play upload. Package name changes after listing creation require a new
-application.
-
-### 2. Complete privacy and policy material
-
-- Replace every privacy-policy placeholder.
-- Host the policy publicly through Firebase Hosting or another stable HTTPS site.
-- Put the same URL in the app and Play Console.
-- Verify the policy matches actual mobile, Firebase, support, and purchase behavior.
-- Complete Play’s Data safety form, including third-party SDK behavior.
-- Complete the Health apps declaration required for published apps.
-- Add an accurate wellness/non-medical disclaimer because the product is framed for ADHD users.
-- Complete content rating, target audience, ads declaration, app access, and any requested account
-  deletion/data deletion responses.
-- Prepare a support contact and a support-response routine.
-
-Official references:
-
-- [Play target API requirements](https://developer.android.com/google/play/requirements/target-sdk)
-- [Data safety form](https://support.google.com/googleplay/android-developer/answer/10787469)
-- [Privacy policy requirements](https://support.google.com/googleplay/android-developer/answer/17105854)
-- [Health apps declaration](https://support.google.com/googleplay/android-developer/answer/14738291)
-- [Health content and services policy](https://support.google.com/googleplay/android-developer/answer/16679511)
-
-At the time of this README update, new apps and updates must target Android 15/API 35 or higher.
-Spark's Expo SDK 57 native template targets API 36, so it is above that minimum. Always re-check
-the live requirement immediately before submission.
-
-### 3. Pass engineering gates
-
-```powershell
-npm.cmd run typecheck
-npm.cmd run test:ci
-npm.cmd run build
-npm.cmd run release:check
-```
-
-Then run the full device and accessibility matrix. Do not substitute Expo Go for a native test.
-Review the implemented findings and remaining manual gates in
-[quality-review.md](./docs/quality-review.md) for the features being enabled.
-
-For an offline beta, keep support and purchases unconfigured. For a paid launch, purchase-token
-ownership, idempotency, refund/revocation reconciliation, and server-enforced feature switches are
-mandatory.
-
-### 4. Create Play Console assets and products
-
-- app icon and feature graphic;
-- phone screenshots showing real shipped behavior;
-- short and full descriptions with no medical claims;
-- category and contact details;
-- privacy policy URL;
-- `spark_premium_lifetime` one-time product only when purchase hardening is ready;
-- license tester accounts and internal testers.
-
-Google Play currently calls durable in-app products “one-time products.” Use its current product
-model and verify activation in the target test track:
-[one-time products](https://developer.android.com/google/play/billing/one-time-products).
-
-### 5. Upload to internal testing first
-
-- Build the production AAB.
-- Upload it to Play Console internal testing.
-- Review automated pre-launch results.
-- Install from the Play-generated test link, not by sideloading, for Billing tests.
-- Test onboarding, storage, reminders, widget, backup, process death, offline mode, support, grants,
-  purchase lifecycle, accessibility, and upgrades.
-
-Google recommends beginning with internal testing:
-[Play test tracks](https://support.google.com/googleplay/android-developer/answer/9845334).
-
-### 6. Run a closed test
-
-- Use a representative small cohort, including ADHD users and accessibility testers.
-- Provide an obvious support/contact route.
-- Record defects without collecting habit content.
-- Review crash, ANR, battery, startup, and pre-launch reports in Play Console.
-- Repeat restore/refund/revocation tests if purchases are enabled.
-- Update the privacy/Data safety declarations whenever behavior or SDKs change.
-
-### 7. Release to production
-
-Complete the final checklist, publish the release notes, and retain the signed artifact and commit
-identifier. Google Play staged rollout applies to **updates**, not the first production release.
-For the first release, use test tracks thoroughly and consider limiting countries if appropriate.
-Use staged rollout for later updates:
-[release and staged rollout behavior](https://support.google.com/googleplay/android-developer/answer/6346149).
-
-Monitor Play vitals, Cloud Run errors, support, billing, refunds, and reviews after release.
+Spark's generated Android project targets API 36. Google currently requires API 35 for new apps,
+and has announced API 36 for new apps and updates from August 31, 2026. Re-check the
+[live target API requirement](https://developer.android.com/google/play/requirements/target-sdk)
+immediately before submission.
 
 ## Optional Google Cloud deployment
 
@@ -888,9 +817,7 @@ latency, and cost.
 1. Authenticate:
 
    ```powershell
-   gcloud.cmd auth login
-   gcloud.cmd auth application-default login
-   gcloud.cmd config set project YOUR_PROJECT_ID
+   .\spark.cmd deploy -Action Login -Provider Google -ProjectId YOUR_PROJECT_ID
    ```
 
 2. Copy and edit Terraform variables:
@@ -899,16 +826,16 @@ latency, and cost.
    Copy-Item infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
    ```
 
-3. Run a no-cost planning/apply pass with `enable_cloud_runtime = false` and
-   `container_image = ""`. When deliberately ready, set `enable_cloud_runtime = true` to create
-   Firestore and Artifact Registry:
+3. Inspect the local configuration and create a saved Terraform plan with
+   `enable_cloud_runtime = false` and `container_image = ""`. A plan is read-only. Applying it can
+   change cloud resources, so the helper shows the exact saved plan and asks you to type the
+   project ID before proceeding. When deliberately ready, set `enable_cloud_runtime = true` to
+   create Firestore and Artifact Registry:
 
    ```powershell
-   Set-Location infra/terraform
-   terraform init
-   terraform plan
-   terraform apply
-   Set-Location ..\..
+   .\spark.cmd deploy -Action Status
+   .\spark.cmd deploy -Action Plan
+   .\spark.cmd deploy -Action Apply
    ```
 
 4. Enable Firebase Anonymous and Google sign-in.
@@ -916,10 +843,7 @@ latency, and cost.
 6. Build the API image:
 
    ```powershell
-   $project = "YOUR_PROJECT_ID"
-   $region = "europe-central2"
-   $image = "$region-docker.pkg.dev/$project/spark/control-plane:0.1.0"
-   gcloud.cmd builds submit --config cloudbuild.yaml --substitutions "_IMAGE=$image" .
+   .\spark.cmd deploy -Action Image -ProjectId YOUR_PROJECT_ID
    ```
 
 7. Put the image URI in `terraform.tfvars` and apply again.
@@ -930,9 +854,8 @@ latency, and cost.
 9. Copy `.firebaserc.example` to `.firebaserc`, set the project ID, then deploy:
 
    ```powershell
-   npm.cmd run build --workspace @spark/admin
-   npx.cmd firebase-tools login
-   npx.cmd firebase-tools deploy --only hosting,firestore:rules,firestore:indexes
+   .\spark.cmd deploy -Action Login -Provider Firebase
+   .\spark.cmd deploy -Action Firebase -ProjectId YOUR_PROJECT_ID
    ```
 
 10. Add the Hosting origin to `allowed_origins` and reapply Terraform.
@@ -944,6 +867,10 @@ latency, and cost.
 
 If Firebase or Firestore already exists, import it into Terraform state instead of recreating or
 deleting it.
+
+Run `.\spark.cmd deploy -Help` for the hosting-only path, custom Terraform variable/plan files,
+outputs, and the safety behavior. Spark deliberately provides no one-command production release
+or infrastructure-destroy operation.
 
 ### First admin owner
 
@@ -962,8 +889,8 @@ The recommended initial business model is:
 
 - free download;
 - all executive-function essentials remain free;
-- no ads, data sale, loot boxes, paid/recurring streak repair, or fake urgency; local Momentum
-  protections are earned or freely planned and are never sold;
+- no ads, data sale, loot boxes, paid/recurring streak repair, or fake urgency; local streak saves
+  are earned or freely planned and are never sold;
 - optional one-time **Spark Premium Supporter** purchase;
 - premium initially provides supporter cosmetics/status, not withheld core care features.
 

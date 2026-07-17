@@ -20,7 +20,7 @@ export interface SparkWidgetSnapshot {
 export const emptyWidgetSnapshot: SparkWidgetSnapshot = {
   habitId: null,
   title: 'Open Spark',
-  tinyLabel: 'Choose one gentle next action',
+  tinyLabel: 'Choose your next action',
   winsToday: 0,
   accent: '#FF6B5F'
 };

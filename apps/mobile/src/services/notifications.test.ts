@@ -139,7 +139,7 @@ describe('notification planning', () => {
     expect(planned[0]?.date.getMinutes()).toBeGreaterThanOrEqual(0);
   });
 
-  it('maps every gentle notification action without ambiguous side effects', () => {
+  it('maps every notification action without ambiguous side effects', () => {
     expect(notificationActionKind('spark-tiny')).toBe('log_tiny');
     expect(notificationActionKind('spark-snooze')).toBe('snooze');
     expect(notificationActionKind('spark-quiet-today')).toBe('quiet_today');
@@ -155,7 +155,7 @@ describe('notification planning', () => {
     await configureNotifications();
     expect(channel).toHaveBeenCalledTimes(7);
     expect(channel).toHaveBeenCalledWith(
-      'gentle-reminders-secret',
+      'habit-reminders-secret',
       expect.objectContaining({
         lockscreenVisibility:
           Notifications.AndroidNotificationVisibility.SECRET,
@@ -163,7 +163,7 @@ describe('notification planning', () => {
       })
     );
     expect(channel).toHaveBeenCalledWith(
-      'gentle-reminders-private-quiet',
+      'habit-reminders-private-quiet',
       expect.objectContaining({ enableVibrate: false, vibrationPattern: null })
     );
     expect(category).toHaveBeenCalledWith(
@@ -263,10 +263,10 @@ describe('notification planning', () => {
     );
     expect(schedule).toHaveBeenCalled();
     const first = schedule.mock.calls[0]?.[0] as any;
-    expect(first.content.title).toBe('A gentle Spark is ready');
+    expect(first.content.title).toBe('A Spark action is ready');
     expect(first.content.body).toBe('Private reminder');
     expect(JSON.stringify(first.content)).not.toContain('Read');
-    expect(first.trigger.channelId).toBe('gentle-reminders-secret-quiet');
+    expect(first.trigger.channelId).toBe('habit-reminders-secret-quiet');
   });
 
   it('quietly pauses a repeatedly ignored reminder for three days', async () => {
@@ -308,12 +308,12 @@ describe('notification planning', () => {
     expect(schedule).toHaveBeenCalledWith(
       expect.objectContaining({
         content: expect.objectContaining({
-          title: 'Gentle reminder',
+          title: 'Habit reminder',
           data: { sparkNotificationType: 'habit', habitId: 'habit' }
         }),
         trigger: expect.objectContaining({
           seconds: 1800,
-          channelId: 'gentle-reminders-private-quiet'
+          channelId: 'habit-reminders-private-quiet'
         })
       })
     );
