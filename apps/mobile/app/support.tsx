@@ -15,6 +15,7 @@ import {
 import { cloudConfigured } from '../src/services/cloudConfig';
 import { useSpark } from '../src/state/SparkProvider';
 import { useTheme } from '../src/theme';
+import { goBackOr } from '../src/lib/navigation';
 
 export default function SupportScreen() {
   const spark = useSpark();
@@ -67,7 +68,7 @@ export default function SupportScreen() {
           The app remains fully functional offline. The owner can enable the optional,
           scale-to-zero support service later without changing local habits.
         </Muted>
-        <Button label="Go back" onPress={() => router.back()} />
+        <Button label="Go back" onPress={() => goBackOr('/settings')} />
       </Screen>
     );
   }

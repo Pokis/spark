@@ -42,6 +42,8 @@ function Navigation() {
         <Stack.Screen name="paywall" options={{ title: 'Spark premium', presentation: 'modal' }} />
         <Stack.Screen name="privacy" options={{ title: t('privacy') }} />
         <Stack.Screen name="help" options={{ title: t('helpNow') }} />
+        <Stack.Screen name="guide" options={{ title: 'How Spark works' }} />
+        <Stack.Screen name="tutorials" options={{ title: 'Feature tutorials' }} />
         <Stack.Screen name="weekly-reset" options={{ title: t('weeklyReset') }} />
         <Stack.Screen name="departure" options={{ title: t('departureMode') }} />
         <Stack.Screen name="experiments" options={{ title: t('experiments') }} />

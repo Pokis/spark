@@ -41,6 +41,28 @@ const widgetConfig: WithAndroidWidgetsParams = {
       targetCellHeight: 2,
       previewImage: './assets/spark-icon-v2.png',
       updatePeriodMillis: 1_800_000
+    },
+    {
+      name: 'SparkProgress',
+      label: 'Spark Progress',
+      description: 'Keep wins and Spark points visible without a streak deadline.',
+      minWidth: '180dp',
+      minHeight: '110dp',
+      targetCellWidth: 3,
+      targetCellHeight: 2,
+      previewImage: './assets/spark-icon-v2.png',
+      updatePeriodMillis: 1_800_000
+    },
+    {
+      name: 'SparkToolkit',
+      label: 'Spark Toolkit',
+      description: 'Open capture, focus, departure, or immediate help in one tap.',
+      minWidth: '250dp',
+      minHeight: '180dp',
+      targetCellWidth: 4,
+      targetCellHeight: 3,
+      previewImage: './assets/spark-icon-v2.png',
+      updatePeriodMillis: 86_400_000
     }
   ]
 };

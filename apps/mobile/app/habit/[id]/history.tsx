@@ -8,7 +8,7 @@ import {
   type HabitVariant
 } from '@spark/domain';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../../src/components/Button';
@@ -19,6 +19,7 @@ import { Eyebrow, H1, Muted, SectionHeading } from '../../../src/components/Typo
 import { loadHabitCompletions } from '../../../src/data/database';
 import { useSpark } from '../../../src/state/SparkProvider';
 import { useTheme } from '../../../src/theme';
+import { goBackOr } from '../../../src/lib/navigation';
 
 const tagLabels: Record<CompletionTag, string> = {
   timer_helped: 'Timer helped',
@@ -45,7 +46,7 @@ export default function HabitHistoryScreen() {
     return (
       <Screen>
         <H1>Habit not found</H1>
-        <Button label="Go back" onPress={() => router.back()} />
+        <Button label="Go back" onPress={() => goBackOr('/(tabs)/journey')} />
       </Screen>
     );
   }

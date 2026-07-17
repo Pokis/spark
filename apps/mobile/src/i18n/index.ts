@@ -31,7 +31,7 @@ const en = {
   today: 'Today',
   focus: 'Focus',
   capture: 'Capture',
-  journey: 'Journey',
+  journey: 'Progress',
   settings: 'Settings',
   newHabit: 'New habit',
   editHabit: 'Edit habit',
@@ -93,7 +93,7 @@ const translations: Record<SupportedLocale, Translation> = {
     localOnly: 'Guardado solo en este dispositivo.', moreTools: 'Más herramientas útiles'
   },
   'pt-BR': {
-    back: 'Voltar', today: 'Hoje', focus: 'Foco', capture: 'Capturar', journey: 'Jornada',
+    back: 'Voltar', today: 'Hoje', focus: 'Foco', capture: 'Capturar', journey: 'Progresso',
     settings: 'Configurações', privacy: 'Privacidade', helpNow: 'Ajude-me agora',
     weeklyReset: 'Revisão semanal', departureMode: 'Modo de saída',
     experiments: 'Experimentos pessoais', shareProgress: 'Compartilhar vitórias escolhidas',
@@ -104,7 +104,7 @@ const translations: Record<SupportedLocale, Translation> = {
   },
   fr: {
     back: 'Retour', today: 'Aujourd’hui', focus: 'Concentration', capture: 'Capture',
-    journey: 'Parcours', settings: 'Réglages', privacy: 'Confidentialité',
+    journey: 'Progrès', settings: 'Réglages', privacy: 'Confidentialité',
     helpNow: 'Aidez-moi maintenant', weeklyReset: 'Bilan hebdomadaire',
     departureMode: 'Mode départ', experiments: 'Expériences personnelles',
     shareProgress: 'Partager des réussites choisies', encryptedBackups: 'Sauvegardes chiffrées',
@@ -114,7 +114,7 @@ const translations: Record<SupportedLocale, Translation> = {
     localOnly: 'Stocké uniquement sur cet appareil.', moreTools: 'Autres outils utiles'
   },
   de: {
-    back: 'Zurück', today: 'Heute', focus: 'Fokus', capture: 'Erfassen', journey: 'Weg',
+    back: 'Zurück', today: 'Heute', focus: 'Fokus', capture: 'Erfassen', journey: 'Fortschritt',
     settings: 'Einstellungen', privacy: 'Datenschutz', helpNow: 'Hilf mir jetzt',
     weeklyReset: 'Wochenrückblick', departureMode: 'Aufbruchmodus',
     experiments: 'Persönliche Experimente', shareProgress: 'Ausgewählte Erfolge teilen',
@@ -125,7 +125,7 @@ const translations: Record<SupportedLocale, Translation> = {
     moreTools: 'Weitere hilfreiche Werkzeuge'
   },
   it: {
-    back: 'Indietro', today: 'Oggi', focus: 'Focus', capture: 'Cattura', journey: 'Percorso',
+    back: 'Indietro', today: 'Oggi', focus: 'Focus', capture: 'Cattura', journey: 'Progressi',
     settings: 'Impostazioni', privacy: 'Privacy', helpNow: 'Aiutami ora',
     weeklyReset: 'Revisione settimanale', departureMode: 'Modalità uscita',
     experiments: 'Esperimenti personali', shareProgress: 'Condividi successi scelti',
@@ -135,7 +135,7 @@ const translations: Record<SupportedLocale, Translation> = {
     localOnly: 'Salvato solo su questo dispositivo.', moreTools: 'Altri strumenti utili'
   },
   pl: {
-    back: 'Wstecz', today: 'Dzisiaj', focus: 'Skupienie', capture: 'Zapisz', journey: 'Droga',
+    back: 'Wstecz', today: 'Dzisiaj', focus: 'Skupienie', capture: 'Zapisz', journey: 'Postępy',
     settings: 'Ustawienia', privacy: 'Prywatność', helpNow: 'Pomóż mi teraz',
     weeklyReset: 'Przegląd tygodnia', departureMode: 'Tryb wyjścia',
     experiments: 'Eksperymenty osobiste', shareProgress: 'Udostępnij wybrane sukcesy',
@@ -145,7 +145,7 @@ const translations: Record<SupportedLocale, Translation> = {
     localOnly: 'Przechowywane tylko na tym urządzeniu.', moreTools: 'Więcej pomocnych narzędzi'
   },
   uk: {
-    back: 'Назад', today: 'Сьогодні', focus: 'Фокус', capture: 'Занотувати', journey: 'Шлях',
+    back: 'Назад', today: 'Сьогодні', focus: 'Фокус', capture: 'Занотувати', journey: 'Прогрес',
     settings: 'Налаштування', privacy: 'Приватність', helpNow: 'Допоможи мені зараз',
     weeklyReset: 'Тижневий огляд', departureMode: 'Режим виходу',
     experiments: 'Особисті експерименти', shareProgress: 'Поділитися обраними перемогами',
@@ -156,7 +156,7 @@ const translations: Record<SupportedLocale, Translation> = {
     moreTools: 'Інші корисні інструменти'
   },
   ru: {
-    back: 'Назад', today: 'Сегодня', focus: 'Фокус', capture: 'Записать', journey: 'Путь',
+    back: 'Назад', today: 'Сегодня', focus: 'Фокус', capture: 'Записать', journey: 'Прогресс',
     settings: 'Настройки', privacy: 'Конфиденциальность', helpNow: 'Помоги мне сейчас',
     weeklyReset: 'Недельный обзор', departureMode: 'Режим выхода',
     experiments: 'Личные эксперименты', shareProgress: 'Поделиться выбранными победами',
@@ -166,7 +166,7 @@ const translations: Record<SupportedLocale, Translation> = {
     localOnly: 'Хранится только на этом устройстве.', moreTools: 'Другие полезные инструменты'
   },
   lt: {
-    back: 'Atgal', today: 'Šiandien', focus: 'Dėmesys', capture: 'Užrašyti', journey: 'Kelionė',
+    back: 'Atgal', today: 'Šiandien', focus: 'Dėmesys', capture: 'Užrašyti', journey: 'Pažanga',
     settings: 'Nustatymai', privacy: 'Privatumas', helpNow: 'Padėk man dabar',
     weeklyReset: 'Savaitės peržiūra', departureMode: 'Išėjimo režimas',
     experiments: 'Asmeniniai eksperimentai', shareProgress: 'Dalintis pasirinktais laimėjimais',
@@ -178,7 +178,7 @@ const translations: Record<SupportedLocale, Translation> = {
     startFocus: 'Pradėti susikaupimą', runningRoutine: 'Vykdoma rutina'
   },
   ja: {
-    back: '戻る', today: '今日', focus: '集中', capture: 'メモ', journey: '歩み',
+    back: '戻る', today: '今日', focus: '集中', capture: 'メモ', journey: '進捗',
     settings: '設定', privacy: 'プライバシー', helpNow: '今すぐ助けて',
     weeklyReset: '週間リセット', departureMode: '出発モード', experiments: '個人実験',
     shareProgress: '選んだ達成を共有', encryptedBackups: '暗号化バックアップ',
@@ -188,7 +188,7 @@ const translations: Record<SupportedLocale, Translation> = {
     moreTools: 'その他の便利なツール'
   },
   ko: {
-    back: '뒤로', today: '오늘', focus: '집중', capture: '기록', journey: '여정',
+    back: '뒤로', today: '오늘', focus: '집중', capture: '기록', journey: '진행',
     settings: '설정', privacy: '개인정보', helpNow: '지금 도와줘',
     weeklyReset: '주간 재정비', departureMode: '출발 모드', experiments: '개인 실험',
     shareProgress: '선택한 성취 공유', encryptedBackups: '암호화 백업',
@@ -198,7 +198,7 @@ const translations: Record<SupportedLocale, Translation> = {
     moreTools: '도움이 되는 다른 도구'
   },
   'zh-Hans': {
-    back: '返回', today: '今天', focus: '专注', capture: '记录', journey: '历程',
+    back: '返回', today: '今天', focus: '专注', capture: '记录', journey: '进展',
     settings: '设置', privacy: '隐私', helpNow: '现在帮助我',
     weeklyReset: '每周重整', departureMode: '出发模式', experiments: '个人实验',
     shareProgress: '分享所选成果', encryptedBackups: '加密备份', diagnostics: '诊断',
@@ -207,7 +207,7 @@ const translations: Record<SupportedLocale, Translation> = {
     localOnly: '仅存储在此设备上。', moreTools: '更多实用工具'
   },
   hi: {
-    back: 'वापस', today: 'आज', focus: 'ध्यान', capture: 'लिखें', journey: 'यात्रा',
+    back: 'वापस', today: 'आज', focus: 'ध्यान', capture: 'लिखें', journey: 'प्रगति',
     settings: 'सेटिंग्स', privacy: 'गोपनीयता', helpNow: 'अभी मेरी मदद करें',
     weeklyReset: 'साप्ताहिक रीसेट', departureMode: 'प्रस्थान मोड',
     experiments: 'व्यक्तिगत प्रयोग', shareProgress: 'चुनी हुई जीत साझा करें',
@@ -217,7 +217,7 @@ const translations: Record<SupportedLocale, Translation> = {
     localOnly: 'केवल इस डिवाइस पर संग्रहीत।', moreTools: 'और उपयोगी उपकरण'
   },
   ar: {
-    back: 'رجوع', today: 'اليوم', focus: 'تركيز', capture: 'تدوين', journey: 'المسار',
+    back: 'رجوع', today: 'اليوم', focus: 'تركيز', capture: 'تدوين', journey: 'التقدم',
     settings: 'الإعدادات', privacy: 'الخصوصية', helpNow: 'ساعدني الآن',
     weeklyReset: 'مراجعة أسبوعية', departureMode: 'وضع المغادرة',
     experiments: 'تجارب شخصية', shareProgress: 'مشاركة الإنجازات المختارة',
@@ -254,4 +254,3 @@ export function useI18n() {
     t: (key: TranslationKey) => translate(locale, key)
   };
 }
-

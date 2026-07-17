@@ -11,6 +11,8 @@ import {
   SparkFocusWidget,
   type SparkFocusSnapshot
 } from './SparkFocusWidget';
+import { SparkProgressWidget } from './SparkProgressWidget';
+import { SparkToolkitWidget } from './SparkToolkitWidget';
 
 export const WIDGET_SNAPSHOT_KEY = 'spark.widget.snapshot.v1';
 export const FOCUS_WIDGET_SNAPSHOT_KEY = 'spark.focus-widget.snapshot.v1';
@@ -34,6 +36,26 @@ async function focusSnapshot(): Promise<SparkFocusSnapshot> {
 }
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
+  if (props.widgetInfo.widgetName === 'SparkToolkit') {
+    if (
+      props.widgetAction === 'WIDGET_ADDED' ||
+      props.widgetAction === 'WIDGET_UPDATE' ||
+      props.widgetAction === 'WIDGET_RESIZED'
+    ) {
+      props.renderWidget(<SparkToolkitWidget />);
+    }
+    return;
+  }
+  if (props.widgetInfo.widgetName === 'SparkProgress') {
+    if (
+      props.widgetAction === 'WIDGET_ADDED' ||
+      props.widgetAction === 'WIDGET_UPDATE' ||
+      props.widgetAction === 'WIDGET_RESIZED'
+    ) {
+      props.renderWidget(<SparkProgressWidget snapshot={await snapshot()} />);
+    }
+    return;
+  }
   if (props.widgetInfo.widgetName === 'SparkCapture') {
     if (
       props.widgetAction === 'WIDGET_ADDED' ||

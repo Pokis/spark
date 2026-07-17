@@ -1,9 +1,10 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Button } from '../../../src/components/Button';
 import { RoutineEditor } from '../../../src/components/RoutineEditor';
 import { Screen } from '../../../src/components/Screen';
 import { H1 } from '../../../src/components/Typography';
 import { useSpark } from '../../../src/state/SparkProvider';
+import { goBackOr } from '../../../src/lib/navigation';
 
 export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -13,9 +14,9 @@ export default function EditRoutineScreen() {
     return (
       <Screen>
         <H1>Routine not found</H1>
-        <Button label="Go back" onPress={() => router.back()} />
+        <Button label="Go back" onPress={() => goBackOr('/(tabs)/journey')} />
       </Screen>
     );
   }
-  return <RoutineEditor routine={routine} onSaved={() => router.back()} />;
+  return <RoutineEditor routine={routine} onSaved={() => goBackOr(`/routine/${routine.id}`)} />;
 }

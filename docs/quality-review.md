@@ -1,11 +1,12 @@
 # Spark quality and release-readiness review
 
-> Update, 2026-07-16: the local-first experience items that followed this review have now been
+> Update, 2026-07-17: the local-first experience items that followed this review, including
+> optional reward-first Momentum streaks, have now been
 > implemented. Use [the feature catalog](./11-feature-catalog.md) for current behavior and
 > [the experience roadmap](./10-experience-roadmap.md) for the original rationale. Manual
 > native-device and store-console gates in this review still apply.
 
-Last implementation pass: **2026-07-16**
+Last implementation pass: **2026-07-17**
 
 This started as a product and engineering review. Every item that could be implemented without
 operator identity, store-console access, Android hardware, or legal decisions has now been applied.
@@ -80,19 +81,20 @@ disabled.
 ### ADHD and cognitive-load experience
 
 - Habit creation starts with a short Basics section and editable starter templates; detailed
-  variants, schedule, context, priority, and reminders live in optional Fine-tuning.
-- Onboarding can create one personal first Spark.
+  variants, schedule, optional Momentum cadence, context, priority, and reminders live in optional Fine-tuning.
+- Onboarding defines habits, actions, wins, and fixed Spark points before it can create one personal first habit.
 - Calm, balanced, and celebratory sensory profiles control motion and feedback.
 - Points and rhythm percentages can be hidden.
-- Minimum viable day shows exactly one tiny action. Today also exposes a direct
+- One-thing day shows exactly one tiny action and explains that other habits are only hidden. Today also exposes a direct
   **Rescue my day** control.
 - Today shows no more than three recommendations and can prioritize the current context: home,
   work, outside, or phone.
 - Every recommendation includes one short explanation.
-- Journey includes a gentle seven-day reflection based only on wins and useful tiny steps.
+- Progress includes a gentle reflection based only on wins and useful tiny steps, plus a recent-win ledger showing where points came from.
 - The Android widget rotates supportive wording without changing the underlying commitment.
-- Social feeds, leaderboards, random rewards, loss-framed streak protection, and engagement
-  notifications remain intentionally excluded.
+- Social feeds, leaderboards, random rewards, paid/loss-framed streak protection, and engagement
+  notifications remain intentionally excluded. Optional local Momentum uses transparent earned
+  Flex passes and planned rest without creating fake completions or charging for repair.
 
 ### Admin and cloud operations
 
@@ -118,7 +120,8 @@ disabled.
 
 ### Automated quality gates
 
-- Domain tests cover capacity, recency, pause history, and distinct-day comebacks.
+- Domain tests cover capacity, recency, pause history, distinct-day comebacks, and daily/two-day
+  Momentum windows, gaps, pauses, milestones, Flex continuity, and planned rest.
 - Mobile tests cover notification occurrence planning, malformed/legacy/future backups,
   accessible settings, and core components.
 - API tests cover feature shutdowns, purchase idempotency/conflicts/transfers, authenticated RTDN,
@@ -131,9 +134,9 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **203 tests passed**: 146 mobile, 16 domain, 25 API, 16 admin.
+- `npm.cmd run test:ci` — **238 tests passed**: 171 mobile, 26 domain, 25 API, 16 admin.
 - `npm.cmd run test:coverage` — passed the checked-in workspace gates. Measured statement
-  coverage: mobile 44.98% across every route/source file, domain 99.42%, API application 88.53%,
+  coverage: mobile 51.32% across every route/source file, domain 99.58%, API application 88.53%,
   and admin source 73.76%.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.

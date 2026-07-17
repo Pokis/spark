@@ -56,6 +56,7 @@ export interface AppSettings {
   showRhythmPercentages: boolean;
   insightsEnabled: boolean;
   hiddenInsightIds: string[];
+  dismissedTutorialIds: string[];
   supporterThemeEnabled: boolean;
   supporterTheme: 'aurora' | 'ocean' | 'forest';
   supporterBadgeVisible: boolean;
@@ -207,6 +208,7 @@ export const defaultSettings: AppSettings = {
   showRhythmPercentages: true,
   insightsEnabled: true,
   hiddenInsightIds: [],
+  dismissedTutorialIds: [],
   supporterThemeEnabled: false,
   supporterTheme: 'aurora',
   supporterBadgeVisible: true,

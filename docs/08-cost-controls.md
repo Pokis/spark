@@ -29,10 +29,12 @@ count**:
 | Notification lock-screen privacy | $0 | $0 | $0 | $0 | Local notification channels; notifications remain off by default |
 | Password-encrypted manual backups | $0 | $0 | $0 | $0 | Local cryptography and system file/share UI |
 | Automatic encrypted folder backups | $0 | $0 | $0 | $0 | Off by default; user chooses one Android folder; seven-file retention |
-| Launcher shortcuts and Focus widget | $0 | $0 | $0 | $0 | Android OS integrations; no background server |
+| Five Android widgets and launcher shortcuts | $0 | $0 | $0 | $0 | Today, Capture, Focus, Progress, and Toolkit use local snapshots/static links; no background server |
+| Feature tutorials and collapsible navigation | $0 | $0 | $0 | $0 | Bundled copy, local dismissed-tip IDs, and UI state; no CMS, analytics, or experimentation service |
 | Bundled localization | $0 | $0 | $0 | $0 | Bundled strings; no translation API |
 | Privacy-safe diagnostics | $0 | $0 | $0 | $0 | Local self-check and explicit file share |
 | Startup Baseline Profile | $0 | $0 | $0 | $0 | Packaged build artifact |
+| Optional Momentum streaks, Flex passes, and planned delays | $0 | $0 | $0 | $0 | Per-habit opt-in; encrypted local JSON plus on-device calculation; no feature flag is required because it cannot create a third-party charge |
 
 If a user deliberately selects a Google Drive, OneDrive, Dropbox, or another
 cloud-backed folder for automatic backup, any storage quota, subscription, or

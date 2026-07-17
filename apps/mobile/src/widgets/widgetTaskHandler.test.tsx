@@ -7,6 +7,8 @@ import {
 import { SparkCaptureWidget } from './SparkCaptureWidget';
 import { SparkFocusWidget } from './SparkFocusWidget';
 import { SparkTodayWidget } from './SparkTodayWidget';
+import { SparkProgressWidget } from './SparkProgressWidget';
+import { SparkToolkitWidget } from './SparkToolkitWidget';
 
 jest.mock('react-native-android-widget', () => ({
   FlexWidget: 'FlexWidget',
@@ -34,6 +36,29 @@ describe('native widget task routing', () => {
     const click = props('SparkCapture', 'WIDGET_CLICK');
     await widgetTaskHandler(click);
     expect(click.renderWidget).not.toHaveBeenCalled();
+  });
+
+  it('renders the static Toolkit and locally snapshotted Progress widgets', async () => {
+    const toolkit = props('SparkToolkit', 'WIDGET_ADDED');
+    await widgetTaskHandler(toolkit);
+    expect(toolkit.renderWidget.mock.calls[0][0].type).toBe(SparkToolkitWidget);
+
+    await AsyncStorage.setItem(
+      WIDGET_SNAPSHOT_KEY,
+      JSON.stringify({
+        habitId: null,
+        title: 'Enough for today',
+        tinyLabel: 'Rest is allowed',
+        winsToday: 2,
+        totalWins: 18,
+        totalSparks: 31,
+        accent: '#20B8B2'
+      })
+    );
+    const progress = props('SparkProgress', 'WIDGET_RESIZED');
+    await widgetTaskHandler(progress);
+    expect(progress.renderWidget.mock.calls[0][0].type).toBe(SparkProgressWidget);
+    expect(progress.renderWidget.mock.calls[0][0].props.snapshot.totalWins).toBe(18);
   });
 
   it('loads persisted Focus state and falls back safely on malformed storage', async () => {

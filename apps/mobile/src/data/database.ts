@@ -32,8 +32,8 @@ import { starterHabits, starterRoutines } from './seed';
 
 const DATABASE_NAME = 'spark.db';
 const DATABASE_KEY_NAME = 'spark.database.key.v1';
-export const CURRENT_DATABASE_SCHEMA_VERSION = 6;
-export const DATABASE_MIGRATION_VERSIONS = [1, 2, 3, 4, 5, 6] as const;
+export const CURRENT_DATABASE_SCHEMA_VERSION = 7;
+export const DATABASE_MIGRATION_VERSIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 const MAX_DATABASE_SAFETY_COPIES = 3;
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 let databaseSecurity = {
@@ -65,10 +65,15 @@ function safetyDatabaseName(fromVersion: number, toVersion: number): string {
     .replaceAll(':', '-')}.db`;
 }
 
+function fileSystemDirectoryUri(directory: string): string {
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(directory)) return directory;
+  return directory.startsWith('/') ? `file://${directory}` : directory;
+}
+
 async function pruneDatabaseSafetyCopies(): Promise<void> {
   const directory = SQLite.defaultDatabaseDirectory;
   if (!directory) return;
-  const names = (await FileSystem.readDirectoryAsync(directory))
+  const names = (await FileSystem.readDirectoryAsync(fileSystemDirectoryUri(directory)))
     .filter((name) => name.startsWith('spark-safety-') && name.endsWith('.db'))
     .sort((a, b) => b.localeCompare(a));
   for (const name of names.slice(MAX_DATABASE_SAFETY_COPIES)) {
@@ -412,6 +417,22 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
     );
   }
 
+  if (version < 7) {
+    const habitColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(habits);'
+    );
+    if (!habitColumns.some((column) => column.name === 'momentum_json')) {
+      await db.execAsync(
+        "ALTER TABLE habits ADD COLUMN momentum_json TEXT NOT NULL DEFAULT '{}';"
+      );
+    }
+    version = 7;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
   if (version !== CURRENT_DATABASE_SCHEMA_VERSION) {
     throw new Error(`Unsupported local database schema version ${version}.`);
   }
@@ -467,7 +488,7 @@ export async function listDatabaseSafetyCopies(): Promise<
 > {
   const directory = SQLite.defaultDatabaseDirectory;
   if (!directory) return [];
-  return (await FileSystem.readDirectoryAsync(directory))
+  return (await FileSystem.readDirectoryAsync(fileSystemDirectoryUri(directory)))
     .filter((name) => name.startsWith('spark-safety-') && name.endsWith('.db'))
     .sort((a, b) => b.localeCompare(a))
     .map((name) => {
@@ -488,6 +509,21 @@ export async function clearDatabaseSafetyCopies(): Promise<void> {
       SQLite.deleteDatabaseAsync(copy.name, directory).catch(() => undefined)
     )
   );
+}
+
+function parseHabitMomentum(value: string | number | null): Habit['momentum'] {
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(String(value)) as Partial<NonNullable<Habit['momentum']>>;
+    return typeof parsed.enabled === 'boolean' &&
+      (parsed.cadence === 'daily' || parsed.cadence === 'everyOtherDay') &&
+      typeof parsed.anchorDate === 'string' &&
+      Array.isArray(parsed.protections)
+      ? (parsed as NonNullable<Habit['momentum']>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function mapHabit(
@@ -517,6 +553,7 @@ function mapHabit(
     pauseHistory: row.pause_history_json
       ? (JSON.parse(String(row.pause_history_json)) as NonNullable<Habit['pauseHistory']>)
       : [],
+    momentum: parseHabitMomentum(row.momentum_json),
     archivedAt: row.archived_at ? String(row.archived_at) : null,
     sortOrder: Number(row.sort_order),
     variants
@@ -528,8 +565,8 @@ async function saveHabit(db: SQLite.SQLiteDatabase, habit: Habit): Promise<void>
     `INSERT OR REPLACE INTO habits(
       id, title, reason, cue, friction_json, color, icon, schedule_json, preferred_time,
       reminder_window, reminder_enabled, priority, contexts_json, created_at,
-      paused_until, paused_at, pause_history_json, archived_at, sort_order
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      paused_until, paused_at, pause_history_json, momentum_json, archived_at, sort_order
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     habit.id,
     habit.title,
     habit.reason ?? null,
@@ -547,6 +584,7 @@ async function saveHabit(db: SQLite.SQLiteDatabase, habit: Habit): Promise<void>
     habit.pausedUntil ?? null,
     habit.pausedAt ?? null,
     JSON.stringify(habit.pauseHistory ?? []),
+    JSON.stringify(habit.momentum ?? {}),
     habit.archivedAt ?? null,
     habit.sortOrder
   );
@@ -989,6 +1027,24 @@ export async function loadHabitCompletions(
     limit
   );
   return rows.map(mapCompletion);
+}
+
+export async function loadHabitCompletionDates(
+  habitId: string
+): Promise<Array<Pick<Completion, 'habitId' | 'localDate'>>> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<{ habit_id: string; local_date: string }>(
+    `SELECT habit_id, local_date
+     FROM completions
+     WHERE habit_id = ?
+     GROUP BY habit_id, local_date
+     ORDER BY local_date`,
+    habitId
+  );
+  return rows.map((row) => ({
+    habitId: row.habit_id,
+    localDate: row.local_date
+  }));
 }
 
 export async function updateCompletionTags(

@@ -15,6 +15,9 @@ If you are new to mobile development, begin with [START-HERE.md](./START-HERE.md
 another topic, use the purpose-based [documentation home](./docs/README.md); you do not need to
 read this long repository reference from top to bottom.
 
+On Windows, run `.\spark.cmd` for a guided command catalog. It wraps setup, Expo targets, Android
+tools, tests, builds, validation, and optional local services; each command supports `-Help`.
+
 ## Current status
 
 Spark is a substantial implementation, not only a design document. It includes the mobile app,
@@ -31,18 +34,18 @@ indexes, Terraform, and release documentation.
 | iPhone release | Codebase-compatible, but native build, StoreKit, widget, and device QA remain |
 | Google Cloud deployment | Optional and defined, but not deployed by this repository |
 
-Validation snapshot on **2026-07-16**:
+Validation snapshot on **2026-07-17**:
 
 - workspace TypeScript checks passed;
-- 203 automated tests passed: 146 mobile, 16 domain, 25 API, and 16 admin;
+- 238 automated tests passed: 171 mobile, 26 domain, 25 API, and 16 admin;
 - coverage gates passed across mobile `app/` and `src/`, the domain package, core API application,
   and admin source;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
 - Expo Doctor passed 20/20 checks;
 - the release checker correctly blocks publication while privacy placeholders remain;
 - the production dependency audit has the known moderate transitive advisory described below;
-- a native Android/Gradle build and Maestro run were not performed because Java and `adb` are not
-  installed in the current environment;
+- Android Studio's JBR and `adb` device selection are supported by `spark.cmd`; a full signed
+  release build, Maestro run, and representative-device matrix remain manual release checks;
 - Terraform was formatted and validated with a temporary checksum-verified official binary; no
   project-specific plan or apply was run.
 
@@ -61,8 +64,9 @@ local/cloud data boundary, monetization choice, and remaining native-QA caveat i
 ## Product principles
 
 - **Tiny counts.** Every habit can have tiny, default, and stretch versions.
-- **Flexible consistency.** Progress is based on schedule opportunities and comebacks, not a
-  fragile all-or-nothing streak.
+- **Flexible consistency.** Rolling progress is always available; each habit can also opt into a
+  reward-first daily or every-other-day Momentum streak with neutral pauses, delays, and earned
+  Flex passes instead of an all-or-nothing reset.
 - **Capacity before ambition.** The app asks what is realistic now.
 - **Low friction.** Today presents a short, actionable set rather than an overwhelming backlog.
 - **Immediate, non-exploitative reward.** Completions use color, haptics, motion, and fixed progress
@@ -93,7 +97,8 @@ care for ADHD or any other condition.
   exact or windowed reminder scheduling, preview, and editing;
 - guarded completion taps, accessible undo, tactile completion celebration, and deterministic
   Spark rewards;
-- no-reset rhythms, recovery language, and comeback recognition;
+- no-reset rolling rhythms, optional reward-first Momentum streaks, recovery language, and
+  comeback recognition;
 - quick brain-dump capture with drafts, search, edit, delete/undo, release/restore, multi-select,
   Android Share to Spark, a quick-capture widget, and habit/focus/routine conversion;
 - restart-safe focus/body-double timer with parked interruptions, prefilled two-minute launches,
@@ -116,8 +121,10 @@ care for ADHD or any other condition.
 - password/recovery-code encrypted backups and bounded automatic backups to one user-selected
   Android folder;
 - deliberate selected-win image/text sharing and neutral one-week personal experiments;
-- explicit-confirmation Android Today widget, Quick Capture widget, Focus widget, and four safe
-  launcher shortcuts;
+- five zero-cloud-cost Android widgets: explicit-confirmation Today, Quick Capture, reliable
+  Focus controls, Progress, and a four-action Toolkit, plus four safe launcher shortcuts;
+- collapsible Settings/Progress sections, width-safe add controls, history-aware Back fallbacks,
+  and eleven skippable, dismissible, fully replayable feature tutorials;
 - bundled language selection for 15 languages, including Lithuanian, with English fallback;
 - privacy-safe content-redacted diagnostics and an Android startup Baseline Profile;
 - privacy policy and data-boundary screens;
@@ -185,8 +192,8 @@ More detail: [architecture.md](./docs/architecture.md).
 
 | Data | Stored where | Cloud required | Visible to an admin |
 | --- | --- | --- | --- |
-| Habits and variants | encrypted device database | No | No |
-| Completions and rhythms | encrypted device database | No | No |
+| Habits, variants, and optional Momentum settings/protections | encrypted device database | No | No |
+| Completions, rolling rhythms, and Momentum calculations | encrypted device database | No | No |
 | Focus sessions and parked thoughts | encrypted device database | No | No |
 | Routines and quick capture | encrypted device database | No | No |
 | Capacity and accessibility settings | encrypted device database | No | No |
@@ -328,10 +335,12 @@ the machine execution policy.
 ## Fastest app preview
 
 ```powershell
-npm.cmd run start
+.\spark.cmd start -Target ExpoGo
 ```
 
-The terminal shows a QR code and Expo development menu. Open the project with Expo Go.
+This explicitly generates an Expo Go QR code. The default `.\spark.cmd start` command instead
+generates a development-build QR code; it opens the installed Spark app and will not open in Expo
+Go.
 
 Expo Go is only a quick layout and interaction preview. It does **not** contain Spark’s custom
 SQLCipher, Android widget, or Play Billing native code, so it is not an accurate security,
@@ -352,7 +361,7 @@ Official background:
 3. Build, install, and start the native development client:
 
    ```powershell
-   npm.cmd run android
+   .\spark.cmd android -Select
    ```
 
 4. On later sessions, keep the installed client and start Metro:
@@ -371,10 +380,16 @@ After a native build is installed:
 
 1. long-press an empty area of the Android home screen;
 2. choose **Widgets**;
-3. find **Spark Today**, **Spark Quick Capture**, or **Spark Focus**;
+3. find **Spark Today**, **Spark Quick Capture**, **Spark Focus**, **Spark Progress**, or
+   **Spark Toolkit**;
 4. drag the desired widget to the home screen;
-5. confirm Today requires explicit logging, Quick Capture opens the minimal form, and Focus
-   reflects the persisted timer and opens pause/resume actions.
+5. confirm Today requires explicit logging, Quick Capture opens the minimal form, Focus reflects
+   the persisted timer and opens pause/resume actions, Progress opens the local history, and
+   Toolkit opens its four labeled destinations.
+
+These widgets use only local snapshots and static deep links, so their runtime cloud cost is $0
+regardless of user count. Adding or changing widget definitions requires rebuilding/reinstalling
+the native app; Expo Go cannot install them.
 
 Long-press the Spark launcher icon to test **Quick capture**, **2-minute focus**,
 **Rescue my day**, and **Resume routine**.
@@ -947,7 +962,8 @@ The recommended initial business model is:
 
 - free download;
 - all executive-function essentials remain free;
-- no ads, data sale, loot boxes, paid streak repair, or fake urgency;
+- no ads, data sale, loot boxes, paid/recurring streak repair, or fake urgency; local Momentum
+  protections are earned or freely planned and are never sold;
 - optional one-time **Spark Premium Supporter** purchase;
 - premium initially provides supporter cosmetics/status, not withheld core care features.
 

@@ -11,6 +11,9 @@ task below; you do not need to read the repository front to back.
 4. [Android release](./03-android-release.md) — signed build and Play Console walkthrough.
 5. [Release checklist](./release-checklist.md) — final go/no-go list.
 
+On Windows, [PowerShell command helper](./12-powershell-tools.md) provides guided commands for
+setup, running, testing, Android utilities, and optional local services.
+
 Cloud is optional. Read the [cost register](./08-cost-controls.md) before the
 [Google Cloud guide](./04-google-cloud.md).
 
@@ -80,6 +83,7 @@ target; iOS-specific StoreKit, widget, native build, and device QA remain future
 | [01-windows-setup.md](./01-windows-setup.md) | install Node, Android Studio, Java, SDK, emulator, and `adb` |
 | [02-run-mobile.md](./02-run-mobile.md) | launch, debug, Expo Go limitations, and native development builds |
 | [troubleshooting.md](./troubleshooting.md) | common local, native, and cloud failures |
+| [12-powershell-tools.md](./12-powershell-tools.md) | guided Windows commands with built-in help |
 
 ### Testing and release
 

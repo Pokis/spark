@@ -1,6 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Linking from 'expo-linking';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../src/components/Button';
@@ -16,6 +15,7 @@ import {
   restorePurchases
 } from '../src/services/purchases';
 import { useSpark } from '../src/state/SparkProvider';
+import { goBackOr } from '../src/lib/navigation';
 import { useTheme } from '../src/theme';
 
 const freeFeatures = [
@@ -163,7 +163,7 @@ export default function PaywallScreen() {
           </Muted>
         </Card>
       ) : null}
-      <Button label="Close" variant="ghost" onPress={() => router.back()} />
+      <Button label="Close" variant="ghost" onPress={() => goBackOr('/settings')} />
     </Screen>
   );
 }

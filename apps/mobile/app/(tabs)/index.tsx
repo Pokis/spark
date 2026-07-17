@@ -20,6 +20,7 @@ import { Chip } from '../../src/components/Chip';
 import { HabitCard } from '../../src/components/HabitCard';
 import { Screen } from '../../src/components/Screen';
 import { SparkBurst } from '../../src/components/SparkBurst';
+import { TutorialPrompt } from '../../src/components/TutorialPrompt';
 import { Body, Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
 import { friendlyDate } from '../../src/lib/date';
 import { useSpark } from '../../src/state/SparkProvider';
@@ -38,6 +39,11 @@ const contextOptions = [
   ['outside', 'Outside'],
   ['phone', 'Phone']
 ] as const;
+const capacityFeedback: Record<Capacity, string> = {
+  empty: 'Running-low selected. Spark is showing gentler action sizes.',
+  steady: 'Steady selected. Spark updated today’s suggestions.',
+  ready: 'Ready selected. Spark can include a stretch option.'
+};
 
 function currentPeriod(): 'morning' | 'afternoon' | 'evening' {
   const hour = new Date().getHours();
@@ -169,6 +175,7 @@ export default function TodayScreen() {
 
   async function chooseCapacity(value: Capacity) {
     setCapacity(value);
+    setNotice(capacityFeedback[value]);
     await spark.setCheckIn(value, timeChosen ? minutes ?? null : null, context ?? null);
     if (timeChosen) setCheckInExpanded(false);
   }
@@ -176,12 +183,20 @@ export default function TodayScreen() {
   async function chooseMinutes(value: number | undefined) {
     setMinutes(value);
     setTimeChosen(true);
+    setNotice(
+      value == null
+        ? 'No-clock selected. Spark will not filter actions by time.'
+        : `${value} minutes selected. Today’s suggestions were updated.`
+    );
     await spark.setCheckIn(capacity ?? 'steady', value ?? null, context ?? null);
     if (capacity) setCheckInExpanded(false);
   }
 
   async function chooseContext(value: HabitContext | undefined) {
     setContext(value);
+    setNotice(
+      value ? `${value[0]!.toUpperCase()}${value.slice(1)} context selected.` : 'Context filter cleared.'
+    );
     await spark.setCheckIn(capacity ?? 'steady', timeChosen ? minutes ?? null : null, value ?? null);
   }
 
@@ -197,6 +212,17 @@ export default function TodayScreen() {
       yesterdayCheckIn.context ?? null
     );
     setCheckInExpanded(false);
+    setNotice('Yesterday’s energy, time, and context were copied. Today’s suggestions changed.');
+  }
+
+  async function toggleOneThingDay() {
+    const enabled = !spark.settings.minimumViableDay;
+    setNotice(
+      enabled
+        ? 'One-thing day is on. Today now shows only one tiny action.'
+        : 'One-thing day is off. Your flexible menu is visible again.'
+    );
+    await spark.updateSetting('minimumViableDay', enabled);
   }
 
   async function complete(
@@ -318,26 +344,48 @@ export default function TodayScreen() {
           </Card>
         ) : null}
 
+        {spark.settings.progressiveHelpEnabled &&
+        !spark.settings.simpleMode &&
+        spark.completionTotals.totalWins < 3 ? (
+          <TutorialPrompt
+            id="getting-started"
+            eyebrow="New here? Start with this"
+            title="Choose one action you already did—or want to do now."
+            body="See how Today, action sizes, wins, and points work in a three-step tour. You can dismiss it now and replay it later from Settings."
+          />
+        ) : null}
+
         {spark.settings.showRewards && !spark.settings.simpleMode ? (
-          <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
-            <View>
-              <Text style={[styles.score, { color: theme.text }]}>{rewards.totalSparks}</Text>
-              <Muted>total sparks · level {rewards.level}</Muted>
-            </View>
-            <View style={styles.todayScore}>
-              <Text style={[styles.todayWins, { color: theme.primary }]}>{winsToday.length}</Text>
-              <Muted>wins today</Muted>
-            </View>
-          </Card>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open Progress. ${rewards.totalSparks} Spark points and ${winsToday.length} wins today.`}
+            onPress={() => router.push('/(tabs)/journey')}
+          >
+            <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
+              <View style={styles.scoreDetails}>
+                <Text style={[styles.score, { color: theme.text }]}>{rewards.totalSparks}</Text>
+                <Muted>Spark points · level {rewards.level}</Muted>
+                <Muted>Tiny 1 · standard 2 · stretch 3</Muted>
+              </View>
+              <View style={styles.todayScore}>
+                <Text style={[styles.todayWins, { color: theme.primary }]}>{winsToday.length}</Text>
+                <Muted>wins today</Muted>
+                <Text style={[styles.textAction, { color: theme.primary }]}>View Progress →</Text>
+              </View>
+            </Card>
+          </Pressable>
         ) : winsToday.length ? (
           <Muted>{winsToday.length} gentle {winsToday.length === 1 ? 'win' : 'wins'} today</Muted>
         ) : null}
 
         {spark.settings.minimumViableDay ? (
           <Card style={{ borderColor: theme.success }}>
-            <Eyebrow>Minimum viable day</Eyebrow>
-            <SectionHeading>One small thing is the whole plan.</SectionHeading>
-            <Muted>You can do more if momentum arrives, but Spark will not ask for it.</Muted>
+            <Eyebrow>One-thing day is on</Eyebrow>
+            <SectionHeading>Spark is showing only one tiny action.</SectionHeading>
+            <Muted>
+              You turned on this temporary view. It hides the rest of today’s menu; it does not
+              delete habits or record missed actions.
+            </Muted>
           </Card>
         ) : null}
 
@@ -359,6 +407,10 @@ export default function TodayScreen() {
                 </Pressable>
               ) : null}
             </View>
+            <Muted>
+              Optional: these answers only change which action sizes appear below. They do not
+              affect your score or mark anything missed.
+            </Muted>
             <CapacityPicker value={capacity} onChange={(value) => void chooseCapacity(value)} />
             <View style={styles.timeArea}>
               <Muted>How much room do you have?</Muted>
@@ -416,13 +468,11 @@ export default function TodayScreen() {
         <Button
           label={
             spark.settings.minimumViableDay
-              ? 'Return to my flexible plan'
-              : 'Rescue my day: show one tiny action'
+              ? 'Turn off One-thing day'
+              : 'Show only one tiny action'
           }
           variant="secondary"
-          onPress={() =>
-            void spark.updateSetting('minimumViableDay', !spark.settings.minimumViableDay)
-          }
+          onPress={() => void toggleOneThingDay()}
         />
 
         {spark.settings.progressiveHelpEnabled && !spark.settings.simpleMode ? (
@@ -434,14 +484,16 @@ export default function TodayScreen() {
         ) : null}
 
         <View style={styles.sectionTitle}>
-          <View>
-            <SectionHeading>Your next Sparks</SectionHeading>
-            <Muted>Invitations, not obligations.</Muted>
+          <View style={styles.sectionTitleText}>
+            <SectionHeading>Choose an action</SectionHeading>
+            <Muted>Tap Log only when you want to record a win. Nothing becomes overdue.</Muted>
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add a habit"
+            hitSlop={10}
             onPress={() => router.push('/habit/new')}
+            style={styles.addHabit}
           >
             <Ionicons name="add-circle" size={34} color={theme.primary} />
           </Pressable>
@@ -626,6 +678,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   scoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  scoreDetails: { flex: 1, gap: 1 },
   score: { fontSize: 30, fontWeight: '800' },
   todayScore: { alignItems: 'flex-end' },
   todayWins: { fontSize: 24, fontWeight: '800' },
@@ -634,7 +687,15 @@ const styles = StyleSheet.create({
   summaryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   textAction: { fontSize: 13, fontWeight: '800' },
   compactCheckIn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionTitle: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  sectionTitleText: { flex: 1, minWidth: 0, gap: 2 },
+  addHabit: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0
+  },
   quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   notice: { fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
   enough: { alignItems: 'center', paddingVertical: 26 },

@@ -1,5 +1,6 @@
 export * from './progress';
 export * from './insights';
+export * from './momentum';
 export * from './recommendations';
 export * from './rewards';
 export * from './schedule';

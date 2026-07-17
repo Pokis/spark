@@ -46,6 +46,9 @@ export function HabitCard({
           <View style={styles.titleText}>
             <Text style={[styles.title, { color: theme.text }]}>{habit.title}</Text>
             <Muted numberOfLines={1}>{suggestion.explanation}</Muted>
+            {habit.momentum?.enabled ? (
+              <Text style={[styles.momentum, { color: habit.color }]}>✦ Momentum on · review in Progress</Text>
+            ) : null}
           </View>
         </Pressable>
         <Pressable
@@ -66,9 +69,9 @@ export function HabitCard({
           <Pressable
             key={candidate.id}
             accessibilityRole="button"
-            accessibilityLabel={`Complete ${habit.title}: ${candidate.label}, ${candidate.targetMinutes} ${
+            accessibilityLabel={`Log a win for ${habit.title}: ${candidate.label}, ${candidate.targetMinutes} ${
               candidate.targetMinutes === 1 ? 'minute' : 'minutes'
-            }`}
+            }${showRewards ? `, earns ${candidate.reward} ${candidate.reward === 1 ? 'Spark point' : 'Spark points'}` : ''}`}
             accessibilityState={{ disabled: saving, busy: saving }}
             disabled={saving}
             onPress={() => onComplete(candidate)}
@@ -96,8 +99,11 @@ export function HabitCard({
                   { color: candidate.kind === 'tiny' ? theme.textMuted : '#FFFFFFCC' }
                 ]}
               >
+                {candidate.kind[0]!.toUpperCase() + candidate.kind.slice(1)} action ·{' '}
                 {candidate.targetMinutes} min
-                {showRewards ? ` · +${candidate.reward} sparks` : ''}
+                {showRewards
+                  ? ` · earns ${candidate.reward} ${candidate.reward === 1 ? 'Spark point' : 'Spark points'}`
+                  : ''}
               </Text>
             </View>
             <View
@@ -109,7 +115,8 @@ export function HabitCard({
                 }
               ]}
             >
-              <Ionicons name="sparkles" size={22} color="#FFFFFF" />
+              <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              <Text style={styles.logText}>{saving ? 'Saving' : 'Log'}</Text>
             </View>
           </Pressable>
         ))}
@@ -213,6 +220,7 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 24 },
   titleText: { flex: 1, gap: 2 },
   title: { fontSize: 17, fontWeight: '800' },
+  momentum: { fontSize: 12, fontWeight: '700' },
   variants: { gap: 8 },
   friction: { borderRadius: 14, padding: 12, gap: 4 },
   frictionTitle: { fontSize: 13, fontWeight: '800' },
@@ -231,12 +239,13 @@ const styles = StyleSheet.create({
   variantLabel: { fontSize: 15, fontWeight: '700' },
   variantMeta: { fontSize: 12, fontWeight: '600' },
   dopamineButton: {
-    width: 46,
-    height: 46,
+    width: 54,
+    minHeight: 48,
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center'
   },
+  logText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
   quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   quickAction: {
     minHeight: 42,

@@ -54,7 +54,7 @@ export default function HelpScreen() {
             Stopping after that still counts as starting.
           </Muted>
           <Button
-            label="Show one tiny action"
+            label="Turn on One-thing day"
             onPress={() =>
               void spark
                 .updateSetting('minimumViableDay', true)
@@ -150,4 +150,3 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
 });
-

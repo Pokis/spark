@@ -46,6 +46,8 @@ optional cosmetic themes—not casino mechanics.
 - five-second activation prompt
 - pause and archive without deleting history
 - rolling rhythm percentages and comeback recognition
+- optional per-habit daily/every-other-day Momentum streaks with earned Flex passes, planned rest,
+  preserved personal bests, and no point penalties
 
 ### Phase 3 — ADHD-supportive tools
 
@@ -115,6 +117,7 @@ These should be evaluated with real users instead of being enabled speculatively
 - blocking other apps; it requires sensitive device permissions and strong policy justification
 - location-triggered reminders; they add permission and battery burden
 - randomized rewards, loss aversion, streak repair purchases, ads, and attention-selling analytics
+  (free local Momentum protections are allowed because they are transparent and non-monetized)
 
 ## Completed experience and reliability pass
 

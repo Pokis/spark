@@ -10,9 +10,9 @@
   ],
   "scripts": {
     "doctor": "node scripts/doctor.mjs",
-    "start": "npm run start --workspace @spark/mobile",
-    "android": "npm run android --workspace @spark/mobile",
-    "ios": "npm run ios --workspace @spark/mobile",
+    "start": "npm run start --workspace @spark/mobile --",
+    "android": "npm run android --workspace @spark/mobile --",
+    "ios": "npm run ios --workspace @spark/mobile --",
     "admin": "npm run dev --workspace @spark/admin",
     "api": "npm run dev --workspace @spark/control-plane",
     "preapi": "npm run build:packages",

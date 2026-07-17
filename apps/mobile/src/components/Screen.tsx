@@ -20,6 +20,14 @@ interface ScreenProps extends PropsWithChildren {
   refreshControl?: ScrollViewProps['refreshControl'];
 }
 
+export function keyboardAvoidingBehavior(
+  platform: typeof Platform.OS,
+  enabled: boolean
+): 'padding' | 'height' | undefined {
+  if (!enabled) return undefined;
+  return platform === 'ios' ? 'padding' : 'height';
+}
+
 export function Screen({
   children,
   scroll = true,
@@ -32,7 +40,9 @@ export function Screen({
   const theme = useTheme();
   const body = scroll ? (
     <ScrollView
-      contentContainerStyle={[styles.content, contentStyle]}
+      contentContainerStyle={[styles.content, styles.scrollContent, contentStyle]}
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}
       testID={testID}
@@ -46,10 +56,14 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: theme.background }]}
+      edges={['top', 'bottom']}
+      testID="spark-safe-area"
+    >
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={keyboard && Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={keyboardAvoidingBehavior(Platform.OS, keyboard)}
       >
         {body}
         {footer}
@@ -61,6 +75,7 @@ export function Screen({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
   content: {
     paddingHorizontal: 20,
     paddingTop: 12,

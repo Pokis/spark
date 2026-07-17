@@ -6,7 +6,7 @@
 npm.cmd run test:ci
 ```
 
-This runs **203 automated tests**: 146 mobile, 16 domain, 25 control-plane API, and 16 admin
+This runs **238 automated tests**: 171 mobile, 26 domain, 25 control-plane API, and 16 admin
 dashboard tests.
 
 The suites cover:
@@ -29,19 +29,19 @@ It rebuilds shared packages first, executes every workspace coverage suite, prin
 reports, and fails if any workspace falls below its checked-in threshold. Generated reports are
 written under ignored `coverage/` folders.
 
-Measured on **2026-07-16**:
+Measured on **2026-07-17**:
 
 | Scope | Statements | Branches | Functions | Lines | Enforced minimum |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Mobile: every `app/` and `src/` TypeScript/TSX file | 44.98% | 34.13% | 36.21% | 46.08% | 44 / 33 / 35 / 45 |
-| Shared domain package | 99.42% | 91.59% | 100% | 99.42% | 98 / 90 / 100 / 98 |
+| Mobile: every `app/` and `src/` TypeScript/TSX file | 51.32% | 41.88% | 42.61% | 52.58% | 44 / 33 / 35 / 45 |
+| Shared domain package | 99.58% | 94.08% | 100% | 99.58% | 98 / 90 / 100 / 98 |
 | Control-plane HTTP application (`src/app.ts`) | 88.53% | 78.52% | 97.91% | 88.66% | 85 / 75 / 95 / 85 |
 | Admin source, excluding test/bootstrap files | 73.76% | 49.35% | 67.18% | 75.32% | 70 / 45 / 60 / 70 |
 
 The mobile scope deliberately includes every route and large editor, including files that unit
 tests do not import. That makes the remaining screen-level gap visible. Core mobile services are
-materially higher: local helpers are fully statement-covered, services are 88.88%, backup is
-86.73%, notifications are 93.02%, diagnostics are 94.73%, and `SparkProvider` is 72.72%.
+materially higher: local helpers are fully statement-covered, services are 88.95%, backup is
+86.98%, notifications are 93.02%, diagnostics are 94.73%, and `SparkProvider` is 72.72%.
 
 Coverage is evidence, not a release substitute. Firebase browser sign-in, Android/iOS system
 dialogs, SQLCipher in the shipped native binary, launchers/widgets, notification delivery,
@@ -88,13 +88,13 @@ Build shared packages, API, dashboard, and the Android JavaScript bundle:
 npm.cmd run build
 ```
 
-Validate that native generation includes the shortcuts, three widgets, blocked calendar
+Validate that native generation includes the shortcuts, five widgets, blocked calendar
 permissions, and Baseline Profile:
 
 ```powershell
 Set-Location apps/mobile
 npx.cmd expo prebuild --platform android --no-install
-Select-String -Path android/app/src/main/AndroidManifest.xml -Pattern "SparkFocus|android.app.shortcuts|READ_CALENDAR|WRITE_CALENDAR"
+Select-String -Path android/app/src/main/AndroidManifest.xml -Pattern "SparkFocus|SparkProgress|SparkToolkit|android.app.shortcuts|READ_CALENDAR|WRITE_CALENDAR"
 Test-Path android/app/src/main/baseline-prof.txt
 Set-Location ../..
 ```
@@ -175,9 +175,20 @@ timing vary.
     date window, and check that the comparison language stays neutral.
 33. Add the Focus widget, start/pause/resume/finish a session from app and widget, force-stop the
     process, and verify timestamp-derived state remains correct. Test the four launcher shortcuts.
-34. Switch through every bundled language, including Lithuanian and an RTL Arabic device. Verify
+34. Add the Progress widget and confirm lifetime wins, fixed points, and today’s count update after
+    logging; tapping it must open Progress without writing data.
+35. Add the Toolkit widget and verify Capture, two-minute Focus, Departure, and Help each open the
+    labeled destination. Test narrow/wide resizing and 200% font/display scaling.
+36. In Settings and Progress, collapse and expand every group. Confirm summaries stay meaningful,
+    controls keep their values, and larger text never clips add-habit/add-routine buttons.
+37. Open every feature tutorial. Verify Skip returns without dismissal, Dismiss hides its
+    contextual prompt, Replay remains available, Restore all tips makes prompts eligible again,
+    and the first-use prompt can disappear immediately.
+38. Open nested screens from Today, Progress, Settings, a widget, and a cold deep link. Back must
+    return to the actual prior screen when one exists and to the documented fallback otherwise.
+39. Switch through every bundled language, including Lithuanian and an RTL Arabic device. Verify
     navigation never becomes blank and legacy copy falls back to English.
-35. Export diagnostics and inspect the JSON: no habit, focus, routine, Capture, weekly-reflection,
+40. Export diagnostics and inspect the JSON: no habit, focus, routine, Capture, weekly-reflection,
     departure, experiment-note, display-name, file-path, or content-URI text should appear.
 
 ## Cloud security scenarios

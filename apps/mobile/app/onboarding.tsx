@@ -16,15 +16,21 @@ import { createId } from '../src/lib/id';
 const pages = [
   {
     eyebrow: 'Welcome to Spark',
-    title: 'Progress without the shame spiral.',
-    body: 'Tiny counts. Coming back counts. A hard day changes the plan—not your worth.',
+    title: 'One doable action at a time.',
+    body: 'Spark is the name of this app. It helps you choose a small action, remember what worked, and come back without punishment.',
     icon: 'sparkles-outline' as const
   },
   {
-    eyebrow: 'Flexible consistency',
-    title: 'Choose the size that fits today.',
-    body: 'Every habit has a tiny, standard, and stretch version. Spark recommends one, but you stay in charge.',
+    eyebrow: 'Plain language',
+    title: 'A habit is something you want to repeat.',
+    body: 'Each habit has three action sizes: tiny, standard, and stretch. All three count as a win. Spark suggests a size; you choose what actually fits.',
     icon: 'options-outline' as const
+  },
+  {
+    eyebrow: 'Predictable progress',
+    title: 'A completed action becomes a win.',
+    body: 'A tiny action earns 1 Spark point, standard earns 2, and stretch earns 3. Points never appear randomly, never expire, and can be hidden in Settings.',
+    icon: 'checkmark-circle-outline' as const
   },
   {
     eyebrow: 'Private by default',
@@ -33,9 +39,9 @@ const pages = [
     icon: 'shield-checkmark-outline' as const
   },
   {
-    eyebrow: 'One personal Spark',
-    title: 'Make the first step yours.',
-    body: 'Name one thing you want to make easier. Spark will create gentle starting sizes you can edit later.',
+    eyebrow: 'Your first habit',
+    title: 'What would you like to make easier?',
+    body: 'Spark already includes two editable examples: Drink some water and Reset one surface. Add your own habit now, or continue with those examples.',
     icon: 'create-outline' as const
   }
 ];
@@ -55,7 +61,7 @@ export default function OnboardingScreen() {
       const habit: Habit = {
         id: habitId,
         title,
-        reason: 'A personal first Spark chosen during onboarding.',
+        reason: 'A personal first habit chosen during onboarding.',
         color: palette.coral,
         icon: '✨',
         variants: [
@@ -108,7 +114,7 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <Screen scroll={false} contentStyle={styles.screen}>
+    <Screen contentStyle={styles.screen} testID="onboarding-screen">
       <View style={styles.top}>
         <Image
           source={require('../assets/spark-icon-v2.png')}
@@ -126,6 +132,7 @@ export default function OnboardingScreen() {
             />
           ))}
         </View>
+        <Muted>Step {page + 1} of {pages.length}</Muted>
       </View>
       <Card style={styles.hero}>
         <View style={[styles.icon, { backgroundColor: `${palette.coral}22` }]}>
@@ -138,6 +145,25 @@ export default function OnboardingScreen() {
           <View style={[styles.promise, { backgroundColor: theme.surfaceAlt }]}>
             <Text style={styles.promiseIcon}>↻</Text>
             <Muted>No streak resets. No red failure calendars. No random reward gambling.</Muted>
+          </View>
+        ) : null}
+        {page === 1 ? (
+          <View style={[styles.definition, { backgroundColor: theme.surfaceAlt }]}>
+            <Muted><Text style={styles.definitionLabel}>Habit</Text> = what you want to repeat</Muted>
+            <Muted><Text style={styles.definitionLabel}>Action</Text> = one size you can do today</Muted>
+            <Muted><Text style={styles.definitionLabel}>Win</Text> = an action you chose to log</Muted>
+          </View>
+        ) : null}
+        {page === 2 ? (
+          <View style={styles.rewardRow}>
+            {['Tiny = 1 point', 'Standard = 2', 'Stretch = 3'].map((label) => (
+              <View
+                key={label}
+                style={[styles.rewardBadge, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}
+              >
+                <Text style={[styles.rewardBadgeText, { color: theme.text }]}>{label}</Text>
+              </View>
+            ))}
           </View>
         ) : null}
         {page === pages.length - 1 ? (
@@ -153,7 +179,8 @@ export default function OnboardingScreen() {
               ))}
             </View>
             <FormField
-              label="My first personal Spark"
+              label="My first habit"
+              hint="This is editable later. It is not a promise or an obligation."
               placeholder="e.g. Open the document"
               value={firstHabit}
               onChangeText={setFirstHabit}
@@ -167,9 +194,9 @@ export default function OnboardingScreen() {
         <Button
           label={
             page === pages.length - 1 && firstHabit.trim()
-              ? 'Create my first Spark'
+              ? 'Create my first habit'
               : page === pages.length - 1
-                ? 'Use gentle starters'
+                ? 'Continue with 2 examples'
                 : 'Continue'
           }
           onPress={() => void continueFlow()}
@@ -184,7 +211,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { justifyContent: 'space-between', paddingBottom: 26 },
+  screen: { justifyContent: 'space-between', paddingBottom: 26, minHeight: '100%' },
   top: { alignItems: 'center', gap: 18 },
   logo: { width: 72, height: 72, borderRadius: 22 },
   dots: { flexDirection: 'row', gap: 7 },
@@ -205,6 +232,11 @@ const styles = StyleSheet.create({
     gap: 10
   },
   promiseIcon: { color: palette.coral, fontSize: 24, fontWeight: '800' },
+  definition: { borderRadius: 14, padding: 13, gap: 7 },
+  definitionLabel: { fontWeight: '800' },
+  rewardRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  rewardBadge: { minHeight: 40, borderWidth: 1, borderRadius: 99, paddingHorizontal: 12, justifyContent: 'center' },
+  rewardBadgeText: { fontSize: 13, fontWeight: '700' },
   actions: { gap: 10 },
   templateRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
 });

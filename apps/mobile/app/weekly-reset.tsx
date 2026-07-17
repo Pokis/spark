@@ -11,6 +11,7 @@ import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography
 import { createId } from '../src/lib/id';
 import { mondayKey } from '../src/lib/weeklyPlanning';
 import { useSpark } from '../src/state/SparkProvider';
+import { goBackOr } from '../src/lib/navigation';
 
 const contexts: { value: HabitContext; label: string }[] = [
   { value: 'home', label: 'Home' },
@@ -60,7 +61,7 @@ export default function WeeklyResetScreen() {
         // when this week's plan already exists.
         createdAt: new Date().toISOString()
       });
-      router.back();
+      goBackOr('/(tabs)/journey');
     } finally {
       setSaving(false);
     }

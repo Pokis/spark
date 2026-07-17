@@ -10,6 +10,8 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
+import { CollapsibleSection } from '../../src/components/CollapsibleSection';
+import { MomentumCard } from '../../src/components/MomentumCard';
 import { Screen } from '../../src/components/Screen';
 import { Body, Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
 import { useSpark } from '../../src/state/SparkProvider';
@@ -27,6 +29,7 @@ export default function JourneyScreen() {
   const maxWins = Math.max(1, ...winsByDay);
   const today = localDateKey(new Date(), spark.timeZone);
   const activeHabits = spark.habits.filter((habit) => !habit.archivedAt);
+  const momentumHabits = activeHabits.filter((habit) => habit.momentum?.enabled);
   const lastSevenDays = new Set(recentDateKeys(new Date(), spark.timeZone, 7));
   const recentWins = spark.completions.filter((completion) =>
     lastSevenDays.has(completion.localDate)
@@ -41,14 +44,20 @@ export default function JourneyScreen() {
   }).filter((insight) => !spark.settings.hiddenInsightIds.includes(insight.id));
   const activeRoutines = spark.routines.filter((routine) => !routine.archivedAt);
   const archivedRoutines = spark.routines.filter((routine) => routine.archivedAt);
+  const recentCompletions = spark.completions.slice(0, 5);
 
   return (
     <Screen testID="journey-screen">
       <View>
-        <Eyebrow>No-guilt progress</Eyebrow>
-        <H1>Your path, not a streak.</H1>
-        <Muted>Blank days are blank. They do not erase any win you already made.</Muted>
+        <Eyebrow>Review progress</Eyebrow>
+        <H1>Your progress & habits</H1>
+        <Muted>
+          See where every point came from, review your habits, and edit anything that no longer
+          helps. Blank days erase nothing.
+        </Muted>
       </View>
+
+      <Button label="What do these words mean?" variant="ghost" onPress={() => router.push('/guide')} />
 
       {spark.settings.showRewards ? (
       <Card style={[styles.levelCard, { backgroundColor: theme.surfaceAlt }]}>
@@ -56,10 +65,12 @@ export default function JourneyScreen() {
           <Text style={styles.levelNumber}>{summary.level}</Text>
         </View>
         <View style={styles.levelText}>
-          <SectionHeading>Level {summary.level} Spark</SectionHeading>
+          <SectionHeading>
+            {summary.totalSparks} {summary.totalSparks === 1 ? 'Spark point' : 'Spark points'}
+          </SectionHeading>
           <Muted>
-            {summary.totalSparks} total · {summary.nextLevelAt - summary.totalSparks} until the
-            next glow
+            Tiny actions earn 1, standard 2, and stretch 3 · level {summary.level} ·{' '}
+            {summary.nextLevelAt - summary.totalSparks} until the next level
           </Muted>
           <View style={[styles.track, { backgroundColor: theme.border }]}>
             <View
@@ -77,7 +88,44 @@ export default function JourneyScreen() {
       ) : null}
 
       <Card>
-        <SectionHeading>Last 14 days</SectionHeading>
+        <SectionHeading>Where your points came from</SectionHeading>
+        <Muted>Each row is an action you deliberately logged as a win.</Muted>
+        {recentCompletions.length ? (
+          recentCompletions.map((completion) => {
+            const habit = spark.habits.find((item) => item.id === completion.habitId);
+            const variant = habit?.variants.find((item) => item.id === completion.variantId);
+            return (
+              <Pressable
+                key={completion.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Open history for ${habit?.title ?? 'this habit'}; ${completion.reward} ${completion.reward === 1 ? 'Spark point' : 'Spark points'}`}
+                disabled={!habit}
+                onPress={() => habit && router.push(`/habit/${habit.id}/history`)}
+                style={[styles.winRow, { borderTopColor: theme.border }]}
+              >
+                <View style={styles.winText}>
+                  <Text style={[styles.rhythmTitle, { color: theme.text }]}>
+                    {habit?.icon ?? '✓'} {variant?.label ?? habit?.title ?? 'Logged action'}
+                  </Text>
+                  <Muted>{new Date(completion.occurredAt).toLocaleString()}</Muted>
+                </View>
+                {spark.settings.showRewards ? (
+                  <Text style={[styles.points, { color: theme.primary }]}>+{completion.reward}</Text>
+                ) : (
+                  <Text style={[styles.points, { color: theme.primary }]}>✓</Text>
+                )}
+              </Pressable>
+            );
+          })
+        ) : (
+          <Muted>No wins logged yet. Your point total starts at zero.</Muted>
+        )}
+      </Card>
+
+      <CollapsibleSection
+        title="Last 14 days"
+        summary={`${winsByDay.reduce((sum, value) => sum + value, 0)} completed actions across ${winsByDay.filter(Boolean).length} active days`}
+      >
         <View
           accessible
           accessibilityLabel={`Fourteen day activity: ${winsByDay.reduce((a, b) => a + b, 0)} total wins`}
@@ -106,7 +154,7 @@ export default function JourneyScreen() {
           {winsByDay.filter(Boolean).length} active days ·{' '}
           {winsByDay.reduce((sum, value) => sum + value, 0)} completed actions
         </Muted>
-      </Card>
+      </CollapsibleSection>
 
       <Card style={{ borderColor: theme.purple }}>
         <Eyebrow>Gentle weekly reflection</Eyebrow>
@@ -127,11 +175,11 @@ export default function JourneyScreen() {
       </Card>
 
       {spark.settings.insightsEnabled && insights.length ? (
-        <View style={styles.insights}>
-          <View>
-            <SectionHeading>Things Spark noticed locally</SectionHeading>
-            <Muted>Observations, not grades. Nothing leaves this device.</Muted>
-          </View>
+        <CollapsibleSection
+          title="Things Spark noticed locally"
+          summary={`${insights.length} neutral local observation${insights.length === 1 ? '' : 's'}`}
+        >
+          <Muted>Observations, not grades. Nothing leaves this device.</Muted>
           {insights.map((insight) => (
             <Card key={insight.id}>
               <View style={styles.insightHeading}>
@@ -154,18 +202,35 @@ export default function JourneyScreen() {
               </View>
             </Card>
           ))}
-        </View>
+        </CollapsibleSection>
+      ) : null}
+
+      {momentumHabits.length ? (
+        <CollapsibleSection
+          title="Momentum streaks"
+          summary={`${momentumHabits.length} optional reward-first ${momentumHabits.length === 1 ? 'rhythm' : 'rhythms'}`}
+        >
+          <Muted>
+            Delays and Flex passes preserve continuity without inventing wins; personal bests
+            and ordinary progress never disappear.
+          </Muted>
+          {momentumHabits.map((habit) => (
+            <MomentumCard key={habit.id} habit={habit} />
+          ))}
+        </CollapsibleSection>
       ) : null}
 
       <View style={styles.sectionHeading}>
-        <View>
-          <SectionHeading>Rhythms</SectionHeading>
-          <Muted>A rolling 14-day view, never a reset.</Muted>
+        <View style={styles.sectionHeadingText}>
+          <SectionHeading>Your habits</SectionHeading>
+          <Muted>Tap a habit to edit it, pause it, or review its full history.</Muted>
         </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add a habit"
+          hitSlop={10}
           onPress={() => router.push('/habit/new')}
+          style={styles.addButton}
         >
           <Ionicons name="add-circle" size={34} color={theme.primary} />
         </Pressable>
@@ -214,14 +279,16 @@ export default function JourneyScreen() {
       })}
 
       <View style={styles.sectionHeading}>
-        <View>
+        <View style={styles.sectionHeadingText}>
           <SectionHeading>Launch routines</SectionHeading>
           <Muted>One visible step at a time.</Muted>
         </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add a routine"
+          hitSlop={10}
           onPress={() => router.push('/routine/new')}
+          style={styles.addButton}
         >
           <Ionicons name="add-circle" size={34} color={theme.primary} />
         </Pressable>
@@ -284,8 +351,10 @@ export default function JourneyScreen() {
         </Body>
       </Card>
       <Button label="Manage settings" variant="ghost" onPress={() => router.push('/settings')} />
-      <Card>
-        <SectionHeading>Plan and share deliberately</SectionHeading>
+      <CollapsibleSection
+        title="Plan and share deliberately"
+        summary="Weekly reset, personal experiments, and selected-win sharing"
+      >
         <Muted>These tools stay local unless you explicitly open the system share sheet or calendar.</Muted>
         <Button
           label="Gentle weekly reset"
@@ -302,7 +371,7 @@ export default function JourneyScreen() {
           variant="ghost"
           onPress={() => router.push('/share-progress')}
         />
-      </Card>
+      </CollapsibleSection>
     </Screen>
   );
 }
@@ -333,7 +402,15 @@ const styles = StyleSheet.create({
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    gap: 12
+  },
+  sectionHeadingText: { flex: 1, minWidth: 0, gap: 2 },
+  addButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0
   },
   rhythmCard: { flexDirection: 'row', alignItems: 'center', padding: 13 },
   habitIcon: {
@@ -346,6 +423,9 @@ const styles = StyleSheet.create({
   habitEmoji: { fontSize: 23 },
   rhythmText: { flex: 1 },
   rhythmTitle: { fontSize: 16, fontWeight: '700' },
+  winRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 11, borderTopWidth: 1 },
+  winText: { flex: 1 },
+  points: { fontSize: 18, fontWeight: '800' },
   percentage: { fontSize: 17, fontWeight: '800' },
   routine: { flexDirection: 'row', alignItems: 'center', padding: 13 },
   routineIcon: { fontSize: 30 },

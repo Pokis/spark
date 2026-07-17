@@ -146,7 +146,13 @@ describe('backup validation', () => {
       contexts: ['anywhere'],
       createdAt: '2026-07-01T00:00:00.000Z',
       sortOrder: 0,
-      friction: { firstStep: 'Open the book' }
+      friction: { firstStep: 'Open the book' },
+      momentum: {
+        enabled: true,
+        cadence: 'everyOtherDay',
+        anchorDate: '2026-07-01',
+        protections: [{ windowStart: '2026-07-03', kind: 'flex' }]
+      }
     };
     const parsed = parseBackupText(
       JSON.stringify({
@@ -178,6 +184,7 @@ describe('backup validation', () => {
         ]
       })
     );
+    expect(parsed.habits[0]?.momentum).toEqual(habit.momentum);
     expect(parsed.habits[0]?.friction?.firstStep).toBe('Open the book');
     expect(parsed.weeklyPlans).toHaveLength(1);
     expect(parsed.personalExperiments).toHaveLength(1);
@@ -188,6 +195,53 @@ describe('backup validation', () => {
     expect(() =>
       parseBackupText(JSON.stringify({ ...base, schemaVersion: 99 }))
     ).toThrow('not supported');
+  });
+
+  it('rejects duplicate or misaligned Momentum protection windows', () => {
+    const momentumHabit = {
+      id: 'habit',
+      title: 'Read',
+      color: '#ffffff',
+      icon: '📚',
+      variants: [
+        { id: 'variant', kind: 'tiny', label: 'One line', targetMinutes: 1, reward: 1 }
+      ],
+      schedule: { type: 'daily' },
+      reminderWindow: 'exact',
+      reminderEnabled: false,
+      priority: 1,
+      contexts: ['home'],
+      createdAt: '2026-07-01T00:00:00.000Z',
+      sortOrder: 0,
+      momentum: {
+        enabled: true,
+        cadence: 'everyOtherDay',
+        anchorDate: '2026-07-01',
+        protections: [{ windowStart: '2026-07-02', kind: 'flex' }]
+      }
+    };
+    expect(() =>
+      parseBackupText(JSON.stringify({ ...base, habits: [momentumHabit] }))
+    ).toThrow('not on a window boundary');
+    expect(() =>
+      parseBackupText(
+        JSON.stringify({
+          ...base,
+          habits: [
+            {
+              ...momentumHabit,
+              momentum: {
+                ...momentumHabit.momentum,
+                protections: [
+                  { windowStart: '2026-07-03', kind: 'flex' },
+                  { windowStart: '2026-07-03', kind: 'delay' }
+                ]
+              }
+            }
+          ]
+        })
+      )
+    ).toThrow('two Momentum protections');
   });
 
   it('rejects completion references to missing habits', () => {

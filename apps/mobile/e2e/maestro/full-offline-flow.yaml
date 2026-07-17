@@ -7,16 +7,19 @@ name: Spark full offline journey
 # Onboarding and privacy promises
 - assertVisible:
     id: onboarding-continue
-- assertVisible: "Progress without the shame spiral."
+- assertVisible: "One doable action at a time."
 - tapOn:
     id: onboarding-continue
-- assertVisible: "Choose the size that fits today."
+- assertVisible: "A habit is something you want to repeat."
+- tapOn:
+    id: onboarding-continue
+- assertVisible: "A completed action becomes a win."
 - tapOn:
     id: onboarding-continue
 - assertVisible: "Your real life stays on this device."
 - tapOn:
     id: onboarding-continue
-- assertVisible: "Make the first step yours."
+- assertVisible: "What would you like to make easier?"
 - tapOn:
     id: onboarding-continue
 - assertVisible:
@@ -39,9 +42,9 @@ name: Spark full offline journey
 - tapOn: "Running low"
 
 # Complete the recommended version and receive an immediate reward
-- tapOn: "Complete Drink water: Touch the first step, 1 minute"
-- assertVisible: "Drink water completed. You earned 1 spark. Tap to continue."
-- tapOn: "Drink water completed. You earned 1 spark. Tap to continue."
+- tapOn: "Log a win for Drink water: Touch the first step, 1 minute, earns 1 Spark point"
+- assertVisible: "Drink water completed. You earned 1 Spark point. Continue."
+- tapOn: "Drink water completed. You earned 1 Spark point. Continue."
 - assertVisible: "Logged. Tiny still counts."
 
 # Capture an interruption without organizing it

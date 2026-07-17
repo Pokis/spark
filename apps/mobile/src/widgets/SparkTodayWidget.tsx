@@ -10,6 +10,9 @@ export interface SparkWidgetSnapshot {
   title: string;
   tinyLabel: string;
   winsToday: number;
+  totalWins?: number;
+  totalSparks?: number;
+  activeHabits?: number;
   accent: string;
   brandMark?: string;
 }

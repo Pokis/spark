@@ -1,6 +1,7 @@
 import type {
   Habit,
   HabitContext,
+  MomentumCadence,
   ReminderWindow,
   HabitVariantKind,
   ScheduleRule
@@ -8,7 +9,7 @@ import type {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
-import { addCalendarDays, localDateKey } from '@spark/domain';
+import { addCalendarDays, calendarDayDifference, localDateKey } from '@spark/domain';
 import { useSpark } from '../state/SparkProvider';
 import { habitColors, useTheme } from '../theme';
 import { Button } from './Button';
@@ -126,6 +127,12 @@ export function HabitEditor({
   const [selectedContexts, setSelectedContexts] = useState<HabitContext[]>(
     habit?.contexts ?? ['anywhere']
   );
+  const [momentumEnabled, setMomentumEnabled] = useState(
+    habit?.momentum?.enabled ?? false
+  );
+  const [momentumCadence, setMomentumCadence] = useState<MomentumCadence>(
+    habit?.momentum?.cadence ?? 'daily'
+  );
   const [saving, setSaving] = useState(false);
   const [advanced, setAdvanced] = useState(Boolean(habit));
   const clearDraft = useLocalDraft(
@@ -157,6 +164,8 @@ export function HabitEditor({
       reminderWindow,
       priority,
       selectedContexts,
+      momentumEnabled,
+      momentumCadence,
       advanced
     },
     (draft) => {
@@ -186,6 +195,8 @@ export function HabitEditor({
       setReminderWindow(draft.reminderWindow);
       setPriority(draft.priority);
       setSelectedContexts(draft.selectedContexts);
+      setMomentumEnabled(draft.momentumEnabled ?? habit?.momentum?.enabled ?? false);
+      setMomentumCadence(draft.momentumCadence ?? habit?.momentum?.cadence ?? 'daily');
       setAdvanced(draft.advanced);
     }
   );
@@ -224,6 +235,9 @@ export function HabitEditor({
     }
     setSaving(true);
     const habitId = habit?.id ?? createId('habit');
+    const momentumAnchor =
+      habit?.momentum?.anchorDate ?? localDateKey(new Date(), spark.timeZone);
+    const momentumCadenceDays = momentumCadence === 'everyOtherDay' ? 2 : 1;
     const next: Habit = {
       id: habitId,
       title: title.trim(),
@@ -272,6 +286,15 @@ export function HabitEditor({
       pausedAt: habit?.pausedAt ?? null,
       pausedUntil: habit?.pausedUntil ?? null,
       pauseHistory: habit?.pauseHistory ?? [],
+      momentum: {
+        enabled: momentumEnabled,
+        cadence: momentumCadence,
+        anchorDate: momentumAnchor,
+        protections: (habit?.momentum?.protections ?? []).filter((protection) => {
+          const elapsed = calendarDayDifference(momentumAnchor, protection.windowStart);
+          return elapsed >= 0 && elapsed % momentumCadenceDays === 0;
+        })
+      },
       archivedAt: habit?.archivedAt ?? null,
       sortOrder: habit?.sortOrder ?? spark.habits.length
     };
@@ -334,10 +357,13 @@ export function HabitEditor({
   return (
     <Screen>
       <Card>
-        <SectionHeading>Make the first step visible</SectionHeading>
+        <SectionHeading>{habit ? 'Edit this habit' : 'Create a habit'}</SectionHeading>
         {!habit ? (
           <>
-            <Muted>Choose a starter or name your own. Every detail remains editable.</Muted>
+            <Muted>
+              A habit is something you want to repeat. Choose a starter or name your own; every
+              detail remains editable.
+            </Muted>
             <View style={styles.choices}>
               {starterTemplates.map((template) => (
                 <Chip
@@ -588,6 +614,58 @@ export function HabitEditor({
       </Card>
 
       <Card>
+        <SectionHeading>Optional Momentum streak</SectionHeading>
+        <Muted>
+          A streak can be encouraging without becoming a debt. Momentum celebrates completed
+          windows, keeps your personal best, and never removes Spark points or habit history.
+        </Muted>
+        <SettingRow
+          title="Track a Momentum streak"
+          description="Off by default for every habit. You can turn it off again without deleting its history."
+          value={momentumEnabled}
+          onValueChange={setMomentumEnabled}
+        />
+        {momentumEnabled ? (
+          <>
+            <Muted>How often should one logged win continue Momentum?</Muted>
+            <View style={styles.choices}>
+              <Chip
+                label="Every day"
+                selected={momentumCadence === 'daily'}
+                onPress={() => setMomentumCadence('daily')}
+              />
+              <Chip
+                label="Every other day"
+                selected={momentumCadence === 'everyOtherDay'}
+                onPress={() => setMomentumCadence('everyOtherDay')}
+              />
+            </View>
+            <Body>
+              {momentumCadence === 'daily'
+                ? 'One win during each calendar day continues it.'
+                : 'One win anywhere in each two-day window continues it.'}
+            </Body>
+            <Muted>
+              You begin with 2 Flex passes and earn another for every 5 completed windows (up to
+              3 held). Flex passes and planned delays preserve continuity but never add a fake
+              win. Manage them in Progress.
+            </Muted>
+            <Muted>
+              Your Flexible rhythm above still decides when Spark suggests this habit. Momentum
+              only controls this optional celebration.
+            </Muted>
+            {habit?.momentum && habit.momentum.cadence !== momentumCadence ? (
+              <Muted>
+                Changing cadence recalculates windows from the original Momentum start. Any old
+                protection marker that is no longer on a window boundary is removed; completed
+                wins and Spark points remain untouched.
+              </Muted>
+            ) : null}
+          </>
+        ) : null}
+      </Card>
+
+      <Card>
         <SectionHeading>Make it easier to notice</SectionHeading>
         <View style={styles.choices}>
           {contexts.map((context) => (
@@ -753,7 +831,7 @@ export function HabitEditor({
       ) : null}
 
       <Button
-        label={habit ? 'Save changes' : 'Create Spark'}
+        label={habit ? 'Save changes' : 'Create habit'}
         loading={saving}
         onPress={() => void save()}
         testID="save-habit"
@@ -765,7 +843,7 @@ export function HabitEditor({
           onPress={() =>
             Alert.alert(
               'Archive this habit?',
-              'Its history stays in your Journey, but it will stop appearing Today.',
+              'Its history stays in Progress, but it will stop appearing Today.',
               [
                 { text: 'Keep it', style: 'cancel' },
                 { text: 'Archive', style: 'destructive', onPress: onArchive }

@@ -4,7 +4,8 @@
 
 - [ ] First-run onboarding tested by someone unfamiliar with the project
 - [ ] Tiny/standard/stretch labels are compassionate and concrete
-- [ ] No streak-reset, failure-red, or random-reward behavior
+- [ ] No punitive streak reset, failure-red, paid repair, or random-reward behavior; optional
+      Momentum gaps keep the personal best and protections never create fake wins/points
 - [ ] Core features work in airplane mode
 - [ ] Empty states and error states are understandable
 
@@ -22,14 +23,20 @@
 - [ ] Automatic folder backup permission survives restart and retains no more than seven files
 - [ ] Recovery code is copied somewhere private; old-code behavior after rotation is understood
 - [ ] Database encryption checked in a native build
-- [ ] Today, Quick Capture, and Focus widgets checked on three launchers
+- [ ] Today, Quick Capture, Focus, Progress, and Toolkit widgets checked on three launchers
 - [ ] Widget tap behavior is explicit and cannot create a surprising completion
 - [ ] Quick Capture widget parks only after explicit submission
 - [ ] Focus widget pause/resume and force-stop recovery use the same persisted timer
+- [ ] Progress widget matches local totals and Toolkit’s four destinations open without writes
+- [ ] Settings/Progress collapsible sections and fixed-width add controls checked at 200% text
+- [ ] All tutorials can be skipped, dismissed, replayed, and restored; first-use prompt dismisses
+- [ ] Back behavior checked from normal navigation, widget launches, and cold deep links
 - [ ] Four launcher shortcuts open the correct narrow routes and expose no user content
 - [ ] Android Share to Spark receives text/URLs locally
 - [ ] Rapid repeated taps do not create duplicate completions
 - [ ] Exact/window reminders, custom snooze, Log tiny, and Quiet today tested
+- [ ] Daily and every-other-day Momentum tested across a completed window, blank closed window,
+      Flex restoration, planned delay, pause, cadence change, backup/restore, and device restart
 - [ ] Routine pause/step/tiny/skipped state survives force-stop and restart
 - [ ] Habit, routine, focus, and Capture drafts survive process death
 - [ ] Offline soundscapes stop outside active Focus and no microphone permission appears

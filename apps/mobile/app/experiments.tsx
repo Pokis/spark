@@ -6,6 +6,7 @@ import { Card } from '../src/components/Card';
 import { Chip } from '../src/components/Chip';
 import { FormField } from '../src/components/FormField';
 import { Screen } from '../src/components/Screen';
+import { TutorialPrompt } from '../src/components/TutorialPrompt';
 import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
 import type { PersonalExperiment } from '../src/data/models';
 import { compareExperiment } from '../src/lib/experiments';
@@ -60,6 +61,12 @@ export default function ExperimentsScreen() {
           A/B system, and nothing leaves the device.
         </Muted>
       </View>
+
+      <TutorialPrompt
+        id="experiments"
+        title="See a neutral one-week example first"
+        body="This short tutorial explains what Spark changes, what it compares, and why this is different from an engagement experiment."
+      />
 
       {active.map((experiment) => {
         const habit = spark.habits.find((item) => item.id === experiment.habitId);
@@ -147,4 +154,3 @@ export default function ExperimentsScreen() {
 const styles = StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
 });
-

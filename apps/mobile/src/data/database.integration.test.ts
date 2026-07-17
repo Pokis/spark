@@ -20,9 +20,10 @@ const mockSafetyDb = {
 const mockOpenDatabase = jest.fn();
 const mockBackupDatabase = jest.fn(async () => undefined);
 const mockDeleteDatabase = jest.fn(async () => undefined);
+const mockReadDirectory = jest.fn(async (..._args: any[]) => [] as string[]);
 
 jest.mock('expo-sqlite', () => ({
-  defaultDatabaseDirectory: 'db/',
+  defaultDatabaseDirectory: '/data/data/com.sparkhabits.app/files/SQLite',
   openDatabaseAsync: (...args: unknown[]) => (mockOpenDatabase as any)(...args),
   backupDatabaseAsync: (...args: unknown[]) =>
     (mockBackupDatabase as any)(...args),
@@ -37,7 +38,7 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 jest.mock('expo-file-system/legacy', () => ({
-  readDirectoryAsync: jest.fn(async () => [])
+  readDirectoryAsync: (...args: unknown[]) => (mockReadDirectory as any)(...args)
 }));
 
 jest.mock('expo-constants', () => ({
@@ -84,7 +85,7 @@ describe('native database migration and safety boundary', () => {
     const schemaVersions = mockDb.runAsync.mock.calls
       .filter(([sql]) => String(sql).includes('schema_version'))
       .map((call) => call[1]);
-    expect(schemaVersions).toEqual(['1', '2', '3', '4', '5', '6']);
+    expect(schemaVersions).toEqual(['1', '2', '3', '4', '5', '6', '7']);
     const executed = mockDb.execAsync.mock.calls
       .map(([sql]) => String(sql))
       .join('\n');
@@ -95,6 +96,7 @@ describe('native database migration and safety boundary', () => {
     expect(executed).toContain('weekly_plans');
     expect(executed).toContain('departure_plans');
     expect(executed).toContain('personal_experiments');
+    expect(executed).toContain('momentum_json');
     await expect(database.getDatabaseSecurityStatus()).resolves.toMatchObject({
       encrypted: true,
       cipherVersion: '4.6.1',
@@ -117,6 +119,9 @@ describe('native database migration and safety boundary', () => {
       "PRAGMA key = 'database-key';"
     );
     expect(mockSafetyDb.closeAsync).toHaveBeenCalled();
+    expect(mockReadDirectory).toHaveBeenCalledWith(
+      'file:///data/data/com.sparkhabits.app/files/SQLite'
+    );
     expect(
       mockDb.execAsync.mock.calls.some(([sql]) =>
         String(sql).includes('weekly_plans')
@@ -124,8 +129,25 @@ describe('native database migration and safety boundary', () => {
     ).toBe(true);
   });
 
+  it('normalizes Android raw SQLite paths for Expo FileSystem safety-copy listing', async () => {
+    mockReadDirectory.mockResolvedValueOnce([
+      'spark-safety-v6-to-v7-2026-07-17T10-00-00.000Z.db',
+      'spark.db'
+    ]);
+    const database = require('./database') as typeof import('./database');
+    await expect(database.listDatabaseSafetyCopies()).resolves.toEqual([
+      {
+        name: 'spark-safety-v6-to-v7-2026-07-17T10-00-00.000Z.db',
+        createdAt: '2026-07-17T10:00:00.000Z'
+      }
+    ]);
+    expect(mockReadDirectory).toHaveBeenCalledWith(
+      'file:///data/data/com.sparkhabits.app/files/SQLite'
+    );
+  });
+
   it('refuses a native database when SQLCipher cannot be verified', async () => {
-    firstAnswers({ version: 6, cipher: null });
+    firstAnswers({ version: 7, cipher: null });
     const database = require('./database') as typeof import('./database');
     await expect(database.getDatabase()).rejects.toThrow(
       'could not verify encrypted local storage'
@@ -134,11 +156,66 @@ describe('native database migration and safety boundary', () => {
   });
 
   it('reports a failed SQLite integrity result without hiding it', async () => {
-    firstAnswers({ version: 6, integrity: 'database disk image is malformed' });
+    firstAnswers({ version: 7, integrity: 'database disk image is malformed' });
     const database = require('./database') as typeof import('./database');
     await expect(database.getDatabaseSecurityStatus()).resolves.toMatchObject({
       integrity: 'failed',
       integrityMessage: 'database disk image is malformed'
     });
+  });
+
+  it('persists optional Momentum configuration inside the encrypted habit row', async () => {
+    firstAnswers({ version: 7 });
+    const database = require('./database') as typeof import('./database');
+    await database.upsertHabit({
+      id: 'read',
+      title: 'Read',
+      color: '#8367E8',
+      icon: '📚',
+      variants: [
+        { id: 'tiny', kind: 'tiny', label: 'One line', targetMinutes: 1, reward: 1 }
+      ],
+      schedule: { type: 'daily' },
+      reminderEnabled: false,
+      priority: 1,
+      contexts: ['home'],
+      createdAt: '2026-07-17T00:00:00.000Z',
+      sortOrder: 0,
+      momentum: {
+        enabled: true,
+        cadence: 'everyOtherDay',
+        anchorDate: '2026-07-17',
+        protections: [{ windowStart: '2026-07-19', kind: 'delay' }]
+      }
+    });
+    const habitWrite = mockDb.runAsync.mock.calls.find(([sql]) =>
+      String(sql).includes('INSERT OR REPLACE INTO habits')
+    );
+    expect(habitWrite?.[0]).toContain('momentum_json');
+    expect(habitWrite).toContain(
+      JSON.stringify({
+        enabled: true,
+        cadence: 'everyOtherDay',
+        anchorDate: '2026-07-17',
+        protections: [{ windowStart: '2026-07-19', kind: 'delay' }]
+      })
+    );
+  });
+
+  it('loads compact lifetime completion dates for accurate Momentum history', async () => {
+    firstAnswers({ version: 7 });
+    mockDb.getAllAsync.mockResolvedValueOnce([
+      { habit_id: 'read', local_date: '2026-07-15' },
+      { habit_id: 'read', local_date: '2026-07-17' }
+    ]);
+    const database = require('./database') as typeof import('./database');
+    await expect(database.loadHabitCompletionDates('read')).resolves.toEqual([
+      { habitId: 'read', localDate: '2026-07-15' },
+      { habitId: 'read', localDate: '2026-07-17' }
+    ]);
+    expect(mockDb.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining('GROUP BY habit_id, local_date'),
+      'read'
+    );
   });
 });

@@ -6,11 +6,12 @@ This is an engineering and product checklist, not legal advice.
 
 | Data | Default location | Cloud only when | Admin visible |
 |---|---|---|---|
-| Habit names, variants, schedule, cues | encrypted device database | never | no |
+| Habit names, variants, schedule, cues, optional Momentum cadence/protection markers | encrypted device database | never | no |
 | Completion history and capacity | encrypted device database | never | no |
 | Focus titles and interruptions | encrypted device database | never | no |
 | Capture text and routines | encrypted device database | never | no |
 | Weekly plans, departure plans, personal experiments, friction notes | encrypted device database | never | no |
+| Dismissed tutorial preferences | encrypted local settings | never | no |
 | JSON or encrypted backup | user-chosen file destination | user places it there | no |
 | Automatic encrypted backup | one Android folder explicitly granted by user | user enables it; Spark never receives it | no |
 | Backup recovery code | operating-system secure storage and any copy made by user | never | no |

@@ -34,7 +34,7 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Complete Drink water: One sip, 1 minute'
+        name: 'Log a win for Drink water: One sip, 1 minute, earns 1 Spark point'
       })
     );
     expect(onComplete).toHaveBeenCalledWith(suggestion.variant);
@@ -46,7 +46,7 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(view.getByRole('button', { name: 'Show all effort options' }));
     expect(view.getByText('One glass')).toBeTruthy();
-    expect(view.getByText('5 min · +3 sparks')).toBeTruthy();
+    expect(view.getByText('Stretch action · 5 min · earns 3 Spark points')).toBeTruthy();
   });
 
   it('blocks completion controls while a completion is saving', async () => {
@@ -61,7 +61,7 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Complete Drink water: One sip, 1 minute'
+        name: 'Log a win for Drink water: One sip, 1 minute, earns 1 Spark point'
       })
     );
     expect(onComplete).not.toHaveBeenCalled();
@@ -96,5 +96,27 @@ describe('HabitCard', () => {
     expect(onTiny).toHaveBeenCalledTimes(1);
     expect(onFocus).toHaveBeenCalledWith(2);
     expect(onDefer).toHaveBeenCalledWith('tomorrow');
+  });
+
+  it('makes an enabled optional Momentum streak discoverable from Today', async () => {
+    const view = await render(
+      <HabitCard
+        suggestion={{
+          ...suggestion,
+          habit: {
+            ...suggestion.habit,
+            momentum: {
+              enabled: true,
+              cadence: 'everyOtherDay',
+              anchorDate: '2026-07-17',
+              protections: []
+            }
+          }
+        }}
+        onComplete={jest.fn()}
+        onEdit={jest.fn()}
+      />
+    );
+    expect(view.getByText('✦ Momentum on · review in Progress')).toBeTruthy();
   });
 });

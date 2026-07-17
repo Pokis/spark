@@ -6,6 +6,7 @@ import { LoadingState } from '../src/components/LoadingState';
 import { Screen } from '../src/components/Screen';
 import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
 import { useSpark } from '../src/state/SparkProvider';
+import { goBackOr } from '../src/lib/navigation';
 
 export default function WidgetActionScreen() {
   const { habitId } = useLocalSearchParams<{ habitId?: string }>();
@@ -41,7 +42,7 @@ export default function WidgetActionScreen() {
           variant="secondary"
           onPress={() => router.replace('/(tabs)')}
         />
-        <Button label="Not now" variant="ghost" onPress={() => router.back()} />
+        <Button label="Not now" variant="ghost" onPress={() => goBackOr('/(tabs)')} />
       </Card>
     </Screen>
   );

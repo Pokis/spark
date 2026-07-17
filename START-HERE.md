@@ -19,6 +19,17 @@ npm.cmd run doctor
 npm.cmd run start
 ```
 
+On Windows, you can use the guided helper instead:
+
+```powershell
+.\spark.cmd
+.\spark.cmd setup-android -Persist
+.\spark.cmd start -Target Web
+```
+
+Every helper command explains its parameters with `-Help`, for example
+`.\spark.cmd test -Help`.
+
 PowerShell on this machine may block `npm.ps1`; using `npm.cmd` avoids that problem.
 
 The Expo terminal will show ways to open the app. For a production-style Android

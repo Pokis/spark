@@ -9,6 +9,7 @@ import { Screen } from '../../src/components/Screen';
 import { Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
 import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
+import { goBackOr } from '../../src/lib/navigation';
 
 export default function RoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,7 +45,7 @@ export default function RoutineScreen() {
     return (
       <Screen>
         <H1>Routine not found</H1>
-        <Button label="Go back" onPress={() => router.back()} />
+        <Button label="Go back" onPress={() => goBackOr('/(tabs)/journey')} />
       </Screen>
     );
   }
@@ -127,7 +128,7 @@ export default function RoutineScreen() {
         </Card>
         <View style={styles.actions}>
           <Button label="Resume routine" onPress={() => void resumeRoutine()} />
-          <Button label="Leave it paused" variant="ghost" onPress={() => router.back()} />
+          <Button label="Leave it paused" variant="ghost" onPress={() => goBackOr('/(tabs)/journey')} />
         </View>
       </Screen>
     );
@@ -220,7 +221,7 @@ export default function RoutineScreen() {
       ) : null}
       <View style={styles.actions}>
         {finished ? (
-          <Button label="Back to journey" onPress={() => router.back()} />
+          <Button label="Back to journey" onPress={() => goBackOr('/(tabs)/journey')} />
         ) : (
           <>
             <Button

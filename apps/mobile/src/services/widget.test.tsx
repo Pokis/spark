@@ -83,6 +83,7 @@ describe('Android widget synchronization', () => {
       accent: '#abcdef',
       brandMark: '◌'
     });
+    expect(stored).toMatchObject({ totalWins: 0, totalSparks: 0, activeHabits: 1 });
     expect(stored.tinyLabel).toContain('One line');
   });
 
@@ -99,6 +100,31 @@ describe('Android widget synchronization', () => {
       habitId: null,
       title: 'Enough for today',
       brandMark: '✧'
+    });
+  });
+
+  it('keeps lifetime progress in the shared local widget snapshot', async () => {
+    await syncTodayWidget({
+      habits: [habit],
+      completions: [
+        {
+          id: 'completion',
+          habitId: habit.id,
+          variantId: 'tiny',
+          variantKind: 'tiny',
+          reward: 1,
+          occurredAt: '2026-07-15T08:00:00.000Z',
+          loggedAt: '2026-07-15T08:00:00.000Z',
+          localDate: '2026-07-15',
+          source: 'today'
+        }
+      ],
+      timeZone: 'UTC'
+    });
+    expect(JSON.parse((await AsyncStorage.getItem(WIDGET_SNAPSHOT_KEY))!)).toMatchObject({
+      totalWins: 1,
+      totalSparks: 1,
+      activeHabits: 1
     });
   });
 

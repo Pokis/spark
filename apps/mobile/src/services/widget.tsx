@@ -10,6 +10,7 @@ import {
   FOCUS_WIDGET_SNAPSHOT_KEY,
   WIDGET_SNAPSHOT_KEY
 } from '../widgets/widgetTaskHandler';
+import { SparkProgressWidget } from '../widgets/SparkProgressWidget';
 import type { FocusSession } from '@spark/domain';
 
 type NativeWidgetModule = Pick<
@@ -49,6 +50,9 @@ export async function syncTodayWidget(input: {
   })[0];
   const today = localDateKey(new Date(), input.timeZone);
   const winsToday = input.completions.filter((item) => item.localDate === today).length;
+  const totalWins = input.completions.length;
+  const totalSparks = input.completions.reduce((sum, item) => sum + item.reward, 0);
+  const activeHabits = input.habits.filter((habit) => !habit.archivedAt).length;
   const wordingIndex = Math.abs(
     [...today].reduce((sum, character) => sum + character.charCodeAt(0), 0)
   ) % 3;
@@ -69,6 +73,9 @@ export async function syncTodayWidget(input: {
           suggestion.variant.label
         }`,
         winsToday,
+        totalWins,
+        totalSparks,
+        activeHabits,
         accent: suggestion.habit.color,
         brandMark
       }
@@ -77,6 +84,9 @@ export async function syncTodayWidget(input: {
         title: 'Enough for today',
         tinyLabel: restMessages[wordingIndex]!,
         winsToday,
+        totalWins,
+        totalSparks,
+        activeHabits,
         accent: '#20B8B2',
         brandMark
       };
@@ -85,6 +95,10 @@ export async function syncTodayWidget(input: {
       widgetName: 'SparkToday',
       renderWidget: () => <SparkTodayWidget snapshot={snapshot} />
     });
+  await requestNativeWidgetRefresh({
+    widgetName: 'SparkProgress',
+    renderWidget: () => <SparkProgressWidget snapshot={snapshot} />
+  });
 }
 
 export async function syncFocusWidget(focusSessions: FocusSession[]): Promise<void> {

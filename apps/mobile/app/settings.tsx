@@ -5,13 +5,13 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
-import { Card } from '../src/components/Card';
 import { Chip } from '../src/components/Chip';
+import { CollapsibleSection } from '../src/components/CollapsibleSection';
 import { FormField } from '../src/components/FormField';
 import { Screen } from '../src/components/Screen';
 import { SettingRow } from '../src/components/SettingRow';
 import { SparkBurst } from '../src/components/SparkBurst';
-import { Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
+import { Eyebrow, H1, Muted } from '../src/components/Typography';
 import {
   pickBackupForPreview,
   restoreBackup,
@@ -224,8 +224,22 @@ export default function SettingsScreen() {
         <H1>Settings</H1>
       </View>
 
-      <Card>
-        <SectionHeading>You</SectionHeading>
+      <Button
+        label="How Spark works"
+        variant="secondary"
+        onPress={() => router.push('/guide')}
+      />
+      <Button
+        label="Browse feature tutorials"
+        variant="ghost"
+        onPress={() => router.push('/tutorials')}
+      />
+
+      <CollapsibleSection
+        title="You"
+        summary={spark.settings.displayName ? `Spark calls you ${spark.settings.displayName}` : 'Name is optional'}
+        defaultExpanded
+      >
         <FormField
           label="Name Spark can use"
           placeholder="Optional"
@@ -233,10 +247,12 @@ export default function SettingsScreen() {
           onChangeText={(value) => void spark.updateSetting('displayName', value)}
           maxLength={40}
         />
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Language</SectionHeading>
+      <CollapsibleSection
+        title="Language"
+        summary={supportedLocales.find((locale) => locale.code === spark.settings.language)?.label ?? 'Use device language'}
+      >
         <Muted>
           Navigation and the main support tools use your chosen language. Untranslated legacy
           copy safely falls back to English.
@@ -251,10 +267,12 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Sensory comfort</SectionHeading>
+      <CollapsibleSection
+        title="Sensory comfort"
+        summary={`${spark.settings.sensoryProfile} feedback${isQuietNow(spark.settings) ? ' · quiet today' : ''}`}
+      >
         <Muted>Choose how much celebration Spark uses. All modes keep rewards predictable.</Muted>
         <View style={styles.choiceRow}>
           {(['calm', 'balanced', 'celebratory'] as const).map((value) => (
@@ -297,13 +315,15 @@ export default function SettingsScreen() {
           variant="secondary"
           onPress={() => void previewFeedback()}
         />
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Cognitive load</SectionHeading>
+      <CollapsibleSection
+        title="Cognitive load"
+        summary={spark.settings.simpleMode ? 'Simple mode is on' : 'Help, context, observations, and display choices'}
+      >
         <SettingRow
           title="Simple mode"
-          description="Keep Today to one action plus Quick Capture, Focus, and a running routine; hide Journey from the tab bar."
+          description="Keep Today to one action plus Quick Capture, Focus, and a running routine; hide Progress from the tab bar."
           value={spark.settings.simpleMode}
           onValueChange={(value) => void spark.updateSetting('simpleMode', value)}
         />
@@ -337,8 +357,8 @@ export default function SettingsScreen() {
           />
         ) : null}
         <SettingRow
-          title="Minimum viable day"
-          description="Today shows one deliberately tiny next action instead of a list."
+          title="One-thing day"
+          description="Temporarily show one deliberately tiny action. Other habits stay saved and nothing is marked missed."
           value={spark.settings.minimumViableDay}
           onValueChange={(value) => void spark.updateSetting('minimumViableDay', value)}
         />
@@ -370,10 +390,12 @@ export default function SettingsScreen() {
           value={spark.settings.showRhythmPercentages}
           onValueChange={(value) => void spark.updateSetting('showRhythmPercentages', value)}
         />
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Gentle reminders</SectionHeading>
+      <CollapsibleSection
+        title="Gentle reminders"
+        summary={spark.settings.notificationsEnabled ? `On · up to ${spark.settings.notificationCap} local reminders` : 'Off'}
+      >
         <SettingRow
           title="Local notifications"
           description="Scheduled on this device. Spark does not need a server to remind you."
@@ -430,10 +452,12 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Backup without an account</SectionHeading>
+      <CollapsibleSection
+        title="Backup without an account"
+        summary="Manual, encrypted, and portable local exports"
+      >
         <Muted>
           Export a readable JSON backup to a folder you choose. Spark never uploads it for you.
           Treat the file as private because its contents are not separately encrypted.
@@ -472,10 +496,12 @@ export default function SettingsScreen() {
         {safetyCopies ? (
           <Button label="Delete automatic safety copies" variant="ghost" onPress={clearSafetyCopies} />
         ) : null}
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>On-device privacy</SectionHeading>
+      <CollapsibleSection
+        title="On-device privacy"
+        summary={spark.settings.appLockEnabled ? 'App lock is on' : 'App lock and private previews'}
+      >
         <SettingRow
           title="Lock Spark"
           description="Require device authentication after Spark has been in the background."
@@ -507,10 +533,17 @@ export default function SettingsScreen() {
             void spark.updateSetting('hideSensitiveAppPreview', value)
           }
         />
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>More helpful tools</SectionHeading>
+      <CollapsibleSection
+        title="More helpful tools"
+        summary="Tutorials, planning, experiments, departure, and sharing"
+      >
+        <SettingRow
+          title="Feature tutorials"
+          description="Skip, dismiss, or replay short guides for every major tool."
+          onPress={() => router.push('/tutorials')}
+        />
         <SettingRow title="Help me now" onPress={() => router.push('/help')} />
         <SettingRow title="Weekly reset" onPress={() => router.push('/weekly-reset')} />
         <SettingRow title="Departure mode" onPress={() => router.push('/departure')} />
@@ -522,10 +555,12 @@ export default function SettingsScreen() {
           title="Share selected wins"
           onPress={() => router.push('/share-progress')}
         />
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Optional cloud features</SectionHeading>
+      <CollapsibleSection
+        title="Optional cloud features"
+        summary={cloudAvailable ? 'Available, with support controlled separately' : 'Not configured · no cloud cost'}
+      >
         <SettingRow
           title="Private support identity"
           description={
@@ -548,10 +583,12 @@ export default function SettingsScreen() {
         {cloudAvailable ? (
           <Button label="Delete optional cloud data" variant="danger" onPress={deleteCloudData} />
         ) : null}
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Support Spark, never unlock basic functioning</SectionHeading>
+      <CollapsibleSection
+        title="Support Spark"
+        summary={spark.entitlement.premium ? 'Premium active · comfort and cosmetic options' : 'Core tools remain free'}
+      >
         <Muted>
           Habits, focus, capture, reminders, and local backups remain free. Premium is for
           supporter cosmetics and comfort options.
@@ -665,10 +702,12 @@ export default function SettingsScreen() {
             </Muted>
           </>
         ) : null}
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <SectionHeading>Trust</SectionHeading>
+      <CollapsibleSection
+        title="Trust and diagnostics"
+        summary="Privacy map, storage health, and troubleshooting export"
+      >
         <SettingRow title="Privacy and data map" onPress={() => router.push('/privacy')} />
         <SettingRow
           title="Open diagnostics and self-check"
@@ -706,7 +745,7 @@ export default function SettingsScreen() {
           }
         />
         <Muted>Version 0.1.0 · Android first, iPhone compatible</Muted>
-      </Card>
+      </CollapsibleSection>
     </Screen>
     <SparkBurst
       visible={preview && !isQuietNow(spark.settings)}

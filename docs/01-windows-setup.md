@@ -52,7 +52,13 @@ adb version
 
 If `java` is missing, Android Studio includes a Java runtime. Its usual location is under the
 Android Studio installation as `jbr`. Set `JAVA_HOME` to that directory and add its `bin`
-directory to `Path`.
+directory to `Path`. With a standard installation:
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+java -version
+```
 
 To make these variables permanent, use Windows **Edit environment variables for your account**.
 

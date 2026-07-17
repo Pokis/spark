@@ -59,7 +59,7 @@ export function SparkBurst({
           ? particles.slice(0, 3)
           : particles;
   const rewardLabel = showReward
-    ? ` You earned ${reward} ${reward === 1 ? 'spark' : 'sparks'}.`
+    ? ` You earned ${reward} ${reward === 1 ? 'Spark point' : 'Spark points'}.`
     : '';
 
   return (
@@ -122,9 +122,11 @@ export function SparkBurst({
           >
             <Text style={styles.sparkIcon}>✦</Text>
           </Animated.View>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title}>Win logged: {title}</Text>
           <Text style={styles.reward}>
-            {showReward ? `+${reward} sparks · it counts` : 'It counts'}
+            {showReward
+              ? `+${reward} ${reward === 1 ? 'Spark point' : 'Spark points'} · fixed reward`
+              : 'It counts'}
           </Text>
           {onToggleTag ? (
             <>

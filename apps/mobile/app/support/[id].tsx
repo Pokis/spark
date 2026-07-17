@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../src/components/Button';
@@ -13,6 +13,7 @@ import {
 } from '../../src/services/api';
 import { friendlyTime } from '../../src/lib/date';
 import { useTheme } from '../../src/theme';
+import { goBackOr } from '../../src/lib/navigation';
 
 export default function SupportConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,7 +53,7 @@ export default function SupportConversationScreen() {
     return (
       <Screen>
         <H1>Conversation not found</H1>
-        <Button label="Go back" onPress={() => router.back()} />
+        <Button label="Go back" onPress={() => goBackOr('/support')} />
       </Screen>
     );
   }

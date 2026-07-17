@@ -55,6 +55,20 @@ const pauseIntervalSchema = z.object({
   endedOn: dateKeySchema
 });
 
+const momentumSchema = z.object({
+  enabled: z.boolean(),
+  cadence: z.enum(['daily', 'everyOtherDay']),
+  anchorDate: dateKeySchema,
+  protections: z
+    .array(
+      z.object({
+        windowStart: dateKeySchema,
+        kind: z.enum(['flex', 'delay'])
+      })
+    )
+    .max(5_000)
+});
+
 const habitSchema = z.object({
   id: z.string().min(1).max(160),
   title: z.string().min(1).max(200),
@@ -88,6 +102,7 @@ const habitSchema = z.object({
   pausedAt: dateKeySchema.nullable().optional(),
   pausedUntil: dateKeySchema.nullable().optional(),
   pauseHistory: z.array(pauseIntervalSchema).max(500).optional(),
+  momentum: momentumSchema.optional(),
   archivedAt: nullableIsoSchema,
   sortOrder: z.number().int()
 });
@@ -212,6 +227,7 @@ const currentSettingsSchema = z.object({
   showRhythmPercentages: z.boolean(),
   insightsEnabled: z.boolean().default(defaultSettings.insightsEnabled),
   hiddenInsightIds: z.array(z.string().max(240)).max(100).default([]),
+  dismissedTutorialIds: z.array(z.string().max(80)).max(100).default([]),
   supporterThemeEnabled: z.boolean(),
   supporterTheme: z
     .enum(['aurora', 'ocean', 'forest'])
@@ -579,6 +595,27 @@ function validateReferences(snapshot: AppSnapshot): void {
     for (const interval of habit.pauseHistory ?? []) {
       if (interval.startedOn > interval.endedOn) {
         throw new Error(`A saved pause interval for “${habit.title}” is reversed.`);
+      }
+    }
+    if (habit.momentum) {
+      const protectionDates = new Set<string>();
+      const cadenceDays = habit.momentum.cadence === 'everyOtherDay' ? 2 : 1;
+      for (const protection of habit.momentum.protections) {
+        if (protection.windowStart < habit.momentum.anchorDate) {
+          throw new Error(`A Momentum protection for “${habit.title}” predates its start.`);
+        }
+        const elapsed = Math.round(
+          (Date.parse(`${protection.windowStart}T00:00:00Z`) -
+            Date.parse(`${habit.momentum.anchorDate}T00:00:00Z`)) /
+            86_400_000
+        );
+        if (elapsed % cadenceDays !== 0) {
+          throw new Error(`A Momentum protection for “${habit.title}” is not on a window boundary.`);
+        }
+        if (protectionDates.has(protection.windowStart)) {
+          throw new Error(`“${habit.title}” has two Momentum protections for one window.`);
+        }
+        protectionDates.add(protection.windowStart);
       }
     }
     for (const variant of habit.variants) {

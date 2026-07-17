@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -18,17 +18,33 @@ const firebaseVersion = existsSync(firebasePackagePath)
 
 function commandVersion(command, args = ['--version']) {
   try {
-    return execFileSync(command, args, {
+    const result = spawnSync(command, args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env, FIREBASE_CLI_DISABLE_UPDATE_CHECK: 'true' },
-    })
-      .trim()
+    });
+    if (result.status !== 0) return null;
+    return (result.stdout.trim() || result.stderr.trim())
       .split(/\r?\n/)[0];
   } catch {
     return null;
   }
 }
+
+const configuredJava = process.env.JAVA_HOME
+  ? join(process.env.JAVA_HOME, 'bin', isWindows ? 'java.exe' : 'java')
+  : null;
+const javaVersion =
+  commandVersion(isWindows ? 'java.exe' : 'java', ['-version']) ??
+  (configuredJava && existsSync(configuredJava)
+    ? commandVersion(configuredJava, ['-version'])
+    : null);
+const bundledJavaHome = isWindows
+  ? [
+      'C:\\Program Files\\Android\\Android Studio\\jbr',
+      'C:\\Program Files\\Android\\Android Studio\\jre',
+    ].find((path) => existsSync(join(path, 'bin', 'java.exe')))
+  : null;
 
 const checks = [
   {
@@ -46,9 +62,15 @@ const checks = [
   },
   {
     name: 'Java',
-    value: commandVersion('java', ['-version']),
-    ok: Boolean(commandVersion('java', ['-version'])),
-    fix: 'Install Android Studio, then set JAVA_HOME to its bundled JBR directory.',
+    value:
+      javaVersion ??
+      (bundledJavaHome
+        ? `Android Studio runtime found at ${bundledJavaHome}, but JAVA_HOME is not configured`
+        : null),
+    ok: Boolean(javaVersion),
+    fix: bundledJavaHome
+      ? `Set JAVA_HOME to "${bundledJavaHome}" and add "%JAVA_HOME%\\bin" to Path.`
+      : 'Install Android Studio, then set JAVA_HOME to its bundled JBR directory.',
     optional: true,
   },
   {
@@ -111,9 +133,14 @@ const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 console.log(`[INFO] Spark repository version: ${packageJson.version}`);
 
 const requiredFailures = checks.filter((check) => !check.ok && !check.optional);
+const androidReady = checks
+  .filter((check) => check.name === 'Java' || check.name === 'Android Debug Bridge')
+  .every((check) => check.ok);
 if (requiredFailures.length) {
   console.log('\nFix the FAIL items above, then run this command again.\n');
   process.exitCode = 1;
+} else if (androidReady) {
+  console.log('\nCore JavaScript and Android command-line tooling are ready.\n');
 } else {
   console.log('\nCore JavaScript tooling is ready. Android INFO items are needed for an emulator build.\n');
 }

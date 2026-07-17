@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
@@ -8,6 +7,7 @@ import { Screen } from '../src/components/Screen';
 import { Eyebrow, H1, Muted } from '../src/components/Typography';
 import { useLocalDraft } from '../src/hooks/useLocalDraft';
 import { useSpark } from '../src/state/SparkProvider';
+import { goBackOr } from '../src/lib/navigation';
 
 export default function QuickCaptureScreen() {
   const spark = useSpark();
@@ -36,11 +36,11 @@ export default function QuickCaptureScreen() {
           onPress={() => {
             void spark.addCapture(text).then(async () => {
               await clearDraft();
-              router.replace('/(tabs)/capture');
+              goBackOr('/(tabs)/capture');
             });
           }}
         />
-        <Button label="Cancel" variant="ghost" onPress={() => router.back()} />
+        <Button label="Cancel" variant="ghost" onPress={() => goBackOr('/(tabs)')} />
       </Card>
     </Screen>
   );

@@ -4,10 +4,24 @@ export type HabitContext = 'anywhere' | 'home' | 'work' | 'outside' | 'phone';
 export type CompletionSource = 'today' | 'widget' | 'notification' | 'history' | 'routine';
 export type ReminderWindow = 'exact' | 'morning' | 'afternoon' | 'evening';
 export type CompletionTag = 'timer_helped' | 'made_it_tiny' | 'body_double' | 'good_cue';
+export type MomentumCadence = 'daily' | 'everyOtherDay';
+export type MomentumProtectionKind = 'flex' | 'delay';
 
 export interface HabitPauseInterval {
   startedOn: string;
   endedOn: string;
+}
+
+export interface MomentumProtection {
+  windowStart: string;
+  kind: MomentumProtectionKind;
+}
+
+export interface HabitMomentum {
+  enabled: boolean;
+  cadence: MomentumCadence;
+  anchorDate: string;
+  protections: MomentumProtection[];
 }
 
 export interface HabitVariant {
@@ -51,6 +65,7 @@ export interface Habit {
   pausedAt?: string | null;
   pausedUntil?: string | null;
   pauseHistory?: HabitPauseInterval[];
+  momentum?: HabitMomentum;
   archivedAt?: string | null;
   sortOrder: number;
 }
@@ -123,6 +138,23 @@ export interface RhythmSummary {
   opportunities: number;
   percentage: number;
   comeback: boolean;
+}
+
+export interface MomentumSummary {
+  cadence: MomentumCadence;
+  cadenceDays: 1 | 2;
+  current: number;
+  best: number;
+  completedWindows: number;
+  protectedWindows: number;
+  usedFlexPasses: number;
+  flexPassesAvailable: number;
+  activeWindowStart: string;
+  nextWindowStart: string;
+  activeWindowCompleted: boolean;
+  activeWindowProtected: boolean;
+  mostRecentMissedWindow?: string;
+  status: 'not-started' | 'due' | 'on-track' | 'resting';
 }
 
 export interface RewardSummary {

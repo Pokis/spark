@@ -26,17 +26,56 @@ java -version
 
 ## Expo Go reports a missing native module
 
-Expected for SQLCipher, Play Billing, or the Android widget. Build Spark's development client:
+Expected for SQLCipher, Play Billing, widgets, notifications, and other native integrations. The
+default Spark QR code uses an `exp+spark-adhd-habits://` address and can only be opened by an
+installed Spark development build; scanning it in Expo Go does nothing.
+
+Build and install Spark's development client:
 
 ```powershell
-npm.cmd run android
+.\spark.cmd android -Select
 ```
 
-Then use:
+For later sessions, use:
 
 ```powershell
-npx.cmd expo start --dev-client
+.\spark.cmd start -Target DevClient
 ```
+
+Use `.\spark.cmd start -Target ExpoGo` only when a limited, non-authoritative UI preview is useful.
+
+## Android build succeeds but installation stops or is canceled
+
+If the build reaches `Installing ... app-debug.apk` but nothing opens, look for the final ADB error.
+If Expo only shows `adb ... install ... exited with non-zero code: 1`, first run:
+
+```powershell
+.\spark.cmd devices
+```
+
+The chosen phone must appear with state **device**. State **offline**, **unauthorized**, a missing
+long `_adb-tls-connect._tcp` ID, or a newly changed Wi-Fi ID means the build succeeded but the ADB
+connection disappeared before installation. Unlock the phone, toggle **Wireless debugging**
+off/on, or reconnect it in Android Studio Device Manager. Wi-Fi serials can change, so use the new
+model/ID printed by `devices` rather than reusing an old copied serial.
+
+`INSTALL_FAILED_USER_RESTRICTED: Install canceled by user` means the phone—not Gradle or Spark—has
+blocked development APK installation.
+
+On Xiaomi/Redmi/POCO devices, unlock the phone and open **Settings → Additional settings → Developer
+options**. Keep **USB debugging** and **Wireless debugging** enabled, then enable **Install via USB**
+and, when present, **USB debugging (Security settings)**. The wording varies by HyperOS/MIUI
+version and the security options may require the device owner's Xiaomi account. Accept any install
+confirmation shown on the phone.
+
+Reconnect or re-pair wireless debugging if the device disappears, confirm it with:
+
+```powershell
+.\spark.cmd devices
+```
+
+Then rerun the printed `android -Device ...` command. Keep the terminal open: after installation,
+Metro remains running and launches the installed Spark development app.
 
 ## Native build became inconsistent after plugin changes
 

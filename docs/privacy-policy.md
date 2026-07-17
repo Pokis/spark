@@ -7,8 +7,9 @@ jurisdictions, and keep the hosted HTML and this document consistent.
 
 ## Summary
 
-Spark is designed to work without an account or server. Habit names, schedules, completion
-history, capacity check-ins, routines, focus sessions, and captured thoughts stay in an encrypted
+Spark is designed to work without an account or server. Habit names, schedules, optional
+Momentum cadence/protection settings, completion history, capacity check-ins, routines, focus
+sessions, and captured thoughts stay in an encrypted
 database on the user's device. Spark does not sell personal information or use it for advertising.
 
 ## Operator
