@@ -49,10 +49,10 @@ privacy, listing, and graphics checks form the local release gate.
 | Item | Current result |
 | --- | --- |
 | Package ID consistency | Confirmed: Expo, PowerShell helpers, Maestro, cloud templates, tests, and regenerated Android use `com.djpokis.sparkhabits.app`. |
-| Version | Ready: public/mobile/native version `0.1.0`; native version code `1`. |
+| Version | Ready: public/mobile/native version `0.1.0`; source is prepared with native version code `2` for the next newly uploaded bundle. Google Play permanently reserved code `1` when it accepted the first bundle; that existing bundle may still be attached to a release with **Add from library**. |
 | Bundle configuration | Ready: local Gradle production output is a signed Android App Bundle. A generated guard rejects release output without the private upload key/password. |
 | Automated verification | Doctor, all workspace types, 261 tests, coverage, builds, identity, listing limits, and graphics checks are automated. |
-| Local Android release build | The complete production AAB path passed July 17, 2026 with a disposable local key: production signature, package `com.djpokis.sparkhabits.app`, version `0.1.0` / code `1`, and Gradle bundle metadata were verified. The disposable key/AAB were deleted; your LastPass-backed upload key and physical-device sign-off remain. |
+| Local Android release build | The complete production AAB path passed July 17, 2026: production signature, package `com.djpokis.sparkhabits.app`, version `0.1.0`, and Gradle bundle metadata were verified. Google Play accepted and reserved the original code `1`; select it with **Add from library** if available. If a new upload is required, rebuild with current code `2`. |
 | First-build cloud boundary | Ready locally: API blank, remote config off, creator-tip link off. `LocalBuild` uses this local configuration. |
 | Privacy policy | Filled consistently and live at `https://djpokis-spark-habits.web.app/privacy.html`; HTTP 200 and approved operator details verified July 17, 2026. |
 | Optional EAS link | Existing but unused by the local path: `@djpokis-team/spark-adhd-habits`; no hosted build is required. |

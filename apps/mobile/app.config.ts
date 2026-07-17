@@ -100,7 +100,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: packageName,
-    versionCode: 1,
+    versionCode: 2,
     allowBackup: false,
     blockedPermissions: [
       'android.permission.READ_EXTERNAL_STORAGE',
