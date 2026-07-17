@@ -10,6 +10,7 @@ import WeeklyResetScreen from '../../app/weekly-reset';
 import DepartureScreen from '../../app/departure';
 import ExperimentsScreen from '../../app/experiments';
 import ShareProgressScreen from '../../app/share-progress';
+import CaptureScreen from '../../app/(tabs)/capture';
 import { defaultSettings } from '../data/models';
 import { endOfToday } from '../lib/sensory';
 
@@ -127,6 +128,32 @@ describe('new local-first feature screens', () => {
       'quietUntil',
       endOfToday(new Date('2026-07-16T12:00:00.000Z'))
     );
+  });
+
+  it('keeps secondary Capture actions behind an explicit More actions button', async () => {
+    const capturedThought = {
+      id: 'capture-1',
+      text: 'Reply to the message',
+      createdAt: '2026-07-16T11:00:00.000Z'
+    };
+    const value = spark({
+      captureItems: [capturedThought],
+      addCapture: jest.fn(async () => undefined),
+      updateCapture: jest.fn(async () => undefined),
+      resolveCapture: jest.fn(async () => undefined),
+      deleteCapture: jest.fn(async () => undefined)
+    });
+    mockedSpark.mockReturnValue(value);
+    const view = await render(<CaptureScreen />);
+
+    expect(view.getByText('Saved for later')).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Focus' })).toBeTruthy();
+    expect(view.queryByRole('button', { name: 'Delete' })).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'More actions' }));
+    expect(view.getByRole('button', { name: 'Make routine' })).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Make habit' })).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Archive' }));
+    await waitFor(() => expect(value.resolveCapture).toHaveBeenCalledWith(capturedThought));
   });
 
   it('limits a weekly plan to three habits and saves tomorrow support', async () => {

@@ -72,7 +72,7 @@ describe('feature tutorial hub', () => {
     await fireEvent.press(view.getByRole('button', { name: 'Replay guide: Home-screen widgets' }));
     await fireEvent.press(view.getByRole('button', { name: 'Next' }));
     await fireEvent.press(view.getByRole('button', { name: 'Next' }));
-    expect(view.getByText('Refreshes are intentionally light')).toBeTruthy();
+    expect(view.getByText('Uses data already on your phone')).toBeTruthy();
     expect(view.queryByRole('button', { name: 'Next' })).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'Done' }));
     expect(view.getByRole('button', { name: 'Replay guide: Home-screen widgets' })).toBeTruthy();

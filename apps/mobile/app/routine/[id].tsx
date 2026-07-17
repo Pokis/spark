@@ -221,7 +221,7 @@ export default function RoutineScreen() {
       ) : null}
       <View style={styles.actions}>
         {finished ? (
-          <Button label="Back to journey" onPress={() => goBackOr('/(tabs)/journey')} />
+          <Button label="Back to Progress" onPress={() => goBackOr('/(tabs)/journey')} />
         ) : (
           <>
             <Button

@@ -417,11 +417,11 @@ export default function FocusScreen() {
   return (
     <Screen testID="focus-screen">
       <View>
-        <Eyebrow>Body double</Eyebrow>
-        <H1>Focus, with company.</H1>
+        <Eyebrow>Focus timer</Eyebrow>
+        <H1>Focus with a quiet companion.</H1>
         <Muted>
-          The active session is saved immediately, so locking or restarting your phone cannot
-          erase it.
+          Pick one task and a time. If you leave Spark, the timer continues from its saved time
+          when you return.
         </Muted>
       </View>
 
@@ -499,7 +499,7 @@ export default function FocusScreen() {
                 {Math.round(spark.settings.soundscapeVolume * 100)}%
               </Muted>
             ) : null}
-            <Button label="Start together" onPress={start} testID="start-focus" />
+            <Button label="Start focus" onPress={start} testID="start-focus" />
             <Button
               label="Add this focus block to calendar"
               variant="ghost"
@@ -525,7 +525,7 @@ export default function FocusScreen() {
         ) : phase === 'finished' ? (
           <View style={styles.finished}>
             <Text style={styles.finishedEmoji}>✦</Text>
-            <SectionHeading>Close the loop gently.</SectionHeading>
+            <SectionHeading>Before the next task</SectionHeading>
             <Muted>Stand, sip water, or look away from the screen before the next choice.</Muted>
             {spark.settings.transitionNudgesEnabled ? (
               <View style={styles.nextMove}>
@@ -537,7 +537,7 @@ export default function FocusScreen() {
                   maxLength={160}
                 />
                 <Button
-                  label="Park next move in Capture"
+                  label="Save next move in Capture"
                   variant="secondary"
                   disabled={!nextMove.trim()}
                   onPress={() => void parkNextMove()}
@@ -566,10 +566,10 @@ export default function FocusScreen() {
 
       {phase === 'running' || phase === 'paused' ? (
         <Card>
-          <SectionHeading>Thought tried to steal the wheel?</SectionHeading>
-          <Muted>Park it here. Spark will keep it in Capture so your brain can let go.</Muted>
+          <SectionHeading>Did another thought interrupt you?</SectionHeading>
+          <Muted>Write it here. Spark will save it in Capture so you can return to your task.</Muted>
           <FormField
-            label="Parking lot"
+            label="Distracting thought"
             placeholder="Remember to…"
             value={interruptionText}
             onChangeText={setInterruptionText}
@@ -577,18 +577,18 @@ export default function FocusScreen() {
             returnKeyType="done"
           />
           <Button
-            label="Park thought"
+            label="Save thought"
             variant="secondary"
             disabled={!interruptionText.trim()}
             onPress={() => void parkInterruption()}
           />
-          <Muted>{session?.interruptionCount ?? 0} parked during this session</Muted>
+          <Muted>{session?.interruptionCount ?? 0} saved during this session</Muted>
         </Card>
       ) : null}
 
       {history.length ? (
         <View style={styles.history}>
-          <SectionHeading>Recent company</SectionHeading>
+          <SectionHeading>Recent focus sessions</SectionHeading>
           {history.slice(0, 4).map((item) => (
             <View key={item.id} style={styles.historyRow}>
               <View

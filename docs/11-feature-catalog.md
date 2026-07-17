@@ -119,7 +119,7 @@ The core strategy is **flexible consistency**:
 | Lock-screen privacy levels | The user can show the habit wording, show generic reminder copy, or use Android secret visibility so the reminder is hidden on the lock screen. Separate Android channels preserve the chosen OS visibility. | Local setting and OS notification channels. |
 | Sensory-quiet reminder channels | When Quiet now is active, reminders due before tomorrow use no-vibration channels; later reminders retain normal behavior. | Local scheduling only. |
 
-## Focus and body doubling
+## Focus timer and companion
 
 | Feature | Implementation and ADHD strategy | Data/cost |
 | --- | --- | --- |
@@ -128,29 +128,30 @@ The core strategy is **flexible consistency**:
 | Two-minute launch | Always available even when remote-configured duration presets do not include two minutes. | Local only. |
 | Optional launch runway | A five-second countdown has explicit Start now and Not yet controls. | Local setting/UI state. |
 | Pause/resume/finish early | Paused time is tracked separately. Early finish is represented neutrally. | Local focus session. |
-| Park interruptions | Thoughts entered during focus move into Capture and increment an interruption count. | Local SQLite. |
-| Transition nudge | After focus, an optional next tiny move can be parked in Capture. | Local setting and Capture item. |
+| Save interruptions | Thoughts entered during focus move into Capture and increment an interruption count. | Local SQLite. |
+| Save the next step | After focus, an optional next tiny move can be saved in Capture. | Local setting and Capture item. |
 | Planned-versus-actual history | Recent sessions show planned and actual time without a speed grade. | Derived locally. |
-| Local companions | Spark, owl, and cloud body doubles change visual company, not core capability. Extra companions are supporter cosmetics. | Local cosmetic setting. |
+| Local focus companions | Spark, owl, and cloud companions provide optional visual company, using the body-doubling strategy without requiring users to know that term. Extra companions are supporter cosmetics. | Local cosmetic setting. |
 | Offline soundscapes | Brown, pink, and soft loops are generated as local WAV files, played only during active focus, and have independent 10–75% volume controls and mute. Nothing streams. | Device cache; no server/license runtime. |
 | Minimal permissions | Audio recording, microphone access, and background playback are disabled in Expo configuration. Only local foreground playback is used. | Android retains audio-output settings permission only. |
 | Draft preservation | Idle focus target, duration, interruption text, and next-move text survive background/process loss. | AsyncStorage. |
 | Explicit calendar bridge | The idle focus form can open the system calendar with only the chosen focus title and duration prefilled. Spark does not list, read, or synchronize calendars and Android calendar read/write permissions are explicitly removed. | System-provided calendar UI; no Spark cloud or calendar account connection. |
 | Focus home-screen widget | Shows the persisted active timer title, running/paused state, and timestamp-derived approximate time remaining. Pause/resume controls open a narrow Spark action route that updates the same persisted focus session and its completion notification. | Android widget plus local SQLite/AsyncStorage; no background server. Periodic launcher refresh is OS-controlled. |
 
-## Capture: external memory
+## Capture: save for later
 
 | Feature | Implementation and ADHD strategy | Data/cost |
 | --- | --- | --- |
-| Category-free capture | A thought can be parked without choosing project, priority, due date, or taxonomy. | Encrypted SQLite. |
-| Main-form draft | Unsubmitted text is restored after background/process loss and cleared after successful parking. | AsyncStorage. |
+| Category-free capture | A thought can be saved without choosing project, priority, due date, or category. | Encrypted SQLite. |
+| Main-form draft | Unsubmitted text is restored after background/process loss and cleared after a successful save. | AsyncStorage. |
 | Android Share to Spark | Text and URLs shared from another Android app become local Capture items. | Android share receiver; no server. |
 | Quick-capture widget | A small Android home-screen widget opens a focused capture form. | Android widget; no runtime cloud. |
-| Local search | Appears once the list is larger and filters active/released text entirely on-device. | In-memory filter. |
+| Local search | Appears once the list is larger and filters active/archived text entirely on-device. | In-memory filter. |
 | Edit | Captured text can be corrected in place. | Local upsert. |
-| Release and undo release | Release moves an item out of the active parking lot; Put back restores it. | Local timestamp update. |
+| Progressive action menu | Each active thought initially shows only **Focus**, **Select**, and **More actions**. Editing, conversion, archiving, and deletion appear only after the user asks for them, reducing default choices without hiding capability. | Local UI state only; $0 at every user count. |
+| Archive and restore | Archive moves an item out of **Saved for later**; Put back restores it. | Local timestamp update. |
 | Delete with immediate undo | Deletion is confirmed and the last deleted item can be restored immediately. | Local delete/reinsert. |
-| Multi-select cleanup | Long-press selection supports releasing several parked thoughts together. | UI state and local updates. |
+| Multi-select cleanup | Explicit selection supports archiving several saved thoughts together. | UI state and local updates. |
 | Convert to habit | Opens the habit editor with the text prefilled. | Local navigation. |
 | Convert to focus | Opens a two-minute Focus target with the text prefilled. | Local navigation. |
 | Convert to routine step | Opens the routine editor with the first step prefilled. | Local navigation. |
@@ -188,6 +189,7 @@ The core strategy is **flexible consistency**:
 | Supportive observations | Can note frequent tiny use, helpful context, and better-fitting focus durations. Requires enough local evidence. | On-device derivation only. |
 | Hide or disable observations | Each observation can be hidden; all observations can be disabled; hidden observations can be restored in Settings. | Local settings. |
 | Optional points/percentages | Spark totals, levels, and rhythm percentages can each be hidden when they create pressure. | Local settings. |
+| Clearly labeled levels | The level badge visibly says **Level** instead of presenting an unexplained number; the card separately states point values and the exact number needed for the next level. | Derived local display only; $0 at every user count. |
 | Point provenance ledger | Progress lists recent completed actions with the habit/action label, timestamp, and exact points added. Each row opens that habit’s full history, so points never appear without an inspectable source. | Derived locally from completions. |
 | Reviewable score card | Today’s Spark-points card states the fixed 1/2/3 scale and opens Progress, where totals, recent completed actions, habits, history, routines, and charts can be reviewed. | Local navigation and materialized totals. |
 | Weekly plan | Combines a short reflection, up to three visible habits, tomorrow context, and one tiny next action under direct **Weekly planning** language. | Encrypted local weekly-plan record. |
@@ -397,13 +399,13 @@ companions live in Focus where they do not pressure home-screen engagement.
 
 ## Automated coverage
 
-The repository includes **257 automated tests** and a root coverage gate:
+The repository includes **258 automated tests** and a root coverage gate:
 
 ```powershell
 npm.cmd run test:coverage
 ```
 
-Current measured coverage is 52.61% statements across every mobile route/source file, 99.58% in
+Current measured coverage is 53.62% statements across every mobile route/source file, 99.58% in
 the domain package, 88.53% in the control-plane HTTP application, and 73.76% across admin source.
 The mobile figure intentionally counts large screen/editor files that are still primarily covered
 by device QA; service and local-helper coverage is substantially higher.

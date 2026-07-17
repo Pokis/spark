@@ -8,6 +8,21 @@
 
 Last implementation pass: **2026-07-17**
 
+### Clarity and choice-reduction pass
+
+- Capture now uses the literal **Save**, **Saved for later**, and **Archive** vocabulary across the
+  main screen, quick form, Focus, widget, tutorials, and help. Each saved thought shows only
+  **Focus**, **Select**, and **More actions** until the secondary menu is requested.
+- Progress visibly labels the level badge and separates the fixed point scale from the exact
+  number of points needed for the next level.
+- Focus calls its optional visual presence a **focus companion**. Body-doubling remains the design
+  strategy in product documentation, but users do not need to know the clinical/community term.
+- Settings, Premium, Support, Privacy, planning, tutorials, and routine navigation now describe
+  user-visible outcomes rather than implementation terms such as control planes, snapshots,
+  aliases, staff grants, or share sheets.
+- A source-level plain-language guard and a Capture interaction test protect this vocabulary and
+  progressive-disclosure behavior. All of these changes are local UI behavior with $0 cloud cost.
+
 This started as a product and engineering review. Every item that could be implemented without
 operator identity, store-console access, Android hardware, or legal decisions has now been applied.
 This document records the result and the remaining honest release gates.
@@ -65,8 +80,8 @@ disabled.
 - Comebacks use distinct calendar dates.
 - Active focus sessions are persisted immediately and restored after process death; pause time is
   persisted, notification failure is non-fatal, and early finish has a closure state.
-- Focus also offers an optional launch countdown, transition capture, interruption parking, local
-  body-double companion, and planned-versus-actual time feedback without grading.
+- Focus also offers an optional launch countdown, next-step capture, saved interruptions, a local
+  focus companion, and planned-versus-actual time feedback without grading.
 - JSON restore uses a complete Zod schema, a 10 MB limit, reference checks, version migration,
   preview counts, destructive confirmation, and an automatic pre-restore safety copy.
 - Database schema migrations are ordered and versioned. Native builds verify
@@ -135,9 +150,9 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **257 tests passed**: 190 mobile, 26 domain, 25 API, 16 admin.
+- `npm.cmd run test:ci` — **258 tests passed**: 191 mobile, 26 domain, 25 API, 16 admin.
 - `npm.cmd run test:coverage` — passed the checked-in workspace gates. Measured statement
-  coverage: mobile 52.61% across every route/source file, domain 99.58%, API application 88.53%,
+  coverage: mobile 53.62% across every route/source file, domain 99.58%, API application 88.53%,
   and admin source 73.76%.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.

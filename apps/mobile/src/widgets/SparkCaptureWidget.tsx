@@ -25,7 +25,7 @@ export function SparkCaptureWidget() {
           style={{ color: '#A8B0C4', fontSize: 11, fontWeight: '700' }}
         />
         <TextWidget
-          text="Park a thought"
+          text="Save a thought"
           style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700' }}
         />
       </FlexWidget>

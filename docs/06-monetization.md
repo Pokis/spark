@@ -29,7 +29,7 @@ The implemented supporter catalog contains:
 
 - Aurora, Ocean, and Forest accent themes
 - supporter badge visibility control
-- Spark, owl, and cloud body-double companions
+- Spark, owl, and cloud focus companions
 - alternate burst, ripple, and confetti celebrations
 - locally generated offline soundscapes with independent volume/mute
 - in-app/widget icon treatments and build-time launcher variants

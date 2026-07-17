@@ -178,6 +178,7 @@ describe('first-run understanding experience', () => {
     const view = await render(<JourneyScreen />);
 
     expect(view.getByText('1 Spark point')).toBeTruthy();
+    expect(view.getByLabelText('Level 1')).toBeTruthy();
     await fireEvent.press(
       view.getByRole('button', { name: 'Expand Recent completed actions' })
     );

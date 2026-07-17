@@ -11,6 +11,8 @@ describe('plain-language information architecture', () => {
     '../../app/(tabs)/index.tsx',
     '../../app/(tabs)/journey.tsx',
     '../../app/(tabs)/focus.tsx',
+    '../../app/(tabs)/capture.tsx',
+    '../../app/quick-capture.tsx',
     '../../app/onboarding.tsx',
     '../../app/guide.tsx',
     '../../app/weekly-reset.tsx',
@@ -20,23 +22,43 @@ describe('plain-language information architecture', () => {
     '../../app/tutorials.tsx',
     '../../app/experiments.tsx',
     '../../app/help.tsx',
+    '../../app/paywall.tsx',
+    '../../app/privacy.tsx',
+    '../../app/support.tsx',
     '../components/HabitCard.tsx',
     '../components/MomentumCard.tsx',
+    '../components/SparkBurst.tsx',
     '../lib/tutorials.ts',
     '../services/widget.tsx',
     '../services/notifications.ts'
   ].map(read);
 
   it('keeps internal product and testing jargon out of everyday screens', () => {
-    const combined = userFacingSources.join('\n');
+    const combined = userFacingSources.join('\n').toLowerCase();
     for (const phrase of [
-      'A/B',
+      'a/b',
       'engagement experiment',
-      'Personal experiments',
-      'Today’s shape',
-      'Cognitive load',
-      'Flex pass',
-      'Momentum streak'
+      'personal experiments',
+      'today’s shape',
+      'cognitive load',
+      'flex pass',
+      'momentum streak',
+      'body double',
+      'body-double',
+      'parking lot',
+      'park it',
+      'release selected',
+      'recent company',
+      'ethical monetization',
+      'async, private',
+      'developer note',
+      'control plane',
+      'staff grant',
+      'share sheet',
+      'local snapshot',
+      'transition nudge',
+      'build-time release',
+      'alias permission'
     ]) {
       expect(combined).not.toContain(phrase);
     }

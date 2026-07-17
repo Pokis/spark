@@ -61,16 +61,23 @@ export default function JourneyScreen() {
 
       {spark.settings.showRewards ? (
       <Card style={[styles.levelCard, { backgroundColor: theme.surfaceAlt }]}>
-        <View style={[styles.levelOrb, { backgroundColor: theme.primary }]}>
+        <View
+          accessible
+          accessibilityLabel={`Level ${summary.level}`}
+          style={[styles.levelOrb, { backgroundColor: theme.primary }]}
+        >
+          <Text style={styles.levelLabel}>LEVEL</Text>
           <Text style={styles.levelNumber}>{summary.level}</Text>
         </View>
         <View style={styles.levelText}>
           <SectionHeading>
             {summary.totalSparks} {summary.totalSparks === 1 ? 'Spark point' : 'Spark points'}
           </SectionHeading>
+          <Muted>Tiny = 1 point · Standard = 2 · Stretch = 3</Muted>
           <Muted>
-            Tiny actions earn 1, standard 2, and stretch 3 · level {summary.level} ·{' '}
-            {summary.nextLevelAt - summary.totalSparks} until the next level
+            {summary.nextLevelAt - summary.totalSparks}{' '}
+            {summary.nextLevelAt - summary.totalSparks === 1 ? 'point' : 'points'} to Level{' '}
+            {summary.level + 1}
           </Muted>
           <View style={[styles.track, { backgroundColor: theme.border }]}>
             <View
@@ -169,7 +176,7 @@ export default function JourneyScreen() {
           {recentWins.length
             ? `You completed actions for ${new Set(recentWins.map((completion) => completion.habitId)).size} ${new Set(recentWins.map((completion) => completion.habitId)).size === 1 ? 'habit' : 'habits'}. ${
                 tinyWins
-                  ? `${tinyWins} tiny ${tinyWins === 1 ? 'step was' : 'steps were'} enough to count.`
+                  ? `${tinyWins} ${tinyWins === 1 ? 'was a tiny action' : 'were tiny actions'}.`
                   : 'You used the action sizes that worked for you.'
               }`
             : 'Choose one clear action, complete it, and mark it Done to begin your progress.'}
@@ -179,9 +186,9 @@ export default function JourneyScreen() {
       {spark.settings.insightsEnabled && insights.length ? (
         <CollapsibleSection
           title="Patterns you may want to know"
-          summary={`${insights.length} private observation${insights.length === 1 ? '' : 's'} from your activity`}
+          summary={`${insights.length} ${insights.length === 1 ? 'pattern' : 'patterns'} based on your activity`}
         >
-          <Muted>Patterns from your completed actions and focus sessions, stored on this device.</Muted>
+          <Muted>Calculated on this device from your completed actions and focus sessions.</Muted>
           {insights.map((insight) => (
             <Card key={insight.id}>
               <View style={styles.insightHeading}>
@@ -264,7 +271,7 @@ export default function JourneyScreen() {
               ) : (
                 <Muted>
                   {rhythm.activeDays === 0
-                    ? 'Room to begin'
+                    ? 'No completed actions yet'
                     : rhythm.comeback
                       ? 'Came back'
                       : 'Finding a rhythm'}
@@ -341,7 +348,7 @@ export default function JourneyScreen() {
         title="Plan or share"
         summary="Plan the week, try one change, or share only the wins you choose"
       >
-        <Muted>These tools stay local unless you explicitly open the system share sheet or calendar.</Muted>
+        <Muted>These tools stay on this device unless you open your phone’s Share menu or calendar app.</Muted>
         <Button
           label="Plan my week"
           variant="secondary"
@@ -371,7 +378,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  levelNumber: { color: '#FFFFFF', fontSize: 28, fontWeight: '800' },
+  levelLabel: { color: '#FFFFFF', fontSize: 9, lineHeight: 10, fontWeight: '800' },
+  levelNumber: { color: '#FFFFFF', fontSize: 25, lineHeight: 29, fontWeight: '800' },
   levelText: { flex: 1, gap: 5 },
   track: { height: 8, borderRadius: 99, overflow: 'hidden' },
   progress: { height: 8, borderRadius: 99 },

@@ -67,7 +67,7 @@ export default function ShareProgressScreen() {
   return (
     <Screen>
       <View>
-        <Eyebrow>Deliberate sharing</Eyebrow>
+        <Eyebrow>Share only what you choose</Eyebrow>
         <H1>You choose every win.</H1>
         <Muted>
           Select up to five completed actions, preview the card, then open your device share

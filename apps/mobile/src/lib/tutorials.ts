@@ -89,14 +89,14 @@ export const tutorialTopics: TutorialTopic[] = [
     pages: [
       { title: 'Choose a focused time block', body: 'Set a clear container for working beside a task. Start with two minutes or choose a longer block.' },
       { title: 'Pause and resume', body: 'The Focus screen and Focus widget keep the active timer state visible and ready to resume.' },
-      { title: 'Name the next tiny move', body: 'After focus, a transition nudge can capture the next action while the task is still visible.' }
+      { title: 'Name the next tiny move', body: 'After focus, Spark can ask for the next small action while the task is still visible.' }
     ]
   },
   {
     id: 'capture',
     icon: '📝',
     title: 'Quick Capture',
-    summary: 'Park thoughts fast, then decide what they become later.',
+    summary: 'Save thoughts fast, then decide what they become later.',
     destination: '/quick-capture',
     actionLabel: 'Quick capture a thought',
     category: 'daily',
@@ -159,7 +159,7 @@ export const tutorialTopics: TutorialTopic[] = [
     pages: [
       { title: 'See your wins over time', body: 'Progress shows completed actions, points, activity, streaks, and personal bests.' },
       { title: 'Choose the story yourself', body: 'A progress card contains the exact wins you select and preview.' },
-      { title: 'Open the device share sheet', body: 'After previewing the image or text, choose a person or app from your device’s share sheet.' }
+      { title: 'Open your phone’s Share menu', body: 'After previewing the image or text, choose a person or app from your phone’s Share menu.' }
     ]
   },
   {
@@ -170,8 +170,8 @@ export const tutorialTopics: TutorialTopic[] = [
     category: 'privacy',
     pages: [
       { title: 'Put it where you already look', body: 'Android widgets can show the next action, timer state, current routine step, progress, capture field, or a small toolkit without opening menus first.' },
-      { title: 'Add from the launcher', body: 'Long-press an empty home-screen area, choose Widgets, find Spark, then drag the size you want.' },
-      { title: 'Refreshes are intentionally light', body: 'Widgets read a small local snapshot. They do not use a server, advertising ID, or paid background service.' }
+      { title: 'Add from your home screen', body: 'Long-press an empty home-screen area, choose Widgets, find Spark, then drag the size you want.' },
+      { title: 'Uses data already on your phone', body: 'Widgets update from Spark data on this device. They do not need a Spark account or cloud service.' }
     ]
   },
   {
@@ -185,7 +185,7 @@ export const tutorialTopics: TutorialTopic[] = [
     pages: [
       { title: 'Reminders are invitations', body: 'Notifications are scheduled on your device, capped, snoozable, and can hide habit names on the lock screen.' },
       { title: 'Your main data stays local', body: 'Habits, completed actions, captured thoughts, routines, and one-week tries stay in the encrypted storage on your device.' },
-      { title: 'Keep an export you control', body: 'Manual and optional automatic-folder backups do not require an account. Cloud support remains off unless configured and enabled.' }
+      { title: 'Keep an export you control', body: 'Manual and optional automatic-folder backups do not require an account. Online support stays off unless you turn it on in Settings.' }
     ]
   }
 ];

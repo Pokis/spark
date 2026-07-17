@@ -17,8 +17,8 @@ export default function QuickCaptureScreen() {
   return (
     <Screen contentStyle={{ justifyContent: 'center' }}>
       <Card>
-        <Eyebrow>External memory</Eyebrow>
-        <H1>Park it quickly.</H1>
+        <Eyebrow>Quick capture</Eyebrow>
+        <H1>Save a thought for later.</H1>
         <Muted>Write it down now and organize it later if useful.</Muted>
         <FormField
           label="Thought"
@@ -30,7 +30,7 @@ export default function QuickCaptureScreen() {
           maxLength={500}
         />
         <Button
-          label="Park it"
+          label="Save thought"
           disabled={!text.trim()}
           icon={<Ionicons name="flash" size={18} color="#FFFFFF" />}
           onPress={() => {

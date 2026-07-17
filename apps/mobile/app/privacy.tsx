@@ -1,24 +1,25 @@
 import { Card } from '../src/components/Card';
 import { Screen } from '../src/components/Screen';
-import { Body, Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
+import { Body, Eyebrow, H1, SectionHeading } from '../src/components/Typography';
 
 export default function PrivacyScreen() {
   return (
     <Screen>
       <Eyebrow>Plain-language privacy</Eyebrow>
-      <H1>Your inner life is not inventory.</H1>
+      <H1>Your data stays private.</H1>
       <Card>
         <SectionHeading>Always kept on this device</SectionHeading>
         <Body>
           Habit names and history, energy check-ins, routines, focus sessions, and captured
-          text are stored in Spark’s encrypted local SQLite database.
+          text are stored in an encrypted database inside Spark on this device.
         </Body>
       </Card>
       <Card>
-        <SectionHeading>Sent only when you choose cloud features</SectionHeading>
+        <SectionHeading>Sent only when you turn on online features</SectionHeading>
         <Body>
-          A random account identifier, support messages you deliberately send, basic app and
-          platform version, and Play purchase tokens used for verification.
+          If you turn on online support or check Premium, Spark sends a random account ID,
+          messages you type, your Spark version and phone type, and the purchase receipt needed
+          to check payment.
         </Body>
       </Card>
       <Card>
@@ -29,24 +30,23 @@ export default function PrivacyScreen() {
         </Body>
       </Card>
       <Card>
-        <SectionHeading>Calendar and sharing are deliberate bridges</SectionHeading>
+        <SectionHeading>Calendar and sharing happen only when you choose</SectionHeading>
         <Body>
-          Spark can open the system calendar with one focus or departure block already filled in.
-          It does not request or read your calendar list. Progress sharing includes only the wins
-          you select and uses the system share sheet; there is no automatic report or connected
-          accountability account.
+          Spark can open your calendar app with one focus or leave-on-time block already filled
+          in. It does not read your calendar. Progress sharing includes only the wins you select
+          and opens your phone’s Share menu. Spark never sends an automatic progress report.
         </Body>
       </Card>
       <Card>
-        <SectionHeading>Portable backups can be encrypted</SectionHeading>
+        <SectionHeading>Backups can be locked</SectionHeading>
         <Body>
-          Manual and automatic folder backups can use AES-256-GCM. Automatic Android backups are
-          written only to a folder you choose, using a recovery code kept in device secure
-          storage. Spark has no server-side password recovery.
+          A manual or automatic-folder backup can be locked with a password or recovery code.
+          Android writes automatic backups only to a folder you choose. Spark cannot recover a
+          forgotten backup password for you.
         </Body>
       </Card>
       <Card>
-        <SectionHeading>Optional screen and app lock</SectionHeading>
+        <SectionHeading>Optional app lock and private previews</SectionHeading>
         <Body>
           Spark can require device authentication after backgrounding. Sensitive-preview
           protection is optional; on Android it also blocks screenshots while enabled.
@@ -55,24 +55,20 @@ export default function PrivacyScreen() {
         </Body>
       </Card>
       <Card>
-        <SectionHeading>You can delete the optional cloud identity</SectionHeading>
+        <SectionHeading>You can delete optional online data</SectionHeading>
         <Body>
-          Settings can remove support conversations, cloud access, and the random Firebase
-          identity. Purchase or security records that must be retained are disconnected from that
-          identity with a random deletion pseudonym. Local data is unchanged.
+          Settings can remove support conversations, online access, and Spark’s random online
+          account ID. Records that must be retained for purchase or security reasons are no
+          longer connected to that ID. Data stored on your phone is unchanged.
         </Body>
       </Card>
       <Card>
-        <SectionHeading>Health disclaimer</SectionHeading>
+        <SectionHeading>Important health note</SectionHeading>
         <Body>
           Spark is a self-management and organization tool. It does not diagnose, treat, cure, or
           prevent ADHD or any medical condition, and it is not a substitute for professional care.
         </Body>
       </Card>
-      <Muted>
-        The publishable privacy policy is included with the project so it can be hosted at a
-        stable public URL before Play Store release.
-      </Muted>
     </Screen>
   );
 }

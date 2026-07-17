@@ -53,7 +53,7 @@ optional cosmetic themes—not casino mechanics.
 
 - timestamp-safe focus timer
 - visual body double
-- interruption parking into Capture
+- saving interruptions into Capture
 - unstructured brain dump
 - captured thought to habit handoff
 - one-step-at-a-time transition routines

@@ -20,6 +20,7 @@ export default function CaptureScreen() {
   const [query, setQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [lastDeleted, setLastDeleted] = useState<CaptureItem | null>(null);
   const clearDraft = useLocalDraft('capture-main', { text }, (draft) => setText(draft.text));
@@ -54,6 +55,12 @@ export default function CaptureScreen() {
     setSelected([]);
   }
 
+  async function archiveItem(item: CaptureItem) {
+    await spark.resolveCapture(item);
+    setSelected((current) => current.filter((id) => id !== item.id));
+    setExpandedItemId((current) => (current === item.id ? null : current));
+  }
+
   function confirmDelete(item: CaptureItem) {
     Alert.alert(
       'Delete this captured thought?',
@@ -76,8 +83,8 @@ export default function CaptureScreen() {
   return (
     <Screen testID="capture-screen">
       <View>
-        <Eyebrow>External memory</Eyebrow>
-        <H1>Get it out of your head.</H1>
+        <Eyebrow>Quick capture</Eyebrow>
+        <H1>Save it for later.</H1>
         <Muted>
           Capture a thought now and organize it later if useful. Text shared from other Android
           apps lands here locally.
@@ -85,7 +92,7 @@ export default function CaptureScreen() {
       </View>
       <Card style={[styles.captureCard, { borderColor: theme.purple }]}>
         <FormField
-          label="Brain dump"
+          label="Thought or task"
           placeholder="A thought, task, worry, idea…"
           multiline
           value={text}
@@ -95,7 +102,7 @@ export default function CaptureScreen() {
           testID="capture-input"
         />
         <Button
-          label="Park it"
+          label="Save"
           disabled={!text.trim()}
           onPress={() => void capture()}
           icon={<Ionicons name="flash" size={18} color="#FFFFFF" />}
@@ -105,7 +112,7 @@ export default function CaptureScreen() {
 
       {spark.captureItems.length >= 8 || query ? (
         <FormField
-          label="Search parked thoughts"
+          label="Search saved thoughts"
           placeholder="Search locally…"
           value={query}
           onChangeText={setQuery}
@@ -114,7 +121,7 @@ export default function CaptureScreen() {
       ) : null}
 
       <View style={styles.heading}>
-        <SectionHeading>Parking lot</SectionHeading>
+        <SectionHeading>Saved for later</SectionHeading>
         <Text style={[styles.count, { color: theme.textMuted }]}>{active.length}</Text>
       </View>
       {selected.length ? (
@@ -122,7 +129,7 @@ export default function CaptureScreen() {
           <Muted>{selected.length} selected</Muted>
           <View style={styles.actions}>
             <Button
-              label="Release selected"
+              label="Archive selected"
               variant="secondary"
               onPress={() => void releaseSelected()}
             />
@@ -158,6 +165,7 @@ export default function CaptureScreen() {
                     onPress={() =>
                       void spark.updateCapture(item, editingText).then(() => {
                         setEditingId(null);
+                        setExpandedItemId(null);
                         setEditingText('');
                       })
                     }
@@ -167,27 +175,9 @@ export default function CaptureScreen() {
               </>
             ) : (
               <>
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected.includes(item.id) }}
-                  accessibilityLabel={`Select ${item.text} for cleanup`}
-                  onLongPress={() => toggleSelected(item.id)}
-                  onPress={() => toggleSelected(item.id)}
-                >
-                  <Text style={[styles.itemText, { color: theme.text }]}>
-                    {selected.includes(item.id) ? '✓ ' : ''}{item.text}
-                  </Text>
-                  <Muted>{friendlyTime(item.createdAt)} · tap to select for cleanup</Muted>
-                </Pressable>
+                <Text style={[styles.itemText, { color: theme.text }]}>{item.text}</Text>
+                <Muted>{friendlyTime(item.createdAt)}</Muted>
                 <View style={styles.actions}>
-                  <SmallAction
-                    icon="create-outline"
-                    label="Edit"
-                    onPress={() => {
-                      setEditingId(item.id);
-                      setEditingText(item.text);
-                    }}
-                  />
                   <SmallAction
                     icon="timer-outline"
                     label="Focus"
@@ -199,40 +189,66 @@ export default function CaptureScreen() {
                     }
                   />
                   <SmallAction
-                    icon="list-outline"
-                    label="Routine"
-                    onPress={() =>
-                      router.push({
-                        pathname: '/routine/new',
-                        params: { step: item.text.slice(0, 100) }
-                      })
-                    }
+                    icon={selected.includes(item.id) ? 'checkmark-circle' : 'square-outline'}
+                    label={selected.includes(item.id) ? 'Selected' : 'Select'}
+                    success={selected.includes(item.id)}
+                    onPress={() => toggleSelected(item.id)}
                   />
                   <SmallAction
-                    icon="repeat-outline"
-                    label="Habit"
+                    icon={expandedItemId === item.id ? 'chevron-up' : 'ellipsis-horizontal'}
+                    label={expandedItemId === item.id ? 'Fewer actions' : 'More actions'}
                     onPress={() =>
-                      router.push({
-                        pathname: '/habit/new',
-                        params: { title: item.text.slice(0, 80) }
-                      })
+                      setExpandedItemId((current) => (current === item.id ? null : item.id))
                     }
                   />
                 </View>
-                <View style={styles.actions}>
-                  <SmallAction
-                    icon="checkmark"
-                    label="Release"
-                    success
-                    onPress={() => void spark.resolveCapture(item)}
-                  />
-                  <SmallAction
-                    icon="trash-outline"
-                    label="Delete"
-                    danger
-                    onPress={() => confirmDelete(item)}
-                  />
-                </View>
+                {expandedItemId === item.id ? (
+                  <View style={[styles.moreActions, { borderTopColor: theme.border }]}>
+                    <Muted>Choose what this thought becomes, or move it out of this list.</Muted>
+                    <View style={styles.actions}>
+                      <SmallAction
+                        icon="create-outline"
+                        label="Edit"
+                        onPress={() => {
+                          setEditingId(item.id);
+                          setEditingText(item.text);
+                        }}
+                      />
+                      <SmallAction
+                        icon="list-outline"
+                        label="Make routine"
+                        onPress={() =>
+                          router.push({
+                            pathname: '/routine/new',
+                            params: { step: item.text.slice(0, 100) }
+                          })
+                        }
+                      />
+                      <SmallAction
+                        icon="repeat-outline"
+                        label="Make habit"
+                        onPress={() =>
+                          router.push({
+                            pathname: '/habit/new',
+                            params: { title: item.text.slice(0, 80) }
+                          })
+                        }
+                      />
+                      <SmallAction
+                        icon="archive-outline"
+                        label="Archive"
+                        success
+                        onPress={() => void archiveItem(item)}
+                      />
+                      <SmallAction
+                        icon="trash-outline"
+                        label="Delete"
+                        danger
+                        onPress={() => confirmDelete(item)}
+                      />
+                    </View>
+                  </View>
+                ) : null}
               </>
             )}
           </Card>
@@ -243,14 +259,14 @@ export default function CaptureScreen() {
           <SectionHeading>
             {query ? 'Try another search.' : 'Your capture list is clear.'}
           </SectionHeading>
-          <Muted>Anything parked during a focus session will appear here too.</Muted>
+          <Muted>Thoughts saved during a focus session will appear here too.</Muted>
         </Card>
       )}
 
       {resolved.length ? (
         <View style={styles.released}>
-          <SectionHeading>Released</SectionHeading>
-          <Muted>Items you moved out of the active list.</Muted>
+          <SectionHeading>Archive</SectionHeading>
+          <Muted>Thoughts you moved out of the active list.</Muted>
           {resolved.slice(0, 8).map((item) => (
             <Card key={item.id} style={styles.releasedItem}>
               <Text style={[styles.releasedText, { color: theme.textMuted }]}>{item.text}</Text>
@@ -330,6 +346,7 @@ const styles = StyleSheet.create({
   item: { gap: 10 },
   itemText: { fontSize: 16, lineHeight: 23, fontWeight: '600' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  moreActions: { borderTopWidth: 1, paddingTop: 10, gap: 8 },
   action: {
     minHeight: 40,
     paddingHorizontal: 11,

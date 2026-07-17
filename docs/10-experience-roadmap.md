@@ -116,7 +116,7 @@ These are the highest-value improvements. They are all local-first and require n
 
 ### Make Capture genuinely frictionless
 
-- Add Android **Share to Spark** so selected text from another app can be parked locally.
+- Add Android **Share to Spark** so selected text from another app can be saved locally.
 - Add a small quick-capture widget or launcher shortcut.
 - Allow a capture item to become a focus target or routine step, not only a habit.
 - Add optional local search after the list becomes large.

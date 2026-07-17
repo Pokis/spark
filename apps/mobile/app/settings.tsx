@@ -268,8 +268,8 @@ export default function SettingsScreen() {
         summary={supportedLocales.find((locale) => locale.code === spark.settings.language)?.label ?? 'Use device language'}
       >
         <Muted>
-          Navigation and the main support tools use your chosen language. Untranslated legacy
-          copy safely falls back to English.
+          Navigation and the main support tools use your chosen language. Some longer screens
+          are still shown in English.
         </Muted>
         <View style={styles.choiceRow}>
           {supportedLocales.map((locale) => (
@@ -350,8 +350,8 @@ export default function SettingsScreen() {
           }
         />
         <SettingRow
-          title="Remember context by time of day"
-          description="Stores morning, afternoon, and evening context preferences only on this device."
+          title="Remember my usual place"
+          description="When you choose Home, Work, or Errands, Spark can preselect it at a similar time of day. This stays on your device."
           value={spark.settings.rememberContextByTime}
           onValueChange={(value) => void spark.updateSetting('rememberContextByTime', value)}
         />
@@ -385,8 +385,8 @@ export default function SettingsScreen() {
           }
         />
         <SettingRow
-          title="Transition nudges"
-          description="After focus, name the next tiny move while the task is still visible."
+          title="Ask for my next step after Focus"
+          description="When a focus timer ends, Spark offers a place to save the next tiny move."
           value={spark.settings.transitionNudgesEnabled}
           onValueChange={(value) =>
             void spark.updateSetting('transitionNudgesEnabled', value)
@@ -434,8 +434,8 @@ export default function SettingsScreen() {
           ))}
         </View>
         <SettingRow
-          title="Quiet repeatedly ignored reminders"
-          description="After three unanswered reminders, pause that habit’s reminders for three days, then restart them automatically."
+          title="Pause reminders I do not answer"
+          description="After three unanswered reminders, pause that habit’s reminders for three days, then start them again automatically."
           value={spark.settings.autoQuietReminders}
           onValueChange={(value) =>
             void spark.updateSetting('autoQuietReminders', value)
@@ -456,6 +456,7 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
+        <Muted>Maximum habit reminders per day</Muted>
         <View style={styles.capRow}>
           {[1, 2, 3, 4].map((value) => (
             <Button
@@ -481,7 +482,7 @@ export default function SettingsScreen() {
           onPress={() => router.push('/encrypted-backups')}
         />
         <Button
-          label="Export local backup"
+          label="Export readable backup (not encrypted)"
           variant="secondary"
           icon={<Ionicons name="share-outline" size={19} color={theme.text} />}
           onPress={() =>
@@ -570,7 +571,7 @@ export default function SettingsScreen() {
         />
         <SettingRow
           title="Share selected wins"
-          description="Choose completed actions, preview them, and open the device share sheet."
+          description="Choose completed actions, preview them, and open your phone’s Share menu."
           onPress={() => router.push('/share-progress')}
         />
       </CollapsibleSection>
@@ -616,7 +617,7 @@ export default function SettingsScreen() {
           description={
             spark.entitlement.premium
               ? 'Premium features are available on this device.'
-              : 'Lifetime purchase, official promo code, or a staff grant.'
+              : 'Lifetime purchase, official promo code, or access granted to you.'
           }
           onPress={() => router.push('/paywall')}
         />
@@ -649,7 +650,7 @@ export default function SettingsScreen() {
               value={spark.settings.supporterBadgeVisible}
               onValueChange={(value) => void spark.updateSetting('supporterBadgeVisible', value)}
             />
-            <Muted>Body-double companion</Muted>
+            <Muted>Focus companion</Muted>
             <View style={styles.choiceRow}>
               {(['spark', 'owl', 'cloud'] as const).map((value) => (
                 <Chip
@@ -713,11 +714,7 @@ export default function SettingsScreen() {
                 />
               ))}
             </View>
-            <Muted>
-              Icon treatment is reflected inside Spark and its widgets. Android launcher icon
-              variants remain a build-time release choice so Spark does not add a fragile native
-              alias permission.
-            </Muted>
+            <Muted>The chosen icon style appears inside Spark and its home-screen widgets.</Muted>
           </>
         ) : null}
       </CollapsibleSection>

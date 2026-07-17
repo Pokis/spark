@@ -6,7 +6,7 @@
 npm.cmd run test:ci
 ```
 
-This runs **257 automated tests**: 190 mobile, 26 domain, 25 control-plane API, and 16 admin
+This runs **258 automated tests**: 191 mobile, 26 domain, 25 control-plane API, and 16 admin
 dashboard tests.
 
 The suites cover:
@@ -33,7 +33,7 @@ Measured on **2026-07-17**:
 
 | Scope | Statements | Branches | Functions | Lines | Enforced minimum |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Mobile: every `app/` and `src/` TypeScript/TSX file | 52.61% | 43.84% | 43.98% | 53.89% | 44 / 33 / 35 / 45 |
+| Mobile: every `app/` and `src/` TypeScript/TSX file | 53.62% | 44.60% | 45.33% | 54.90% | 44 / 33 / 35 / 45 |
 | Shared domain package | 99.58% | 94.08% | 100% | 99.58% | 98 / 90 / 100 / 98 |
 | Control-plane HTTP application (`src/app.ts`) | 88.53% | 78.52% | 97.91% | 88.66% | 85 / 75 / 95 / 85 |
 | Admin source, excluding test/bootstrap files | 73.76% | 49.35% | 67.18% | 75.32% | 70 / 45 / 60 / 70 |
@@ -130,7 +130,7 @@ timing vary.
 2. Leave multiple blank days and verify no red failure state or reset appears.
 3. Pause a habit and verify existing rhythm remains.
 4. Lock the phone during focus, wait, and return; the timestamp should remain correct.
-5. Park interruptions during focus and verify they appear in Capture.
+5. Save interruptions during focus and verify they appear in Capture.
 6. Increase system font size and enable TalkBack.
 7. Enable reduced motion and verify celebration and body double stop pulsing.
 8. Deny notifications and verify the app remains useful and does not reprompt aggressively.

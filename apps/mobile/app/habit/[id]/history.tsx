@@ -24,7 +24,7 @@ import { goBackOr } from '../../../src/lib/navigation';
 const tagLabels: Record<CompletionTag, string> = {
   timer_helped: 'Timer helped',
   made_it_tiny: 'Made it tiny',
-  body_double: 'Body double',
+  body_double: 'Focus companion',
   good_cue: 'Good cue'
 };
 
@@ -106,7 +106,7 @@ export default function HabitHistoryScreen() {
             );
           })}
         </View>
-        <Muted>✓ completed · Ⅱ intentionally paused · · blank</Muted>
+        <Muted>✓ completed action · Ⅱ planned pause</Muted>
       </Card>
 
       <Button

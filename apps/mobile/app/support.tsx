@@ -65,8 +65,8 @@ export default function SupportScreen() {
       <Screen>
         <H1>Support is not available right now.</H1>
         <Muted>
-          The app remains fully functional offline. The owner can enable the optional,
-          scale-to-zero support service later without changing local habits.
+          The optional support inbox is currently turned off. Spark and all features that
+          store data on your phone still work.
         </Muted>
         <Button label="Go back" onPress={() => goBackOr('/settings')} />
       </Screen>
@@ -76,11 +76,11 @@ export default function SupportScreen() {
   return (
     <Screen>
       <View>
-        <Eyebrow>Async, private, human</Eyebrow>
+        <Eyebrow>Private support messages</Eyebrow>
         <H1>How can we help?</H1>
         <Muted>
-          This sends only the text below plus app/platform version. Habit and brain-dump data are
-          never attached.
+          This sends only the text below, your Spark version, and whether you use Android or
+          iPhone. Habits and captured thoughts are never attached.
         </Muted>
       </View>
       <Card>

@@ -106,7 +106,7 @@ export default function WeeklyResetScreen() {
 
       <Card>
         <SectionHeading>Set up tomorrow’s first win</SectionHeading>
-        <Muted>Likely context</Muted>
+        <Muted>Where will you probably be?</Muted>
         <View style={styles.choices}>
           {contexts.map((item) => (
             <Chip

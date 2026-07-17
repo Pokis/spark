@@ -136,8 +136,8 @@ export function SparkBurst({
                   [
                     ['timer_helped', 'Timer helped'],
                     ['made_it_tiny', 'Made it tiny'],
-                    ['body_double', 'Body double'],
-                    ['good_cue', 'Good cue']
+                    ['body_double', 'Focus companion'],
+                    ['good_cue', 'Helpful reminder']
                   ] as const
                 ).map(([tag, label]) => (
                   <Pressable

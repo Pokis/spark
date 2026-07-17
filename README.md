@@ -41,7 +41,7 @@ indexes, Terraform, and release documentation.
 Validation snapshot on **2026-07-17**:
 
 - workspace TypeScript checks passed;
-- 257 automated tests passed: 190 mobile, 26 domain, 25 API, and 16 admin;
+- 258 automated tests passed: 191 mobile, 26 domain, 25 API, and 16 admin;
 - coverage gates passed across mobile `app/` and `src/`, the domain package, core API application,
   and admin source;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
@@ -103,9 +103,9 @@ care for ADHD or any other condition.
   Spark rewards;
 - no-reset rolling progress, optional reward-first streaks, recovery language, and
   comeback recognition;
-- quick brain-dump capture with drafts, search, edit, delete/undo, release/restore, multi-select,
+- quick capture with drafts, search, edit, delete/undo, archive/restore, multi-select,
   Android Share to Spark, a quick-capture widget, and habit/focus/routine conversion;
-- restart-safe focus/body-double timer with parked interruptions, prefilled two-minute launches,
+- restart-safe focus timer with a quiet companion, saved interruptions, prefilled two-minute launches,
   optional launch countdown, local offline soundscapes, transition capture, companions, and
   planned-versus-actual feedback;
 - explicit focus/leave-on-time calendar export without calendar reads, a leave-on-time plan with a real
@@ -199,7 +199,7 @@ More detail: [architecture.md](./docs/architecture.md).
 | --- | --- | --- | --- |
 | Habits, variants, and optional streak schedules/saves | encrypted device database | No | No |
 | Completions, rolling rhythms, and optional streak calculations | encrypted device database | No | No |
-| Focus sessions and parked thoughts | encrypted device database | No | No |
+| Focus sessions and saved thoughts | encrypted device database | No | No |
 | Routines and quick capture | encrypted device database | No | No |
 | Energy and accessibility settings | encrypted device database | No | No |
 | Weekly plans, leave-on-time plans, and one-week changes | encrypted device database | No | No |

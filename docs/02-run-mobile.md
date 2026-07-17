@@ -138,7 +138,7 @@ After installing a native build:
 The Today widget updates when Spark data changes and receives a periodic Android refresh. Its
 action is labeled **Log tiny**, but tapping it first opens a confirmation screen. The confirmation
 offers **Log tiny win**, **Open Today without logging**, and **Not now**. The Quick Capture widget
-opens the minimal local capture form and does not create an item until **Park it** is pressed.
+opens the minimal local capture form and does not create an item until **Save thought** is pressed.
 The Focus widget derives remaining time from the persisted session timestamps and opens narrow
 pause/resume action routes. Android launchers may refresh the displayed minute label only on their
 own schedule, but opening Pause/Resume always recalculates from the database.

@@ -19,15 +19,15 @@ import { goBackOr } from '../src/lib/navigation';
 import { useTheme } from '../src/theme';
 
 const freeFeatures = [
-  'Unlimited habits with three effort sizes',
-  'Flexible rhythms and all local insights',
-  'Focus companion and brain-dump capture',
+  'Unlimited habits with three action sizes',
+  'Progress history, optional streaks, and on-device patterns',
+  'Focus companion and quick capture',
   'Local reminders and device backups'
 ];
 
 const premiumFeatures = [
   'Aurora, Ocean, and Forest accent themes',
-  'Spark, owl, and cloud body-double companions',
+  'Spark, owl, and cloud focus companions',
   'Alternate celebrations and icon treatments',
   'Generated offline focus soundscapes with volume control',
   'Optional Spark supporter badge',
@@ -62,8 +62,8 @@ export default function PaywallScreen() {
   async function run(action: 'buy' | 'restore' | 'refresh') {
     if (!configured || (action !== 'refresh' && !purchasesAvailable)) {
       Alert.alert(
-        'Purchases are not enabled',
-        'The offline app is complete. Configure the low-cost control plane before accepting money so every purchase can be verified safely.'
+        'Purchases are not available yet',
+        'Every core Spark tool remains free. Premium will become available when purchase checking is ready.'
       );
       return;
     }
@@ -89,7 +89,7 @@ export default function PaywallScreen() {
         <View style={[styles.icon, { backgroundColor: theme.primary }]}>
           <Ionicons name="sparkles" size={40} color="#FFFFFF" />
         </View>
-        <Eyebrow>Ethical monetization</Eyebrow>
+        <Eyebrow>Optional supporter extras</Eyebrow>
         <H1>{spark.entitlement.premium ? 'Premium is active.' : 'Support Spark once.'}</H1>
         <Body>
           Core ADHD support stays free. Premium is a one-time lifetime supporter purchase for
@@ -115,7 +115,16 @@ export default function PaywallScreen() {
           </View>
         ))}
         {spark.entitlement.premium ? (
-          <Muted>Access source: {spark.entitlement.source}</Muted>
+          <Muted>
+            Access from{' '}
+            {{
+              play: 'Google Play',
+              'app-store': 'the App Store',
+              promo: 'a promo code',
+              admin: 'granted access',
+              none: 'this device'
+            }[spark.entitlement.source]}
+          </Muted>
         ) : (
           <Button
             label={price ? `Buy lifetime premium · ${price}` : 'Buy lifetime premium'}
@@ -136,7 +145,7 @@ export default function PaywallScreen() {
           onPress={() => void run('restore')}
         />
         <Button
-          label="Check staff or promo grant"
+          label="Check granted or promo access"
           variant="ghost"
           loading={busy}
           disabled={!configured}
@@ -148,18 +157,18 @@ export default function PaywallScreen() {
           onPress={() => void Linking.openURL('https://play.google.com/redeem')}
         />
         <Muted>
-          Public giveaways use official Play promo codes. Staff can also grant a named support
-          account through the admin dashboard; those actions are audited.
+          Public giveaways use official Google Play promo codes. If someone granted Premium to
+          your support account, use the check button above.
         </Muted>
       </Card>
 
       {!purchasesAvailable ? (
         <Card style={{ borderColor: theme.warning }}>
-          <SectionHeading>Developer note</SectionHeading>
+          <SectionHeading>Premium purchases are not available here yet</SectionHeading>
           <Muted>
             {platformSupported
-              ? 'Purchase buttons are intentionally disabled until the verification service, Firebase identity, and dashboard purchase switch are enabled. This prevents unverified or lost purchases.'
-              : 'iPhone purchases are intentionally disabled until App Store server verification, restore, and revocation handling are complete.'}
+              ? 'You can keep using every core feature for free. Purchase and restore buttons will appear when they are ready.'
+              : 'iPhone purchases are coming later. You can keep using every core feature for free.'}
           </Muted>
         </Card>
       ) : null}

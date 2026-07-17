@@ -48,7 +48,7 @@ export default function HelpScreen() {
 
       {need === 'start' ? (
         <Card style={{ borderColor: theme.success }}>
-          <SectionHeading>Make contact with the first object.</SectionHeading>
+          <SectionHeading>Touch or open the first thing you need.</SectionHeading>
           <Muted>
             Open the file, touch the shoes, place the cup by the sink, or read one sentence.
             That first contact gives you a clear action to complete.
@@ -85,7 +85,7 @@ export default function HelpScreen() {
             }
           />
           <Button
-            label="Park the whole list in Capture"
+            label="Save the list in Capture"
             variant="secondary"
             onPress={() => router.push('/quick-capture')}
           />
