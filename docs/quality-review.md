@@ -182,11 +182,10 @@ Not run here:
 
 These cannot be safely guessed or automated:
 
-1. Decide whether `com.sparkhabits.app` is the permanent Play package ID. If not, rename the Expo
-   and native Android packages before the first upload.
-2. Replace every `REPLACE_ME` value with the real legal operator, contact, address, retention
-   decisions, and privacy email.
-3. Publish the privacy policy at a stable public HTTPS URL, put that URL in Play Console, and keep
+1. The permanent Play package ID is confirmed as `com.djpokis.sparkhabits.app`; do not rename it
+   after the first upload.
+2. The public operator, contact, address, and retention decisions are filled in consistently.
+3. Publish the prepared privacy policy at a stable public HTTPS URL, put that URL in Play Console, and keep
    the in-app Settings → Privacy explanation consistent with it.
 4. Complete Data safety, Health apps, content rating, target audience, app access, and other Play
    declarations from the exact release build.

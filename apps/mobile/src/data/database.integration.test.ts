@@ -23,7 +23,7 @@ const mockDeleteDatabase = jest.fn(async () => undefined);
 const mockReadDirectory = jest.fn(async (..._args: any[]) => [] as string[]);
 
 jest.mock('expo-sqlite', () => ({
-  defaultDatabaseDirectory: '/data/data/com.sparkhabits.app/files/SQLite',
+  defaultDatabaseDirectory: '/data/data/com.djpokis.sparkhabits.app/files/SQLite',
   openDatabaseAsync: (...args: unknown[]) => (mockOpenDatabase as any)(...args),
   backupDatabaseAsync: (...args: unknown[]) =>
     (mockBackupDatabase as any)(...args),
@@ -120,7 +120,7 @@ describe('native database migration and safety boundary', () => {
     );
     expect(mockSafetyDb.closeAsync).toHaveBeenCalled();
     expect(mockReadDirectory).toHaveBeenCalledWith(
-      'file:///data/data/com.sparkhabits.app/files/SQLite'
+      'file:///data/data/com.djpokis.sparkhabits.app/files/SQLite'
     );
     expect(
       mockDb.execAsync.mock.calls.some(([sql]) =>
@@ -142,7 +142,7 @@ describe('native database migration and safety boundary', () => {
       }
     ]);
     expect(mockReadDirectory).toHaveBeenCalledWith(
-      'file:///data/data/com.sparkhabits.app/files/SQLite'
+      'file:///data/data/com.djpokis.sparkhabits.app/files/SQLite'
     );
   });
 

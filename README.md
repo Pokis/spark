@@ -32,11 +32,11 @@ indexes, Terraform, and release documentation.
 | --- | --- |
 | Quick local UI preview | Available through Expo Go, with native-feature limitations |
 | Android development build | Implemented; requires Android Studio/emulator or a USB device |
-| Offline Android internal test | Code-ready; requires final identity, policy details, and native-device QA |
+| Offline Android internal test | Identity, policy, assets, and EAS link ready; requires signed AAB, Play upload, and native-device QA |
 | Public free Android release | Requires the release gates below |
 | Public paid Android release | Server safeguards are implemented; requires deployment and Play lifecycle testing |
 | iPhone release | Codebase-compatible, but native build, StoreKit, widget, and device QA remain |
-| Google Cloud deployment | Optional and defined, but not deployed by this repository |
+| Google Cloud deployment | Static privacy/admin shell is hosted; billing, Firestore, Cloud Run, accounts, and all runtime features remain disabled |
 
 Validation snapshot on **2026-07-17**:
 
@@ -46,10 +46,14 @@ Validation snapshot on **2026-07-17**:
   and admin source;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
 - Expo Doctor passed 20/20 checks;
-- the release checker correctly blocks publication while privacy placeholders remain;
+- the release checker passes with the final package identity, resolved privacy details, 19 valid
+  store listings, and validated graphics;
 - the production dependency audit has the known moderate transitive advisory described below;
-- Android Studio's JBR and `adb` device selection are supported by `spark.cmd`; a full signed
-  release build, Maestro run, and representative-device matrix remain manual release checks;
+- the renamed native Android release build passed and its APK package/version/permission set was
+  inspected; the EAS-signed AAB, Maestro run, and representative-device matrix remain;
+- the public policy is live at https://djpokis-spark-habits.web.app/privacy.html, and Google Cloud
+  billing is disabled with no billing account attached;
+- Expo/EAS is linked to `@djpokis-team/spark-adhd-habits`; no hosted build quota has been consumed;
 - Terraform was formatted and validated with a temporary checksum-verified official binary; no
   project-specific plan or apply was run.
 
@@ -630,7 +634,7 @@ adb logcat ReactNativeJS:V "*:S"
 To clear only Spark’s Android data:
 
 ```powershell
-adb shell pm clear com.sparkhabits.app
+adb shell pm clear com.djpokis.sparkhabits.app
 ```
 
 This destroys the local encrypted database and secure key. Export a backup first when the data
@@ -758,7 +762,8 @@ secure operator account. Run `.\spark.cmd release -Help` for build listing, exac
 guarded submission commands. The first Google Play upload must be completed manually in Play
 Console; later builds can use the submission helper.
 
-The generated Play icon, feature graphic, six phone screenshots, English/Lithuanian listing, and
+The generated Play icon, feature graphic, six phone screenshots, listings for all 19 bundled
+languages, and
 form-by-form declaration worksheet are grouped in
 [`store/android/README.md`](./store/android/README.md). The Assets action is local-only and has no
 cloud cost.
@@ -775,7 +780,7 @@ explains, with examples:
 
 - the difference between the public app name, permanent Android package ID, Expo slug, EAS project,
   Google Cloud project, version name, version code, APK, and AAB;
-- exactly which files matter if you keep or change `com.sparkhabits.app`, why each mentions the ID,
+- exactly which files use the confirmed `com.djpokis.sparkhabits.app` identity and how to regenerate native Android safely,
   and how to regenerate the ignored local native Android project safely;
 - which privacy placeholders you must fill, what each value means, and how to host the policy;
 - the free/offline EAS configuration and commands for a signed production AAB;
@@ -824,7 +829,7 @@ latency, and cost.
 1. Authenticate:
 
    ```powershell
-   .\spark.cmd deploy -Action Login -Provider Google -ProjectId YOUR_PROJECT_ID
+   .\spark.cmd deploy -Action Login -Provider Google -ProjectId djpokis-spark-habits
    ```
 
 2. Copy and edit Terraform variables:
@@ -850,7 +855,7 @@ latency, and cost.
 6. Build the API image:
 
    ```powershell
-   .\spark.cmd deploy -Action Image -ProjectId YOUR_PROJECT_ID
+   .\spark.cmd deploy -Action Image -ProjectId djpokis-spark-habits
    ```
 
 7. Put the image URI in `terraform.tfvars` and apply again.
@@ -862,7 +867,7 @@ latency, and cost.
 
    ```powershell
    .\spark.cmd deploy -Action Login -Provider Firebase
-   .\spark.cmd deploy -Action Firebase -ProjectId YOUR_PROJECT_ID
+   .\spark.cmd deploy -Action Firebase -ProjectId djpokis-spark-habits
    ```
 
 10. Add the Hosting origin to `allowed_origins` and reapply Terraform.

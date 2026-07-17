@@ -175,7 +175,7 @@ that no cloud deployment is configured.
 
 ```powershell
 .\spark.cmd deploy -Action Login -Provider Firebase
-.\spark.cmd deploy -Action Login -Provider Google -ProjectId YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Login -Provider Google -ProjectId djpokis-spark-habits
 ```
 
 Google login performs both normal CLI authentication and Application Default Credentials login.
@@ -183,18 +183,21 @@ Supplying `-ProjectId` also selects that project locally.
 
 ### Privacy/admin Hosting only
 
+This was completed for project `djpokis-spark-habits` on July 17, 2026. Run it again only after a
+privacy-page or static-dashboard change that you deliberately want to publish.
+
 ```powershell
-.\spark.cmd deploy -Action Hosting -ProjectId YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Hosting -ProjectId djpokis-spark-habits
 ```
 
 This runs the release placeholder check, builds the admin/static privacy site, prints the exact
-project, and requires `DEPLOY HOSTING YOUR_PROJECT_ID`. It does not deploy Cloud Run or Firestore.
+project, and requires `DEPLOY HOSTING djpokis-spark-habits`. It does not deploy Cloud Run or Firestore.
 Firebase Hosting allowances/overages still apply.
 
 ### Hosting plus Firestore rules/indexes
 
 ```powershell
-.\spark.cmd deploy -Action Firebase -ProjectId YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Firebase -ProjectId djpokis-spark-habits
 ```
 
 This is for a deliberately configured cloud project. It deploys only
@@ -236,11 +239,11 @@ After an apply:
 After Terraform has created the Artifact Registry repository:
 
 ```powershell
-.\spark.cmd deploy -Action Image -ProjectId YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Image -ProjectId djpokis-spark-habits
 ```
 
 Spark tests and builds the API locally first, then shows the complete image URI and requires
-`BUILD IMAGE YOUR_PROJECT_ID`. Google Cloud Build and Artifact Registry can generate costs. The
+`BUILD IMAGE djpokis-spark-habits`. Google Cloud Build and Artifact Registry can generate costs. The
 default image tag is the mobile app version; override it with `-ImageTag`. The command prints the
 exact `container_image` value to place into `terraform.tfvars`, after which you create and review a
 new Terraform plan.

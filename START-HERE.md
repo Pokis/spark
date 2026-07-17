@@ -47,7 +47,7 @@ development build, first install Android Studio by following
 ```
 
 When you are ready for Google Play, the upload-ready icon, feature graphic, six phone
-screenshots, English/Lithuanian listing copy, and declaration worksheet are grouped in
+screenshots, listings for all 19 bundled languages, and declaration worksheet are grouped in
 [`store/android/README.md`](./store/android/README.md). Regenerate and validate the images with:
 
 ```powershell

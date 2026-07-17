@@ -6,6 +6,13 @@ private support or verified premium access.
 Read [08-cost-controls.md](./08-cost-controls.md) first. It is the authoritative register of
 every billable capability, its default-off switch, and its approximate cost by user count.
 
+**Current Spark status (July 17, 2026):** Firebase/Google project `djpokis-spark-habits` exists,
+only the static Hosting site has been deployed, and
+`https://djpokis-spark-habits.web.app/privacy.html` is live. Cloud Billing is disabled with no
+billing account attached. Firestore, Cloud Run, Auth-backed app accounts, support, purchases,
+remote config, scheduled jobs, monitoring, and image builds remain disabled. This section is for
+future cloud activation; do not repeat project creation for the offline release.
+
 ## Recommended shape
 
 Use one dedicated Firebase-enabled Google Cloud project:
@@ -56,10 +63,11 @@ The local account is `owner@spark.local` / `SparkLocalOnly123!`. The seeder acce
 `demo-*` project and localhost endpoints. This follows Firebase's recommendation to use demo
 projects where possible because they cannot fall through to billable production resources.
 
-## 1. Create a project
+## 1. Project and local tooling
 
-Choose a unique project ID in Google Cloud Console. Link billing only when ready to deploy Cloud
-Run. The mobile app still runs without billing.
+The dedicated project is already `djpokis-spark-habits`. Do not create a second project or link
+billing for the initial release. Link billing only after explicitly approving a costed cloud
+feature that needs it; the mobile app still runs without billing.
 
 Install:
 
@@ -69,17 +77,21 @@ Install:
 Then:
 
 ```powershell
-.\spark.cmd deploy -Action Login -Provider Google -ProjectId YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Login -Provider Google -ProjectId djpokis-spark-habits
 ```
 
 The wrapper runs both Google Cloud CLI and Application Default Credentials authentication, then
 selects the exact project. On Windows it uses `gcloud.cmd`, avoiding the script-policy problem
 that can affect PowerShell shims.
 
-Copy Terraform variables:
+The ignored `infra\terraform\terraform.tfvars` file has already been prepared on this PC with the
+real project, operator email, Hosting origin, package ID, and every cost-bearing switch off. On a
+fresh clone only, create it if it is missing:
 
 ```powershell
-Copy-Item infra\terraform\terraform.tfvars.example infra\terraform\terraform.tfvars
+if (-not (Test-Path infra\terraform\terraform.tfvars)) {
+  Copy-Item infra\terraform\terraform.tfvars.example infra\terraform\terraform.tfvars
+}
 ```
 
 Edit `terraform.tfvars`. For the first planning run, leave every cost-bearing switch off:
@@ -159,7 +171,7 @@ client rules.
 From the repository root:
 
 ```powershell
-.\spark.cmd deploy -Action Image -ProjectId YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Image -ProjectId djpokis-spark-habits
 ```
 
 The wrapper tests/builds the API locally, prints the full image URI, warns about Cloud Build and
@@ -200,7 +212,7 @@ Authenticate once, then deploy to an explicit project ID:
 
 ```powershell
 .\spark.cmd deploy -Action Login -Provider Firebase
-.\spark.cmd deploy -Action Firebase -ProjectId YOUR_PROJECT_ID
+.\spark.cmd deploy -Action Firebase -ProjectId djpokis-spark-habits
 ```
 
 The Firebase action runs the release/privacy check and admin build first, then deploys only

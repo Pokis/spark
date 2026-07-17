@@ -54,7 +54,7 @@ variable "allowed_origins" {
 
 variable "google_play_package_name" {
   type    = string
-  default = "com.sparkhabits.app"
+  default = "com.djpokis.sparkhabits.app"
 }
 
 variable "internal_oidc_audience" {

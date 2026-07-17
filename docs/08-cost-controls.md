@@ -14,6 +14,11 @@ An offline Android or iPhone build costs **$0/month in cloud runtime**. Habits,
 completions, reminders, focus, soundscapes, Capture, routines, widgets, insights,
 backups, and all accessibility features stay on the device.
 
+Current hosted footprint (verified July 17, 2026): one tiny static Firebase Hosting site for the
+privacy policy and inert admin shell. Project `djpokis-spark-habits` has Cloud Billing disabled and
+no billing account attached, so it cannot silently move to paid Blaze overages. Firestore, Cloud
+Run, Auth-backed app accounts, scheduled work, monitoring, and EAS builds are unused.
+
 The 2026-07-16 assistive expansion also remains **$0/month for Spark at every user
 count**:
 
@@ -66,7 +71,7 @@ A Cloud Run URL by itself therefore does not turn features on.
 | Manual supporter grants | `manualGrantsEnabled` | `false` | Admin → App config |
 | Play promo inventory | `promoCodesEnabled` | `false` | Admin → App config |
 | Admin-role changes | `adminRolesEnabled` | `false` | Admin → App config |
-| Admin web application | `VITE_SPARK_ADMIN_ENABLED` | `false` | admin `.env.local`; also do not deploy Hosting until wanted |
+| Admin web application | `VITE_SPARK_ADMIN_ENABLED` | `false` | admin `.env.local`; the hosted static shell stays inert while this is false and API/Firebase config is absent |
 | Google Play RTDN | `enable_google_play_rtdn` | `false` | Terraform variables and apply |
 | Nightly retention cleanup | `enable_maintenance_job` | `false` | Terraform variables and apply |
 | Five-minute uptime and 5xx monitoring | `enable_synthetic_monitoring` | `false` | Terraform variables and apply |
@@ -168,7 +173,7 @@ These depend on deployments rather than user count:
 | --- | --- | --- |
 | Cloud Run | 2M requests, 180k vCPU-seconds, and 360k GiB-seconds free monthly for request-based services | Usually $0 at small scale; `min=0`, `max=2`; no service exists until cloud runtime and image are enabled |
 | Firestore | 50k reads/day, 20k writes/day, 20k deletes/day, 1 GiB storage, 10 GiB outbound monthly | Usually $0; one default database, bounded queries, no habit sync |
-| Firebase Hosting | 10 GB storage and 10 GB transfer monthly free; Blaze overage currently $0.026/GB storage and $0.15/GB transfer | Usually $0; do not deploy admin Hosting until wanted |
+| Firebase Hosting | 10 GB storage and 10 GB transfer monthly free; Blaze overage currently $0.026/GB storage and $0.15/GB transfer | Current tiny static policy/site is expected to remain $0; billing is disabled, so enabling paid overages requires a separate deliberate billing change |
 | Identity Platform | 50k Tier-1 MAU free, then tiered per-MAU pricing | Usually $0; identity is lazy and no phone/SMS auth is used |
 | Pub/Sub | First 10 GiB Message Delivery Basic throughput per billing account free; then $40/TiB | RTDN should remain $0; separately disabled |
 | Cloud Scheduler | Three jobs/month per billing account free; then $0.10/job/month | One job, separately disabled |

@@ -16,16 +16,16 @@ are grouped in the [Google Play submission pack](../store/android/README.md).
 These are the only immediate steps for getting a Play-delivered build onto your own/tester
 devices:
 
-- [ ] Intentionally keep `com.sparkhabits.app` or complete the one-time package rename in
-      [release guide section 1](./03-android-release.md#1-decide-the-permanent-package-id).
-- [ ] Confirm Expo config, `spark.ps1`, and Maestro flow use that same ID. If the ignored/generated
+- [x] Permanent package ID confirmed and renamed to `com.djpokis.sparkhabits.app` before any
+      Play upload; see [release guide section 1](./03-android-release.md#1-decide-the-permanent-package-id).
+- [x] Confirm Expo config, `spark.ps1`, and Maestro flow use that same ID. If the ignored/generated
       native Android folder exists, regenerate it and confirm its Gradle ID too. Do not upload
       until this is true; the first artifact fixes the Play identity.
-- [ ] Keep cloud, remote config, purchases, and creator-tip flags off for the initial offline build.
-- [ ] Replace the privacy-policy placeholders and choose retention periods. This is recommended
+- [x] Keep cloud, remote config, purchases, and creator-tip flags off for the initial offline build.
+- [x] Replace the privacy-policy placeholders and choose retention periods. This is recommended
       before any external testing and is required by Spark's release check. Play Internal testing
       itself can be started before every listing/form is complete.
-- [ ] Run `.\spark.cmd check -Level Release` and understand every warning.
+- [x] Run `.\spark.cmd check -Level Release` and understand every warning.
 - [ ] Test a native release-like APK on a real Android device; Expo Go is not sufficient.
 - [ ] Create the production EAS `.aab` with
       `.\spark.cmd release -Action Build -Profile production`, then list/download the exact build
@@ -44,7 +44,7 @@ distribution.
 
 ## Gate 2 — before Closed testing
 
-- [ ] Publish `apps/admin/public/privacy.html` at a public HTTPS URL and verify it while logged out.
+- [x] Publish `apps/admin/public/privacy.html` at a public HTTPS URL and verify it while logged out.
 - [ ] Run `.\spark.cmd release -Action Assets` and review every item in
       `store/android/asset-manifest.md` against the final AAB.
 - [ ] Complete the main store listing: accurate descriptions, 512×512 icon, 1024×500 feature
@@ -97,11 +97,11 @@ release. They become mandatory only when those optional features are enabled.
 `.\spark.cmd release -Action Verify` runs the five automated commands below in order. They remain
 listed separately so release evidence can identify exactly which check failed.
 
-- [ ] `npm.cmd run doctor`
-- [ ] `npm.cmd run typecheck`
-- [ ] `npm.cmd run test:ci`
-- [ ] `npm.cmd run build`
-- [ ] `npm.cmd run release:check`
+- [x] `npm.cmd run doctor`
+- [x] `npm.cmd run typecheck`
+- [x] `npm.cmd run test:ci`
+- [x] `npm.cmd run build`
+- [x] `npm.cmd run release:check`
 - [ ] Release-like Android build tested
 - [ ] Backup/restore tested on a clean install
 - [ ] Schema 1/2/3 backups migrate to schema 4; schema-4 weekly/leave-on-time/one-week-change data restores
@@ -158,20 +158,20 @@ listed separately so release evidence can identify exactly which check failed.
 
 ## Privacy and policy
 
-- [ ] Replace every `REPLACE_ME`
-- [ ] Host public non-geofenced HTML privacy policy
+- [x] Public operator identity, address, contact, and approved retention periods synchronized
+- [x] Host public non-geofenced HTML privacy policy
 - [ ] Settings → Privacy opens and its plain-language text matches the hosted policy
 - [ ] Data safety form matches released SDK behavior
 - [ ] Health apps declaration completed accurately
 - [ ] Medical disclaimer visible
 - [ ] Developer account type accepted for Spark's classification
 - [ ] Cloud deletion tested
-- [ ] Retention periods approved
+- [x] Retention periods approved
 - [ ] Creator-tip build flag is `false`, or external-payment program/region/reporting eligibility is documented for this exact binary
 
 ## Google Play
 
-- [ ] Package ID final
+- [x] Package ID final: `com.djpokis.sparkhabits.app`
 - [ ] Play App Signing enabled
 - [ ] Store listing and screenshots
 - [ ] feature graphic and icon

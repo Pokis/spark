@@ -12,6 +12,9 @@ files from the rest of the repository.
 4. Upload the files shown in [asset-manifest.md](./asset-manifest.md).
 5. Open **Policy and programs → App content** and follow [declarations.md](./declarations.md).
 
+The publisher's confirmed identity, audience, price, hosting, and feature-boundary choices are in
+[release-decisions.md](./release-decisions.md).
+
 The Assets command only reads local screenshots and writes this repository. It does not contact
 Google, Expo, Firebase, or any other service and costs nothing to run.
 
@@ -23,7 +26,7 @@ Google, Expo, Firebase, or any other service and costs nothing to run.
 | Feature graphic | `graphics/feature-graphic-1024x500.png` | 1024 × 500, 24-bit PNG, no alpha |
 | Phone screenshots | `graphics/phone/01-*.png` through `06-*.png` | Six real-app captures, each 1080 × 1920, 24-bit PNG, no alpha |
 | Default English listing | `listing/en-US.md` | Title, short description, full description, and notes |
-| Lithuanian listing | `listing/lt-LT.md` | Human-readable localized title and descriptions |
+| Localized listings | [`listing/README.md`](./listing/README.md) | Nineteen listings matching every language bundled by Spark, including Lithuanian and Arabic |
 | Screenshot descriptions | `asset-manifest.md` | Upload order and accessible description for every image |
 | Play declarations | `declarations.md` | Ads, access, audience, content rating, Data safety, health, accounts, and permissions |
 
@@ -35,13 +38,14 @@ non-sensitive test data. They are not mockups and contain no real person's data.
 These choices require your identity, account, or legal attestation and therefore cannot be
 completed safely by code:
 
-- confirm that `com.sparkhabits.app` is the permanent package ID before the first Play upload;
-- replace the operator placeholders in `docs/privacy-policy.md` and
-  `apps/admin/public/privacy.html`;
-- publish that policy at a stable public HTTPS URL and paste the URL into Play Console;
+- keep the confirmed `com.djpokis.sparkhabits.app` package ID unchanged after the first Play upload;
+- review the completed operator details in `docs/privacy-policy.md` and
+  `apps/admin/public/privacy.html` for exact postal formatting;
+- paste the verified public policy URL
+  `https://djpokis-spark-habits.web.app/privacy.html` into Play Console;
 - confirm the recommended 18+ target audience and the health-app category described in
   `declarations.md`;
-- choose countries/regions, confirm the app is free, and provide your monitored support email;
+- apply the confirmed all-available-countries, free-app, and `djpokis@gmail.com` choices in Play;
 - upload the signed `.aab`, answer the console forms, and make the final declarations yourself.
 
 Do not upload until the descriptions and declarations still match the exact build. The initial

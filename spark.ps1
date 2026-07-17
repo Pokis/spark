@@ -103,7 +103,7 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 $script:Root = $PSScriptRoot
-$script:PackageName = 'com.sparkhabits.app'
+$script:PackageName = 'com.djpokis.sparkhabits.app'
 $script:MobileProcessFile = Join-Path $script:Root '.expo\spark-mobile-process.json'
 
 function Write-Heading {
@@ -429,10 +429,10 @@ deploy
   Examples:
     .\spark.cmd deploy
     .\spark.cmd deploy -Action Login -Provider Firebase
-    .\spark.cmd deploy -Action Hosting -ProjectId my-spark-project
+    .\spark.cmd deploy -Action Hosting -ProjectId djpokis-spark-habits
     .\spark.cmd deploy -Action Plan
     .\spark.cmd deploy -Action Apply
-    .\spark.cmd deploy -Action Image -ProjectId my-spark-project
+    .\spark.cmd deploy -Action Image -ProjectId djpokis-spark-habits
     .\spark.cmd deploy -Action Outputs
 '@ | Write-Host
     }

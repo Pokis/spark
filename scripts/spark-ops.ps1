@@ -138,7 +138,7 @@ function Show-SparkReleaseInspection {
   $mobilePackage = Get-Content -LiteralPath $mobilePackagePath -Raw | ConvertFrom-Json
   $eas = Get-Content -LiteralPath $easPath -Raw | ConvertFrom-Json
 
-  Write-SparkStatus 'Android package ID' $packageName $(if ($packageName -eq $script:PackageName) { 'Warn' } else { 'Good' })
+  Write-SparkStatus 'Android package ID' $packageName $(if ($packageName -eq $script:PackageName) { 'Good' } else { 'Bad' })
   Write-SparkStatus 'Public app version' $appVersion 'Good'
   Write-SparkStatus 'Mobile package version' ([string]$mobilePackage.version) $(if ($appVersion -eq [string]$mobilePackage.version) { 'Good' } else { 'Bad' })
   Write-SparkStatus 'EAS production output' ([string]$eas.build.production.android.buildType) 'Good'
@@ -184,9 +184,6 @@ function Show-SparkReleaseInspection {
   $dirty = @(& git status --porcelain 2>$null)
   Write-SparkStatus 'Git branch' $branch 'Normal'
   Write-SparkStatus 'Working tree' $(if ($dirty.Count) { "$($dirty.Count) changed path(s)" } else { 'clean' }) $(if ($dirty.Count) { 'Warn' } else { 'Good' })
-  if ($packageName -eq 'com.sparkhabits.app') {
-    Write-Warning 'Confirm that com.sparkhabits.app is your intentional permanent Play package ID before uploading.'
-  }
 }
 
 function Resolve-SparkTerraformPath {

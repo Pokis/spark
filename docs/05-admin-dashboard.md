@@ -1,7 +1,9 @@
 # Admin dashboard
 
 The dashboard is feasible and implemented, but it is not needed for the initial offline release.
-Deploy it when you need support or monetization operations.
+Its static shell was published with the required privacy page on July 17, 2026, but it has no API,
+Firebase client configuration, account access, or operator capability. Activate the dashboard only
+when you need support or monetization operations.
 
 The dashboard and every cost-bearing operation are disabled by default. Read
 [08-cost-controls.md](./08-cost-controls.md) for the authoritative switch and cost table.
@@ -130,7 +132,7 @@ The dashboard compiles to static files:
 
 ```powershell
 .\spark.cmd deploy -Action Login -Provider Firebase
-.\spark.cmd deploy -Action Hosting -ProjectId YOUR_FIREBASE_PROJECT_ID
+.\spark.cmd deploy -Action Hosting -ProjectId djpokis-spark-habits
 ```
 
 Firebase Hosting also publishes `privacy.html`. The dashboard's HTML is public, but all useful API

@@ -2,8 +2,9 @@
 
 Effective: July 17, 2026
 
-Before publishing, replace every `REPLACE_ME` value, have the policy reviewed for the operator's
-jurisdictions, and keep the hosted HTML and this document consistent.
+This policy uses the operator details and starting retention periods approved on July 17, 2026.
+Keep the hosted HTML and this document consistent and review them when distributed behavior or
+applicable law changes.
 
 ## Summary
 
@@ -16,10 +17,13 @@ database on the user's device. Spark does not sell personal information or use i
 
 Spark is operated by:
 
-`REPLACE_ME_LEGAL_NAME`  
-`REPLACE_ME_POSTAL_ADDRESS`  
-`REPLACE_ME_COUNTRY`  
-Email: `REPLACE_ME@example.com`
+Domantas Judeikis
+
+Kolektyvo g. 266, Vilnius, LT8350
+
+Lithuania
+
+Email: `djpokis@gmail.com`
 
 ## Information stored on the device
 
@@ -111,7 +115,7 @@ review.
 
 ## Retention
 
-`REPLACE_ME` with final periods. The implemented defaults and intended starting schedule are:
+The approved starting retention schedule is:
 
 - support conversations: 90 days after the latest message by default
 - anonymous cloud identities: until the user deletes the identity or the operator adopts an
@@ -134,7 +138,7 @@ The user can remove local data by clearing Spark's app storage or uninstalling i
 exported first.
 
 Requests for access, correction, objection, restriction, portability, or deletion can be sent to
-`REPLACE_ME@example.com`. Rights and response periods depend on applicable law. The operator may
+`djpokis@gmail.com`. Rights and response periods depend on applicable law. The operator may
 need to verify that the requester controls the relevant support identity.
 
 ## International processing
@@ -145,9 +149,9 @@ safeguards.
 
 ## Children
 
-Spark is not directed to children under the applicable age of digital consent. The operator does
-not knowingly enable optional cloud collection from such children without appropriate
-authorization and policy compliance.
+Spark is intended for adults aged 18 and over and is not directed to children. The operator does
+not knowingly enable optional cloud collection for a child without appropriate authorization and
+policy compliance.
 
 ## Security
 
@@ -169,4 +173,4 @@ or store listing.
 
 ## Contact
 
-Privacy questions: `REPLACE_ME@example.com`
+Privacy questions: `djpokis@gmail.com`

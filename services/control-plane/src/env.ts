@@ -3,7 +3,7 @@ import { z } from 'zod';
 const envSchema = z.object({
   GOOGLE_CLOUD_PROJECT: z.string().min(1),
   GOOGLE_CLOUD_REGION: z.string().default('europe-central2'),
-  GOOGLE_PLAY_PACKAGE_NAME: z.string().default('com.sparkhabits.app'),
+  GOOGLE_PLAY_PACKAGE_NAME: z.string().default('com.djpokis.sparkhabits.app'),
   SPARK_PREMIUM_PRODUCT_ID: z.string().default('spark_premium_lifetime'),
   ADMIN_EMAIL_ALLOWLIST: z.string().default(''),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),

@@ -58,9 +58,9 @@ Spark is a planning and self-management tool. It does not diagnose, treat, cure,
 - Tags: use only Play-suggested tags that describe habit tracking, focus, planning, or routines
 - Pricing: **Free** for the initial release
 - Contains ads: **No**
-- Contact email: your monitored public support address
+- Contact email: `djpokis@gmail.com`
 - Website: optional; use your stable Spark site if one exists
-- Privacy policy: the public HTTPS URL created from `apps/admin/public/privacy.html`
+- Privacy policy: `https://djpokis-spark-habits.web.app/privacy.html` (live and verified)
 
 Do not add “#1”, “best”, discounts, awards, download counts, store ranking, pricing claims, emoji
 spam, or medical outcome claims. Do not advertise premium until purchases are actually enabled and

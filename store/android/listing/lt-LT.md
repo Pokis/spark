@@ -57,8 +57,8 @@ Pirmoji „Spark“ versija veikia be paskyros ir serverio. Įpročiai, užraša
 - Kategorija: **Produktyvumas**
 - Kaina: **Nemokama** pradinei versijai
 - Yra reklamų: **Ne**
-- Kontaktinis el. paštas: jūsų viešas ir nuolat tikrinamas pagalbos adresas
-- Privatumo politika: viešas HTTPS adresas, sukurtas iš `apps/admin/public/privacy.html`
+- Kontaktinis el. paštas: `djpokis@gmail.com`
+- Privatumo politika: `https://djpokis-spark-habits.web.app/privacy.html` (paskelbta ir patikrinta)
 
 Prieš paskelbdami paprašykite lietuvių kalbos redaktoriaus peržiūrėti tekstą, jei norite naudoti
 formalesnį arba konkrečiam regionui pritaikytą toną. Techniniai teiginiai atitinka pradinę

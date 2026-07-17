@@ -10,8 +10,9 @@ guide.
 
 ## Short version: get the first Internal test into Google Play
 
-**TL;DR:** follow the table from top to bottom. Your immediate tasks are confirming the package
-ID and supplying the privacy details; Codex has already completed the safe local verification.
+**TL;DR:** follow the table from top to bottom. The package ID, publisher details, retention,
+audience, and store positioning are confirmed. The remaining account task is publishing the
+prepared privacy page and creating the signed Play bundle.
 
 Start here. All PowerShell commands below are run in **PowerShell at `D:\AI\Spark`** unless a row
 says otherwise. Do not start Google Cloud, Firebase, Premium, or the admin dashboard for this
@@ -19,12 +20,12 @@ first release.
 
 | Step | Who/where | Exact action | Done when |
 | --- | --- | --- | --- |
-| 1. Confirm the permanent ID | **You**, in this document | Decide whether `com.sparkhabits.app` is permanent. If yes, edit nothing. If no, tell Codex the final ID before any Play upload. | You are willing to keep this ID for the lifetime of the Play app. |
-| 2. Provide the publisher details | **You**, edit `docs/privacy-policy.md` and `apps/admin/public/privacy.html` | Replace every `REPLACE_ME` with your real publisher name, address, country, monitored email, and approved retention text. | `rg -n "REPLACE_ME" docs/privacy-policy.md apps/admin/public/privacy.html` prints nothing. |
-| 3. Publish the privacy page | **You**, your existing website or Firebase Hosting | Put the completed `privacy.html` at a stable public HTTPS URL. For Firebase, run `.\spark.cmd deploy -Action Login -Provider Firebase`, then `.\spark.cmd deploy -Action Hosting -ProjectId YOUR_REAL_PROJECT_ID`. | The URL opens without login in a phone browser and an incognito window. |
+| 1. Permanent ID | **Done locally** | `com.djpokis.sparkhabits.app` was selected and propagated before any Play upload. Do not change it after upload. | `Inspect` reports the same ID in Expo, helpers, Maestro, and generated Android. |
+| 2. Publisher details | **Done locally; you review** | Domantas Judeikis, the supplied Vilnius address, Lithuania, `djpokis@gmail.com`, and the approved retention defaults are synchronized in both policy files. | `rg -n "REPLACE_ME" docs/privacy-policy.md apps/admin/public/privacy.html` prints nothing. |
+| 3. Publish the privacy page | **Done July 17, 2026** | Static Firebase Hosting only; no database or server runtime was enabled. | `https://djpokis-spark-habits.web.app/privacy.html` returned HTTP 200 without login and contained the approved operator details. |
 | 4. Run the release gate | **Codex or you**, PowerShell at `D:\AI\Spark` | Run `.\spark.cmd release -Action Verify`. | The command exits successfully. Decision reminders may remain; red failures may not. |
 | 5. Test native Android | **You**, connected phone plus PowerShell | Run `.\spark.cmd devices`, copy the printed model/ID, then run `.\spark.cmd release -Action Native -Device "THE_PRINTED_VALUE"` and complete the physical-device checklist. | Onboarding, widgets, reminders, backup, app lock, calendar handoff, and airplane mode pass. |
-| 6. Build the Play bundle | **You**, Expo/EAS from PowerShell | Run `.\spark.cmd release -Action Setup` once, then `.\spark.cmd release -Action Build -Profile production -Message "First internal test"`. | EAS reports a successful Android `.aab` build. |
+| 6. Build the Play bundle | **EAS link done; build remains**, PowerShell | Run `.\spark.cmd release -Action Project` to confirm the existing link, then `.\spark.cmd release -Action Build -Profile production -Message "First internal test"`. | EAS reports a successful Android `.aab` build. |
 | 7. Download one exact bundle | **You**, PowerShell | Run `.\spark.cmd release -Action List -Profile production`, copy its build ID, then run `.\spark.cmd release -Action Download -BuildId THE_ID`. | One `.aab` exists under `artifacts\eas`. |
 | 8. Create the Play app | **You**, [Play Console](https://play.google.com/console/) | **Home → Create app**; use name `Spark`, type `App`, price `Free`, your default listing language, and a monitored support email. | Spark's Play Console dashboard opens. |
 | 9. Upload to Internal | **You**, Play Console | Open **Test and release → Internal testing** (or search the left menu for **Internal testing**), add your tester account, create a release, and upload the exact `.aab`. | Play gives you an Internal-test opt-in link. |
@@ -33,28 +34,31 @@ first release.
 
 ### Current local status—already checked by Codex
 
-**TL;DR:** code, tests, Android tooling, versioning, and AAB configuration are ready. The release
-gate is waiting only for your package-ID confirmation and real privacy-policy values.
+**TL;DR:** code, tests, Android tooling, identity, privacy text, graphics, and AAB configuration
+are ready locally. Firebase Hosting and EAS project linking are complete. EAS signing/build,
+physical-device sign-off, Play upload, and console attestations remain.
 
 The commands `.\spark.cmd release -Action Inspect`, `.\spark.cmd release`, and the complete
 `.\spark.cmd release -Action Verify` were run on **July 17, 2026**. Re-run `Inspect` whenever you
-want a fresh status. Verify currently exits with code 1 only at its final privacy-placeholder
-gate; its doctor, TypeScript, 258 tests, coverage runs, and all production builds pass first.
+want a fresh status. Doctor, TypeScript, 258 tests, coverage, production builds, identity,
+privacy, listing, and graphics checks form the local release gate.
 
 | Item | Current result |
 | --- | --- |
-| Package ID consistency | Ready: Expo, PowerShell helpers, Maestro, and generated Android all use `com.sparkhabits.app`. **You still must confirm it is permanent.** |
+| Package ID consistency | Confirmed: Expo, PowerShell helpers, Maestro, cloud templates, tests, and regenerated Android use `com.djpokis.sparkhabits.app`. |
 | Version | Ready: public/mobile/native version `0.1.0`; native version code `1`. |
 | Bundle configuration | Ready: EAS production output is an Android App Bundle and the default submit track is Internal. |
-| Automated verification | Ready except policy identity: doctor, all workspace types, 258 tests, coverage, and all builds pass. The final release check stops on the two privacy files below. |
+| Automated verification | Doctor, all workspace types, 258 tests, coverage, builds, identity, listing limits, and graphics checks are automated. |
+| Local Android release build | `assembleRelease` passed July 17, 2026; the APK reports package `com.djpokis.sparkhabits.app`, version `0.1.0` / code `1`, target API 36, and no forbidden calendar/media/storage/overlay/camera/microphone/location permission. Physical-device sign-off remains. |
 | First-build cloud boundary | Ready locally: API blank, remote config off, creator-tip link off. Re-check the separate EAS environment before building. |
-| Privacy policy | **Blocked on your information:** both policy files still contain `REPLACE_ME`. Codex cannot invent your legal identity, address, contact mailbox, or retention decision. |
-| EAS link | **Not configured locally:** run the Setup action only when you are ready to sign in and create/link the Expo project. |
-| Store assets | **Ready:** six real-app screenshots, icon, feature graphic, English/Lithuanian copy, alt text, and an upload manifest are in `store/android`. |
+| Privacy policy | Filled consistently and live at `https://djpokis-spark-habits.web.app/privacy.html`; HTTP 200 and approved operator details verified July 17, 2026. |
+| EAS link | **Ready:** `@djpokis-team/spark-adhd-habits`, project ID `d13c96e7-3533-4fdb-88da-48e0b5a4f932`; no hosted build has been started. |
+| Store assets | **Ready:** six real-app screenshots, icon, feature graphic, listings for all 19 bundled languages, alt text, and an upload manifest are in `store/android`. |
 | Play forms/testing | **Prepared but manual:** recommended answers are in `store/android/declarations.md`; your account, legal attestations, final policy URL, and tester actions cannot be automated. |
 
-If you only want the next action, fix the two privacy files and confirm the package ID. Then run
-`.\spark.cmd release -Action Verify`. Everything after that requires your Expo or Play account.
+If you only want the next action, run `.\spark.cmd release -Action Verify`, then complete the
+physical-device checks and create the production EAS build. The signed AAB and Play upload still
+require deliberate authenticated actions.
 
 ## The recommended first release
 
@@ -79,6 +83,9 @@ build or hosting usage, not Spark user count.
 | Premium/admin/support | Do not enable for the first release | $0 while disabled. Their user-scale estimates and switches are in the [cost register](./08-cost-controls.md). |
 
 These are infrastructure/runtime estimates, not tax, legal-review, design, or paid-marketing costs.
+The selected Firebase project was checked on July 17, 2026: Cloud Billing was disabled and no
+billing account was attached. A future feature that requires the Blaze plan must not silently
+change that setting; review the cost register and explicitly approve billing first.
 
 For that first upload you do **not** need:
 
@@ -107,8 +114,8 @@ You need **before Closed/Open/Production distribution**:
 
 The shortest order is:
 
-1. Decide whether to keep `com.sparkhabits.app`.
-2. Replace the privacy-policy placeholders and publish the HTML policy.
+1. Keep the confirmed `com.djpokis.sparkhabits.app` identity unchanged.
+2. Publish the completed HTML privacy policy on the selected Firebase Hosting project.
 3. Run Spark's release checks and native-device tests.
 4. Use EAS Build to create a signed `.aab`.
 5. Create the Play Console app and upload the `.aab` to **Internal testing**.
@@ -120,12 +127,12 @@ The shortest order is:
 
 > **TL;DR — read once:** the only permanent identifier is the Android package ID. **Where to
 > verify it:** run `.\spark.cmd release -Action Inspect`. The store name and version can change;
-> `com.sparkhabits.app` must not change after the first Play artifact upload.
+> `com.djpokis.sparkhabits.app` must not change after the first Play artifact upload.
 
 | Term | Spark value/example | What it means | Can it change later? |
 | --- | --- | --- | --- |
 | Store app name | `Spark` | The public name users see in Google Play. | Yes. |
-| Android package ID / application ID | `com.sparkhabits.app` | The permanent technical identity inside the Android bundle and Play listing. | Treat as permanent after the first uploaded artifact. |
+| Android package ID / application ID | `com.djpokis.sparkhabits.app` | The confirmed permanent technical identity inside the Android bundle and Play listing. | Do not change after the first uploaded artifact. |
 | Expo slug | `spark-adhd-habits` | Expo's project-friendly name. It is not the Play package ID. | Possible, but avoid unnecessary changes after EAS setup. |
 | EAS project ID | Generated by Expo | Connects this folder to an Expo project/build history. | Do not casually replace after setup. |
 | Google Cloud project ID | Example: `spark-production-123` | Optional cloud infrastructure identifier. It is not the Play package ID. | The chosen project remains separate from the app identity. |
@@ -139,35 +146,33 @@ uploaded even to Internal testing fixes the package name for that Play app. See
 [Create and set up your app](https://support.google.com/googleplay/android-developer/answer/9859152)
 and [Set up a test](https://support.google.com/googleplay/android-developer/answer/9845334).
 
-## 1. Decide the permanent package ID
+## 1. Permanent package ID — confirmed
 
-> **TL;DR — manual decision. Where:** `apps/mobile/app.config.ts`, then the files listed below.
-> **Do:** keep `com.sparkhabits.app` unchanged, or give Codex the final replacement before any
-> Play upload. **Verify:** `.\spark.cmd release -Action Inspect` shows the same ID everywhere.
+> **TL;DR — done:** the operator selected `com.djpokis.sparkhabits.app` before any Play upload.
+> Codex propagated it through source, tools, tests, cloud templates, and generated Android.
+> **Verify:** `.\spark.cmd release -Action Inspect` shows the same ID everywhere.
 
 The current ID is:
 
 ```text
-com.sparkhabits.app
+com.djpokis.sparkhabits.app
 ```
 
-This is technically valid. You may keep it. Owning a matching domain is not required by Android,
-but a reverse-domain namespace controlled by you or your organization reduces naming and brand
-confusion. For example, if your permanent brand namespace were `example.com`, an ID could be
-`com.example.spark`.
+This identifier is technically valid and was explicitly confirmed by the publisher. It is also
+used as the future iPhone bundle identifier so the product identity remains consistent.
 
 Do not put an email address, spaces, hyphens, display name, environment name, or secret in the
 package ID. Use lowercase dot-separated identifier segments.
 
-### If you keep `com.sparkhabits.app`
+### Confirmed status
 
-**TL;DR:** no file edit is required. Record your decision and continue to section 2.
+**TL;DR:** the one-time rename is complete. Continue to section 2; do not repeat the rename after
+the first Play upload.
 
-Do not edit the package-related files. Record that you intentionally accepted it, and continue to
-the privacy-policy section. The release checker warning is a reminder, not evidence that the ID
-is invalid.
+The package-related files and local native Android project must remain aligned. Spark's release
+checker treats any disagreement as an error.
 
-### If you change it
+### If a different ID is ever requested before the first upload
 
 **TL;DR:** stop here and ask Codex to perform the one-time rename. Do not upload any existing
 Spark APK/AAB to Play, and do not hand-edit generated Android package folders.
@@ -199,7 +204,7 @@ below explain why; they are not a list of files you should change manually one b
 
 | File | What is inside | Why it must match |
 | --- | --- | --- |
-| `apps/mobile/app.config.ts` | `const packageName = 'com.sparkhabits.app'` | Primary Expo source for Android `package` and the future iPhone bundle identifier. |
+| `apps/mobile/app.config.ts` | `const packageName = 'com.djpokis.sparkhabits.app'` | Primary Expo source for Android `package` and the future iPhone bundle identifier. |
 | `spark.ps1` | `$script:PackageName` | Lets `spark.cmd stop` and other Android helpers address the correct installed app. |
 | `apps/mobile/e2e/maestro/full-offline-flow.yaml` | `appId` | Tells the device-level test which app to launch. |
 
@@ -228,8 +233,8 @@ so later Play verification cannot accidentally point at the former ID.
 | `infra/terraform/terraform.tfvars.example` | Example operator configuration. |
 | `infra/terraform/terraform.tfvars` | Your real local Terraform values, if this ignored file exists. It normally does not exist before cloud setup. |
 
-The warning rule in `scripts/release-check.mjs` intentionally keeps the original ID so it can
-detect an undecided checkout. Do **not** replace that comparison when renaming the app.
+The release checker reads the configured ID and requires every helper/generated identity to
+match it; there is no unresolved package-name warning.
 
 `apps/mobile/.env.example` does **not** currently contain the package ID and does not need a
 package edit. `infra/terraform/main.tf` passes a variable and also does not need a literal rename.
@@ -289,13 +294,13 @@ and service defaults should not.
 If you are unsure about the rename, stop before running `prebuild --clean` and ask Codex to make
 and verify the one-time rename. There is no advantage to doing it manually under time pressure.
 
-## 2. Fill the release identity and privacy policy
+## 2. Release identity and privacy policy — filled
 
-> **TL;DR — your information is required. Where:** edit `docs/privacy-policy.md` and
-> `apps/admin/public/privacy.html`. **Do:** replace every placeholder with the same real details,
-> then host the HTML. **Verify locally:** `rg -n "REPLACE_ME" docs/privacy-policy.md
-> apps/admin/public/privacy.html` returns no matches. **Verify publicly:** the HTTPS URL opens
-> logged out on a phone.
+> **TL;DR — local work and hosting done. Where:** `docs/privacy-policy.md`,
+> `apps/admin/public/privacy.html`. **Recorded:** Domantas Judeikis, the supplied Vilnius postal
+> address, Lithuania, `djpokis@gmail.com`, and the approved retention schedule. **Live URL:**
+> `https://djpokis-spark-habits.web.app/privacy.html`. **Remaining:** confirm the address/postal
+> code is exactly how it should appear publicly.
 
 Two policy files exist because they serve different purposes:
 
@@ -304,20 +309,10 @@ Two policy files exist because they serve different purposes:
 | `docs/privacy-policy.md` | Detailed editable source/reference for you and reviewers. | No; a repository Markdown file is not the public policy URL. |
 | `apps/admin/public/privacy.html` | Public HTML page that can be deployed as a normal website. | Yes, after it is filled and hosted at a stable public HTTPS URL. |
 
-The release checker intentionally fails while either file contains `REPLACE_ME`.
-
-### What the placeholders mean
-
-**TL;DR:** use your real Play publisher/operator details—not examples. Codex can insert values you
-provide, but it cannot choose or invent legal identity, address, mailbox, or retention periods.
-
-| Placeholder | What to enter | Example format—not a value to copy |
-| --- | --- | --- |
-| `REPLACE_ME_LEGAL_NAME` | The person or registered organization actually publishing/operating Spark. It should align with the Play developer identity. | `Jane Example` or `Example Tools UAB` |
-| `REPLACE_ME_POSTAL_ADDRESS` | A valid contact/business address chosen with appropriate privacy and legal advice. Do not invent one. | `Street 1, City, Postal code` |
-| `REPLACE_ME_COUNTRY` | Operator's country. | `Lithuania` |
-| `REPLACE_ME@example.com` | A real, monitored privacy/support mailbox. Prefer a role address that will survive personnel changes. | `privacy@your-domain.example` |
-| `REPLACE_ME` / `REPLACE_ME_RETENTION_APPROVAL` retention text | Your approved final retention periods. The template suggests 90 days for support and 365 days for admin audit records, but you must decide whether those periods fit your operation and laws. | Keep the chosen numbers and remove the instruction text. |
+The release checker requires both policy files to contain the completed values and remain
+consistent. The approved starting schedule is 90 days after the latest support message, up to 180
+days after promo reconciliation, 365 days for administrative security records, cloud identity
+until deletion, and purchase records only as required for fraud, tax, accounting, or law.
 
 Also update the effective date whenever the policy materially changes. The Markdown and hosted
 HTML must describe the same released app. Do not promise that Spark has no cloud data if the
@@ -332,10 +327,9 @@ and [Health content policy](https://support.google.com/googleplay/android-develo
 
 ### Hosting the policy with minimal cloud footprint
 
-**TL;DR:** prefer an existing website. Otherwise, from `D:\AI\Spark`, run Firebase Login and then
-the guarded Hosting command shown below with your real project ID. Done means
-`https://PROJECT_ID.web.app/privacy.html` opens without login. Do not deploy Firestore or Cloud
-Run for this page.
+**TL;DR:** completed July 17, 2026 using Firebase project `djpokis-spark-habits`. The exact URL is
+`https://djpokis-spark-habits.web.app/privacy.html`; it returned HTTP 200 without login. Only
+Hosting was deployed—Firestore and Cloud Run remain disabled.
 
 If you already have a public website, copy the finished HTML there. Otherwise Spark's existing
 Firebase Hosting configuration can publish it without enabling Cloud Run, Firestore, support, or
@@ -343,7 +337,7 @@ purchases:
 
 ```powershell
 .\spark.cmd deploy -Action Login -Provider Firebase
-.\spark.cmd deploy -Action Hosting -ProjectId YOUR_FIREBASE_PROJECT_ID
+.\spark.cmd deploy -Action Hosting -ProjectId djpokis-spark-habits
 ```
 
 The admin build copies `privacy.html` into `apps/admin/dist` alongside the static, signed-out
@@ -356,7 +350,7 @@ confirmation before it changes Hosting.
 The expected URL is similar to:
 
 ```text
-https://YOUR_FIREBASE_PROJECT_ID.web.app/privacy.html
+https://djpokis-spark-habits.web.app/privacy.html
 ```
 
 Open that exact URL in a private/incognito browser window and on a phone. Confirm that it needs no
@@ -415,12 +409,10 @@ can also run only the release file check with:
 .\spark.cmd release
 ```
 
-Typical messages:
-
-- `Replace operator placeholders...` means the privacy files still contain `REPLACE_ME`.
-- `Confirm ... final permanent Play package name` is a decision reminder, not a failed build.
-- `Manual release requirements...` lists tasks no script can honestly complete for you, such as
-  screenshots, account classification, and legal declarations.
+Typical messages now concern a real file mismatch, invalid asset, build failure, or an
+account-authenticated task. Package identity, policy values, screenshots, listing text, audience,
+and the recommended health category are already recorded locally; Play Console still requires the
+publisher's personal attestation.
 
 Do not bypass a failing release check with `--force` or by deleting the check. Resolve or document
 each item.
@@ -469,8 +461,8 @@ development signing. Follow [Testing](./testing.md) and the device sections of t
 
 ## 6. Create the production Android App Bundle with EAS
 
-> **TL;DR — where:** PowerShell at `D:\AI\Spark`, using your Expo account. **Do once:**
-> `.\spark.cmd release -Action Setup`. **Build:** `.\spark.cmd release -Action Build -Profile
+> **TL;DR — where:** PowerShell at `D:\AI\Spark`, using your Expo account. **Setup is done:**
+> `.\spark.cmd release -Action Project` shows `@djpokis-team/spark-adhd-habits`. **Build:** `.\spark.cmd release -Action Build -Profile
 > production -Message "First internal test"`. **Download:** List, copy the exact build ID, then
 > Download it. **Done when:** `artifacts\eas` contains the successful `.aab`. Hosted quota/cost
 > may apply, so read the confirmation before typing it.
@@ -535,17 +527,18 @@ Spark's generated project currently targets API 36. Google requires API 35 throu
 for the current project, but confirm the target reported by Play for every uploaded bundle. See
 the [live target API requirement](https://developer.android.com/google/play/requirements/target-sdk).
 
-Because Spark uses a dynamic `app.config.ts`, check `apps/mobile/.env` after `eas init`. If EAS did
-not write the project UUID automatically, copy the UUID shown by EAS into this uncommitted local
-value:
+Spark uses a dynamic `app.config.ts`. The confirmed EAS owner and public project UUID are now safe
+fallbacks in that tracked configuration, and the local ignored `apps/mobile/.env` contains the
+same values:
 
 ```text
-EXPO_PROJECT_ID=00000000-0000-0000-0000-000000000000
+EXPO_OWNER=djpokis-team
+EXPO_PROJECT_ID=d13c96e7-3533-4fdb-88da-48e0b5a4f932
 ```
 
-Use the real UUID, not the example. Confirm the link with
-`.\spark.cmd release -Action Project`.
-The `.env` file is local configuration and must not be committed.
+Confirm the link with `.\spark.cmd release -Action Project`. The project UUID and owner slug are
+public identifiers and are also present in `.env.example`; passwords, signing credentials, and
+service keys must never be committed.
 
 After the build finishes, list and download one exact build rather than relying on an ambiguous
 latest file:
@@ -615,7 +608,8 @@ Google's current setup instructions are in
 > **TL;DR — where:** Play Console → **Grow users → Store presence → Main store listing** (or use
 > the console search for **Main store listing**). **Do:** run `.\spark.cmd release -Action
 > Assets`, then follow `store/android/README.md`. The complete upload-ready pack already includes
-> the English/Lithuanian copy, icon, feature graphic, six screenshots, upload order, and image
+> the English default plus all 18 localized listings, icon, feature graphic, six screenshots,
+> upload order, and image
 > descriptions. **Done when:** the local check passes, Play shows no missing listing fields, and
 > every pictured feature exists in the uploaded AAB.
 

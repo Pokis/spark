@@ -1,4 +1,4 @@
-appId: com.sparkhabits.app
+appId: com.djpokis.sparkhabits.app
 name: Spark full offline journey
 ---
 - launchApp:

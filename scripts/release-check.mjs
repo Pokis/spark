@@ -2,6 +2,27 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const storeListingFiles = [
+  'ar-SA.md',
+  'de-DE.md',
+  'en-US.md',
+  'es-ES.md',
+  'fr-FR.md',
+  'hi-IN.md',
+  'id-ID.md',
+  'it-IT.md',
+  'ja-JP.md',
+  'ko-KR.md',
+  'lt-LT.md',
+  'nl-NL.md',
+  'pl-PL.md',
+  'pt-BR.md',
+  'ru-RU.md',
+  'tr-TR.md',
+  'uk-UA.md',
+  'vi-VN.md',
+  'zh-CN.md',
+].map((name) => `store/android/listing/${name}`);
 const required = [
   'apps/mobile/app.config.ts',
   'apps/mobile/eas.json',
@@ -15,8 +36,9 @@ const required = [
   'store/android/README.md',
   'store/android/asset-manifest.md',
   'store/android/declarations.md',
-  'store/android/listing/en-US.md',
-  'store/android/listing/lt-LT.md',
+  'store/android/release-decisions.md',
+  'store/android/listing/README.md',
+  ...storeListingFiles,
   'store/android/source/feature-graphic-background.png',
   'store/android/source/phone/01-today-final.png',
   'store/android/source/phone/focus-original.png',
@@ -100,7 +122,7 @@ function textBlocks(path) {
   );
 }
 
-for (const path of ['store/android/listing/en-US.md', 'store/android/listing/lt-LT.md']) {
+for (const path of storeListingFiles) {
   const blocks = textBlocks(path);
   if (blocks.length < 3) {
     console.error(`✗ ${path} must contain app name, short description, and full description blocks.`);
@@ -233,12 +255,6 @@ if (!packageName) {
   }
 }
 
-if (packageName === 'com.sparkhabits.app') {
-  console.warn(
-    '⚠ Confirm com.sparkhabits.app is the final permanent Play package name before the first upload.',
-  );
-}
-
 const maestroDirectory = join(root, 'apps', 'mobile', 'e2e', 'maestro');
 const maestroFlows = existsSync(maestroDirectory)
   ? readFileSync(join(maestroDirectory, 'full-offline-flow.yaml'), 'utf8')
@@ -249,7 +265,7 @@ if (!maestroFlows.includes('That was a real focus block')) {
 }
 
 console.log(
-  '\nManual requirements before wider release: publish the completed privacy policy, confirm package/audience/health choices, upload the prepared store pack, and personally attest the Play forms. Active Google Play product configuration is needed only when purchases are enabled.',
+  '\nManual requirements before wider release: confirm the hosted privacy URL still opens, upload the prepared store pack, and personally attest the Play forms. Active Google Play product configuration is needed only when purchases are enabled.',
 );
 
 if (failed) process.exitCode = 1;

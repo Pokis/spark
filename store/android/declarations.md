@@ -4,6 +4,23 @@ Use this as a form-by-form worksheet in Play Console. It describes the exact **f
 default-off production profile** currently configured in the repository. It is not a substitute
 for reading the wording shown in your own Play Console or for your final legal attestation.
 
+## Confirmed publisher decisions
+
+| Decision | Confirmed value |
+| --- | --- |
+| Permanent package ID | `com.djpokis.sparkhabits.app` |
+| Publisher/account type | Individual |
+| Public developer/operator name | Domantas Judeikis |
+| Country | Lithuania |
+| Privacy and support email | `djpokis@gmail.com` |
+| Initial price | Free |
+| Availability intent | All countries/regions offered by Play, subject to Play eligibility and law |
+| Default listing | English, with every bundled Spark language prepared as a translation |
+| Target audience | Adults aged 18 and over; not directed to children |
+| Health feature | Stress Management, Relaxation, Mental Acuity; non-clinical self-management |
+| Cloud/purchases/analytics/ads/tip link | Disabled for the initial build |
+| Privacy hosting project | `djpokis-spark-habits`; static Firebase Hosting only |
+
 ## Build facts to verify first
 
 Run:
@@ -19,7 +36,9 @@ Continue only if the build still has:
 - remote config off;
 - purchases and entitlement verification off;
 - creator-tip link off;
-- no analytics, advertising, crash-reporting, session-replay, or remote-push SDK enabled;
+- no analytics, advertising, crash-reporting, or session-replay SDK; and no remote push-token
+  registration, remote notification delivery, or push server configured (`expo-notifications` is
+  used only for on-device scheduled reminders);
 - no login or account creation; and
 - local habits, notes, routines, focus history, experiments, and progress only.
 
@@ -99,9 +118,9 @@ The app has no account system, so there is no in-app or web account-deletion wor
 Users can erase Spark's local content from in-app privacy/data controls, Android app storage, or
 by uninstalling. Do not claim a hosted deletion URL exists.
 
-The public privacy-policy URL is still mandatory for broader Play distribution. Publish the
-completed `apps/admin/public/privacy.html` at a stable HTTPS URL and use the same operator details
-as `docs/privacy-policy.md`.
+The public privacy-policy URL is
+`https://djpokis-spark-habits.web.app/privacy.html`. It was deployed and verified without sign-in
+on July 17, 2026, and uses the same operator details as `docs/privacy-policy.md`.
 
 ## Health apps declaration
 
@@ -136,7 +155,7 @@ or any medical condition and is not a substitute for professional care.
 
 | Play card | Recommended answer for initial build |
 | --- | --- |
-| Privacy policy | Public HTTPS URL for the completed Spark policy; no login, PDF download, or edit permission required |
+| Privacy policy | `https://djpokis-spark-habits.web.app/privacy.html`; live and verified without login on July 17, 2026 |
 | News app | No |
 | COVID-19 contact tracing/status | No |
 | Government app | No |
@@ -154,7 +173,9 @@ photos/media permissions.
 Expected permissions include network state/Internet from the app framework and dormant optional
 integration libraries; notifications, vibration, wake lock, boot completion, foreground service,
 biometric authentication, screen-capture protection, Play Billing, install referrer, and launcher
-badge integration. None gives Spark access to restricted personal content by itself.
+badge integration. The notifications library also contributes the FCM/C2DM receive permission,
+but this build never requests a push token or configures remote delivery. None gives Spark access
+to restricted personal content by itself.
 
 No sensitive/restricted-permission declaration is expected for the current manifest. Always
 inspect the final `.aab` in Play Console's App Bundle Explorer because dependency updates can
@@ -188,9 +209,9 @@ forms before publishing that build.
 
 ## Manual confirmations before submission
 
-- [ ] `com.sparkhabits.app` is the permanent ID.
-- [ ] Publisher/operator name, postal address, country, monitored email, and retention language are real and consistent.
-- [ ] Privacy URL is public HTTPS and opens without sign-in.
+- [x] `com.djpokis.sparkhabits.app` is the permanent ID.
+- [x] Publisher/operator name, postal address, country, monitored email, and retention language are supplied consistently.
+- [x] Privacy URL is public HTTPS and opens without sign-in.
 - [ ] The signed `.aab` uses the offline/default-off profile described above.
 - [ ] 18+ is the intended audience.
 - [ ] Health category and disclaimer match the live Play wording.

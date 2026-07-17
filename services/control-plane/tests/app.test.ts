@@ -363,7 +363,7 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
     purchases,
     app: createApp(dependencies, {
       premiumProductId: 'spark_premium_lifetime',
-      packageName: 'com.sparkhabits.app'
+      packageName: 'com.djpokis.sparkhabits.app'
     })
   };
 }
@@ -590,7 +590,7 @@ describe('Spark control plane', () => {
       })
       .expect(200);
     const notification = {
-      packageName: 'com.sparkhabits.app',
+      packageName: 'com.djpokis.sparkhabits.app',
       voidedPurchaseNotification: {
         purchaseToken,
         orderId: 'order-1',
@@ -627,7 +627,7 @@ describe('Spark control plane', () => {
     const { app, purchases } = setup();
     purchases.failuresRemaining = 1;
     const body = pubSubBody('retryable-event', {
-      packageName: 'com.sparkhabits.app',
+      packageName: 'com.djpokis.sparkhabits.app',
       oneTimeProductNotification: {
         notificationType: 1,
         purchaseToken: 'a-retryable-purchase-token',

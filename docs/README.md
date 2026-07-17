@@ -12,7 +12,7 @@ task below; you do not need to read the repository front to back.
 5. [Release checklist](./release-checklist.md) — staged Internal, Closed, and Production gates.
 
 The ready-to-upload [Google Play submission pack](../store/android/README.md) contains the final
-graphics, English and Lithuanian listing copy, screenshot descriptions, and form-by-form
+graphics, listings for all 19 bundled languages, screenshot descriptions, and form-by-form
 declarations in one place.
 
 On Windows, [PowerShell command helper](./12-powershell-tools.md) provides guided commands for
@@ -50,7 +50,8 @@ folder backup permissions, billing, accessibility, SQLCipher, sound, and Android
 1. [Android release quick steps](./03-android-release.md#short-version-get-the-first-internal-test-into-google-play)
 2. [Google Play submission pack](../store/android/README.md)
 3. [Release checklist](./release-checklist.md)
-4. [Privacy-policy template](./privacy-policy.md) when the guide tells you to fill it
+4. [Completed privacy-policy source](./privacy-policy.md) and its verified public HTML URL when
+   Play asks for it
 5. [Privacy and Google Play policy reference](./09-data-privacy-and-play-policy.md) only when
    completing Play's declarations
 

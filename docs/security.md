@@ -87,12 +87,14 @@ steps, impact, and any suggested mitigation.
 - A repository scan found no private-key, OpenAI-style secret, Firebase API-key, or service-account
   private-key patterns outside ignored dependency/generated directories. `gitleaks` and `semgrep`
   are not installed locally, so CI should add one of them before accepting outside contributors.
-- The generated merged release manifest contains none of `READ_CALENDAR`, `WRITE_CALENDAR`,
-  `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, or
-  `SYSTEM_ALERT_WINDOW`; cleartext traffic is not enabled and `allowBackup=false`.
+- The regenerated release APK is `com.djpokis.sparkhabits.app` version `0.1.0` / code `1`, targets
+  API 36, and contains none of the calendar, media/storage, overlay, camera, microphone-recording,
+  or location permissions checked by the release scan; cleartext traffic is not enabled and
+  `allowBackup=false`.
 - All six Spark widget receivers are non-exported. Exported third-party components are the main
   deep-link/share activity, a read-only widget-image provider scoped to its dedicated image
   directory, and AndroidX/Firebase receivers/services protected by their documented platform
   permissions.
-- Gradle successfully produced the native debug APK after the manifest hardening. Upstream
+- Gradle successfully produced the native release APK after the package rename and manifest
+  hardening. Upstream
   Gradle/Kotlin deprecation warnings remain dependency-maintenance items, not build failures.
