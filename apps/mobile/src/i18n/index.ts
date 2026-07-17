@@ -23,7 +23,11 @@ export const supportedLocales: {
   { code: 'ko', label: '한국어' },
   { code: 'zh-Hans', label: '简体中文' },
   { code: 'hi', label: 'हिन्दी' },
-  { code: 'ar', label: 'العربية' }
+  { code: 'ar', label: 'العربية' },
+  { code: 'nl', label: 'Nederlands' },
+  { code: 'tr', label: 'Türkçe' },
+  { code: 'id', label: 'Bahasa Indonesia' },
+  { code: 'vi', label: 'Tiếng Việt' }
 ];
 
 const en = {
@@ -74,11 +78,82 @@ const en = {
   shareImage: 'Share image',
   shareText: 'Share text',
   calendarExport: 'Add to calendar',
-  notMedical: 'Spark supports routines and self-organization; it does not diagnose or treat ADHD.'
+  notMedical: 'Spark supports routines and self-organization; it does not diagnose or treat ADHD.',
+  add: 'Add',
+  delete: 'Delete',
+  edit: 'Edit',
+  archive: 'Archive',
+  restore: 'Restore',
+  select: 'Select',
+  selected: 'Selected',
+  moreActions: 'More actions',
+  fewerActions: 'Fewer actions',
+  chooseNextWin: 'Choose your next win.',
+  todaySoFar: 'Today so far',
+  completedAction: 'completed action',
+  completedActions: 'completed actions',
+  totalSparkPoints: 'total Spark points',
+  viewProgress: 'View Progress',
+  adjustSuggestions: 'Adjust today’s suggestions',
+  suggestedNextActions: 'Suggested next actions',
+  readyWhenYouAre: 'Ready when you are',
+  minutesRemaining: 'minutes remaining',
+  oneTarget: 'One target',
+  thoughtOrTask: 'Thought or task',
+  savedForLater: 'Saved for later',
+  recentCompletedActions: 'Recent completed actions',
+  reviewProgress: 'Review progress',
+  myHabits: 'My habits',
+  myRoutines: 'My routines',
+  manageSettings: 'Manage settings',
+  languageCoverage:
+    'Navigation and essential actions on Today, Focus, Capture, and Progress use this language. Advanced guides and settings use English when a translation is not bundled.'
 } as const;
 
-type TranslationKey = keyof typeof en;
+export type TranslationKey = keyof typeof en;
 type Translation = Partial<Record<TranslationKey, string>>;
+
+export const coreExperienceKeys = [
+  'today',
+  'focus',
+  'capture',
+  'journey',
+  'settings',
+  'save',
+  'cancel',
+  'done',
+  'start',
+  'pause',
+  'resume',
+  'add',
+  'delete',
+  'edit',
+  'archive',
+  'restore',
+  'select',
+  'selected',
+  'moreActions',
+  'fewerActions',
+  'chooseNextWin',
+  'todaySoFar',
+  'completedAction',
+  'completedActions',
+  'totalSparkPoints',
+  'viewProgress',
+  'adjustSuggestions',
+  'suggestedNextActions',
+  'readyWhenYouAre',
+  'minutesRemaining',
+  'oneTarget',
+  'thoughtOrTask',
+  'savedForLater',
+  'recentCompletedActions',
+  'reviewProgress',
+  'myHabits',
+  'myRoutines',
+  'manageSettings',
+  'languageCoverage'
+] as const satisfies readonly TranslationKey[];
 
 const translations: Record<SupportedLocale, Translation> = {
   en,
@@ -225,6 +300,305 @@ const translations: Record<SupportedLocale, Translation> = {
     simpleMode: 'الوضع البسيط', quietNow: 'هدوء اليوم', save: 'حفظ', cancel: 'إلغاء',
     done: 'تم', start: 'ابدأ', pause: 'إيقاف مؤقت', resume: 'متابعة',
     localOnly: 'محفوظ على هذا الجهاز فقط.', moreTools: 'أدوات مفيدة أخرى'
+  },
+  nl: {
+    back: 'Terug', today: 'Vandaag', focus: 'Focus', capture: 'Vastleggen', journey: 'Voortgang',
+    settings: 'Instellingen', newHabit: 'Nieuwe gewoonte', editHabit: 'Gewoonte bewerken',
+    habitHistory: 'Geschiedenis', routine: 'Routine', editRoutine: 'Routine bewerken',
+    newRoutine: 'Nieuwe routine', privacy: 'Privacy', helpNow: 'Help me nu',
+    weeklyReset: 'Weekoverzicht', departureMode: 'Op tijd vertrekken',
+    experiments: 'Probeer een week één verandering', shareProgress: 'Gekozen successen delen',
+    encryptedBackups: 'Versleutelde back-ups', diagnostics: 'Diagnostiek', language: 'Taal',
+    simpleMode: 'Eenvoudige modus', quietNow: 'Nu stil', save: 'Opslaan', cancel: 'Annuleren',
+    done: 'Klaar', start: 'Start', pause: 'Pauze', resume: 'Hervatten', stop: 'Stoppen',
+    localOnly: 'Alleen op dit apparaat opgeslagen.', moreTools: 'Meer handige hulpmiddelen',
+    quickCapture: 'Snel vastleggen', startFocus: 'Focus starten', runningRoutine: 'Lopende routine'
+  },
+  tr: {
+    back: 'Geri', today: 'Bugün', focus: 'Odak', capture: 'Not al', journey: 'İlerleme',
+    settings: 'Ayarlar', newHabit: 'Yeni alışkanlık', editHabit: 'Alışkanlığı düzenle',
+    habitHistory: 'Alışkanlık geçmişi', routine: 'Rutin', editRoutine: 'Rutini düzenle',
+    newRoutine: 'Yeni rutin', privacy: 'Gizlilik', helpNow: 'Şimdi yardım et',
+    weeklyReset: 'Haftalık değerlendirme', departureMode: 'Zamanında çık',
+    experiments: 'Bir değişikliği bir hafta dene', shareProgress: 'Seçilen başarıları paylaş',
+    encryptedBackups: 'Şifreli yedekler', diagnostics: 'Tanılama', language: 'Dil',
+    simpleMode: 'Basit mod', quietNow: 'Şimdi sessiz', save: 'Kaydet', cancel: 'İptal',
+    done: 'Bitti', start: 'Başlat', pause: 'Duraklat', resume: 'Sürdür', stop: 'Durdur',
+    localOnly: 'Yalnızca bu cihazda saklanır.', moreTools: 'Daha fazla yararlı araç',
+    quickCapture: 'Hızlı not', startFocus: 'Odağı başlat', runningRoutine: 'Devam eden rutin'
+  },
+  id: {
+    back: 'Kembali', today: 'Hari ini', focus: 'Fokus', capture: 'Catat', journey: 'Kemajuan',
+    settings: 'Pengaturan', newHabit: 'Kebiasaan baru', editHabit: 'Edit kebiasaan',
+    habitHistory: 'Riwayat kebiasaan', routine: 'Rutinitas', editRoutine: 'Edit rutinitas',
+    newRoutine: 'Rutinitas baru', privacy: 'Privasi', helpNow: 'Bantu saya sekarang',
+    weeklyReset: 'Tinjauan mingguan', departureMode: 'Berangkat tepat waktu',
+    experiments: 'Coba satu perubahan selama seminggu', shareProgress: 'Bagikan keberhasilan pilihan',
+    encryptedBackups: 'Cadangan terenkripsi', diagnostics: 'Diagnostik', language: 'Bahasa',
+    simpleMode: 'Mode sederhana', quietNow: 'Hening sekarang', save: 'Simpan', cancel: 'Batal',
+    done: 'Selesai', start: 'Mulai', pause: 'Jeda', resume: 'Lanjutkan', stop: 'Hentikan',
+    localOnly: 'Disimpan hanya di perangkat ini.', moreTools: 'Alat bantu lainnya',
+    quickCapture: 'Catatan cepat', startFocus: 'Mulai fokus', runningRoutine: 'Rutinitas berjalan'
+  },
+  vi: {
+    back: 'Quay lại', today: 'Hôm nay', focus: 'Tập trung', capture: 'Ghi lại', journey: 'Tiến độ',
+    settings: 'Cài đặt', newHabit: 'Thói quen mới', editHabit: 'Sửa thói quen',
+    habitHistory: 'Lịch sử thói quen', routine: 'Quy trình', editRoutine: 'Sửa quy trình',
+    newRoutine: 'Quy trình mới', privacy: 'Quyền riêng tư', helpNow: 'Giúp tôi ngay',
+    weeklyReset: 'Xem lại tuần', departureMode: 'Rời đi đúng giờ',
+    experiments: 'Thử một thay đổi trong một tuần', shareProgress: 'Chia sẻ thành quả đã chọn',
+    encryptedBackups: 'Bản sao lưu mã hóa', diagnostics: 'Chẩn đoán', language: 'Ngôn ngữ',
+    simpleMode: 'Chế độ đơn giản', quietNow: 'Yên tĩnh ngay', save: 'Lưu', cancel: 'Hủy',
+    done: 'Xong', start: 'Bắt đầu', pause: 'Tạm dừng', resume: 'Tiếp tục', stop: 'Dừng',
+    localOnly: 'Chỉ lưu trên thiết bị này.', moreTools: 'Thêm công cụ hữu ích',
+    quickCapture: 'Ghi nhanh', startFocus: 'Bắt đầu tập trung', runningRoutine: 'Quy trình đang chạy'
+  }
+};
+
+const dailyTranslations: Record<SupportedLocale, Translation> = {
+  en,
+  es: {
+    add: 'Añadir', delete: 'Eliminar', edit: 'Editar', archive: 'Archivar', restore: 'Restaurar',
+    select: 'Seleccionar', selected: 'Seleccionado', moreActions: 'Más acciones',
+    fewerActions: 'Menos acciones', chooseNextWin: 'Elige tu próximo logro.',
+    todaySoFar: 'Hoy hasta ahora', completedAction: 'acción completada',
+    completedActions: 'acciones completadas', totalSparkPoints: 'puntos Spark en total',
+    viewProgress: 'Ver progreso', adjustSuggestions: 'Ajustar las sugerencias de hoy',
+    suggestedNextActions: 'Próximas acciones sugeridas', readyWhenYouAre: 'Cuando estés listo',
+    minutesRemaining: 'minutos restantes', oneTarget: 'Un objetivo',
+    thoughtOrTask: 'Pensamiento o tarea', savedForLater: 'Guardado para después',
+    recentCompletedActions: 'Acciones completadas recientes', reviewProgress: 'Revisar progreso',
+    myHabits: 'Mis hábitos', myRoutines: 'Mis rutinas', manageSettings: 'Administrar ajustes',
+    languageCoverage: 'La navegación y las acciones esenciales de Hoy, Enfoque, Capturar y Progreso usan este idioma. Las guías y ajustes avanzados usan inglés cuando no hay una traducción incluida.'
+  },
+  'pt-BR': {
+    add: 'Adicionar', delete: 'Excluir', edit: 'Editar', archive: 'Arquivar', restore: 'Restaurar',
+    select: 'Selecionar', selected: 'Selecionado', moreActions: 'Mais ações',
+    fewerActions: 'Menos ações', chooseNextWin: 'Escolha sua próxima vitória.',
+    todaySoFar: 'Hoje até agora', completedAction: 'ação concluída',
+    completedActions: 'ações concluídas', totalSparkPoints: 'pontos Spark no total',
+    viewProgress: 'Ver progresso', adjustSuggestions: 'Ajustar as sugestões de hoje',
+    suggestedNextActions: 'Próximas ações sugeridas', readyWhenYouAre: 'Quando você estiver pronto',
+    minutesRemaining: 'minutos restantes', oneTarget: 'Um objetivo',
+    thoughtOrTask: 'Pensamento ou tarefa', savedForLater: 'Guardado para depois',
+    recentCompletedActions: 'Ações concluídas recentes', reviewProgress: 'Revisar progresso',
+    myHabits: 'Meus hábitos', myRoutines: 'Minhas rotinas', manageSettings: 'Gerenciar configurações',
+    languageCoverage: 'A navegação e as ações essenciais de Hoje, Foco, Capturar e Progresso usam este idioma. Guias e configurações avançadas usam inglês quando não há tradução incluída.'
+  },
+  fr: {
+    add: 'Ajouter', delete: 'Supprimer', edit: 'Modifier', archive: 'Archiver', restore: 'Restaurer',
+    select: 'Sélectionner', selected: 'Sélectionné', moreActions: 'Plus d’actions',
+    fewerActions: 'Moins d’actions', chooseNextWin: 'Choisissez votre prochaine réussite.',
+    todaySoFar: 'Aujourd’hui jusqu’ici', completedAction: 'action terminée',
+    completedActions: 'actions terminées', totalSparkPoints: 'points Spark au total',
+    viewProgress: 'Voir les progrès', adjustSuggestions: 'Ajuster les suggestions du jour',
+    suggestedNextActions: 'Prochaines actions suggérées', readyWhenYouAre: 'Quand vous êtes prêt',
+    minutesRemaining: 'minutes restantes', oneTarget: 'Un objectif',
+    thoughtOrTask: 'Pensée ou tâche', savedForLater: 'Enregistré pour plus tard',
+    recentCompletedActions: 'Actions récemment terminées', reviewProgress: 'Voir les progrès',
+    myHabits: 'Mes habitudes', myRoutines: 'Mes routines', manageSettings: 'Gérer les réglages',
+    languageCoverage: 'La navigation et les actions essentielles dans Aujourd’hui, Concentration, Capture et Progrès utilisent cette langue. Les guides et réglages avancés utilisent l’anglais si aucune traduction n’est incluse.'
+  },
+  de: {
+    add: 'Hinzufügen', delete: 'Löschen', edit: 'Bearbeiten', archive: 'Archivieren', restore: 'Wiederherstellen',
+    select: 'Auswählen', selected: 'Ausgewählt', moreActions: 'Mehr Aktionen',
+    fewerActions: 'Weniger Aktionen', chooseNextWin: 'Wähle deinen nächsten Erfolg.',
+    todaySoFar: 'Heute bisher', completedAction: 'erledigte Aktion',
+    completedActions: 'erledigte Aktionen', totalSparkPoints: 'Spark-Punkte insgesamt',
+    viewProgress: 'Fortschritt ansehen', adjustSuggestions: 'Heutige Vorschläge anpassen',
+    suggestedNextActions: 'Vorgeschlagene nächste Aktionen', readyWhenYouAre: 'Wenn du bereit bist',
+    minutesRemaining: 'Minuten verbleibend', oneTarget: 'Ein Ziel',
+    thoughtOrTask: 'Gedanke oder Aufgabe', savedForLater: 'Für später gespeichert',
+    recentCompletedActions: 'Kürzlich erledigte Aktionen', reviewProgress: 'Fortschritt ansehen',
+    myHabits: 'Meine Gewohnheiten', myRoutines: 'Meine Routinen', manageSettings: 'Einstellungen verwalten',
+    languageCoverage: 'Navigation und wichtige Aktionen in Heute, Fokus, Erfassen und Fortschritt verwenden diese Sprache. Erweiterte Anleitungen und Einstellungen verwenden Englisch, wenn keine Übersetzung enthalten ist.'
+  },
+  it: {
+    add: 'Aggiungi', delete: 'Elimina', edit: 'Modifica', archive: 'Archivia', restore: 'Ripristina',
+    select: 'Seleziona', selected: 'Selezionato', moreActions: 'Altre azioni',
+    fewerActions: 'Meno azioni', chooseNextWin: 'Scegli il tuo prossimo successo.',
+    todaySoFar: 'Oggi finora', completedAction: 'azione completata',
+    completedActions: 'azioni completate', totalSparkPoints: 'punti Spark totali',
+    viewProgress: 'Vedi progressi', adjustSuggestions: 'Regola i suggerimenti di oggi',
+    suggestedNextActions: 'Prossime azioni suggerite', readyWhenYouAre: 'Quando sei pronto',
+    minutesRemaining: 'minuti rimanenti', oneTarget: 'Un obiettivo',
+    thoughtOrTask: 'Pensiero o attività', savedForLater: 'Salvato per dopo',
+    recentCompletedActions: 'Azioni completate di recente', reviewProgress: 'Rivedi i progressi',
+    myHabits: 'Le mie abitudini', myRoutines: 'Le mie routine', manageSettings: 'Gestisci impostazioni',
+    languageCoverage: 'La navigazione e le azioni essenziali in Oggi, Focus, Cattura e Progressi usano questa lingua. Le guide e impostazioni avanzate usano l’inglese quando una traduzione non è inclusa.'
+  },
+  pl: {
+    add: 'Dodaj', delete: 'Usuń', edit: 'Edytuj', archive: 'Archiwizuj', restore: 'Przywróć',
+    select: 'Wybierz', selected: 'Wybrano', moreActions: 'Więcej działań',
+    fewerActions: 'Mniej działań', chooseNextWin: 'Wybierz kolejne zwycięstwo.',
+    todaySoFar: 'Dzisiaj do tej pory', completedAction: 'ukończone działanie',
+    completedActions: 'ukończone działania', totalSparkPoints: 'punktów Spark łącznie',
+    viewProgress: 'Zobacz postępy', adjustSuggestions: 'Dostosuj dzisiejsze sugestie',
+    suggestedNextActions: 'Sugerowane następne działania', readyWhenYouAre: 'Kiedy będziesz gotowy',
+    minutesRemaining: 'minut pozostało', oneTarget: 'Jeden cel',
+    thoughtOrTask: 'Myśl lub zadanie', savedForLater: 'Zapisane na później',
+    recentCompletedActions: 'Ostatnio ukończone działania', reviewProgress: 'Przejrzyj postępy',
+    myHabits: 'Moje nawyki', myRoutines: 'Moje rutyny', manageSettings: 'Zarządzaj ustawieniami',
+    languageCoverage: 'Nawigacja i najważniejsze działania na ekranach Dzisiaj, Skupienie, Zapisz i Postępy używają tego języka. Zaawansowane poradniki i ustawienia są po angielsku, jeśli tłumaczenie nie jest dołączone.'
+  },
+  uk: {
+    add: 'Додати', delete: 'Видалити', edit: 'Редагувати', archive: 'Архівувати', restore: 'Відновити',
+    select: 'Вибрати', selected: 'Вибрано', moreActions: 'Більше дій',
+    fewerActions: 'Менше дій', chooseNextWin: 'Оберіть наступну перемогу.',
+    todaySoFar: 'Сьогодні наразі', completedAction: 'виконана дія',
+    completedActions: 'виконані дії', totalSparkPoints: 'балів Spark загалом',
+    viewProgress: 'Переглянути прогрес', adjustSuggestions: 'Налаштувати сьогоднішні пропозиції',
+    suggestedNextActions: 'Запропоновані наступні дії', readyWhenYouAre: 'Коли будете готові',
+    minutesRemaining: 'хвилин залишилося', oneTarget: 'Одна ціль',
+    thoughtOrTask: 'Думка або завдання', savedForLater: 'Збережено на потім',
+    recentCompletedActions: 'Нещодавно виконані дії', reviewProgress: 'Переглянути прогрес',
+    myHabits: 'Мої звички', myRoutines: 'Мої рутини', manageSettings: 'Керувати налаштуваннями',
+    languageCoverage: 'Навігація й основні дії на екранах Сьогодні, Фокус, Занотувати та Прогрес використовують цю мову. Розширені посібники й налаштування показуються англійською, якщо переклад не включено.'
+  },
+  ru: {
+    add: 'Добавить', delete: 'Удалить', edit: 'Изменить', archive: 'Архивировать', restore: 'Восстановить',
+    select: 'Выбрать', selected: 'Выбрано', moreActions: 'Больше действий',
+    fewerActions: 'Меньше действий', chooseNextWin: 'Выберите следующую победу.',
+    todaySoFar: 'Сегодня на данный момент', completedAction: 'выполненное действие',
+    completedActions: 'выполненные действия', totalSparkPoints: 'баллов Spark всего',
+    viewProgress: 'Посмотреть прогресс', adjustSuggestions: 'Настроить сегодняшние предложения',
+    suggestedNextActions: 'Предлагаемые следующие действия', readyWhenYouAre: 'Когда будете готовы',
+    minutesRemaining: 'минут осталось', oneTarget: 'Одна цель',
+    thoughtOrTask: 'Мысль или задача', savedForLater: 'Сохранено на потом',
+    recentCompletedActions: 'Недавно выполненные действия', reviewProgress: 'Посмотреть прогресс',
+    myHabits: 'Мои привычки', myRoutines: 'Мои рутины', manageSettings: 'Управлять настройками',
+    languageCoverage: 'Навигация и основные действия на экранах Сегодня, Фокус, Записать и Прогресс используют этот язык. Расширенные руководства и настройки показываются на английском, если перевод не включён.'
+  },
+  lt: {
+    add: 'Pridėti', delete: 'Ištrinti', edit: 'Redaguoti', archive: 'Archyvuoti', restore: 'Atkurti',
+    select: 'Pasirinkti', selected: 'Pasirinkta', moreActions: 'Daugiau veiksmų',
+    fewerActions: 'Mažiau veiksmų', chooseNextWin: 'Pasirinkite kitą laimėjimą.',
+    todaySoFar: 'Šiandien jau', completedAction: 'atliktas veiksmas',
+    completedActions: 'atlikti veiksmai', totalSparkPoints: 'iš viso „Spark“ taškų',
+    viewProgress: 'Peržiūrėti pažangą', adjustSuggestions: 'Koreguoti šiandienos pasiūlymus',
+    suggestedNextActions: 'Siūlomi kiti veiksmai', readyWhenYouAre: 'Kai būsite pasiruošę',
+    minutesRemaining: 'liko minučių', oneTarget: 'Vienas tikslas',
+    thoughtOrTask: 'Mintis arba užduotis', savedForLater: 'Išsaugota vėlesniam',
+    recentCompletedActions: 'Naujausi atlikti veiksmai', reviewProgress: 'Peržiūrėti pažangą',
+    myHabits: 'Mano įpročiai', myRoutines: 'Mano rutinos', manageSettings: 'Tvarkyti nustatymus',
+    languageCoverage: 'Naršymas ir pagrindiniai veiksmai ekranuose Šiandien, Dėmesys, Užrašyti ir Pažanga rodomi šia kalba. Išplėstiniai vadovai ir nustatymai rodomi angliškai, jei vertimas dar neįtrauktas.'
+  },
+  ja: {
+    add: '追加', delete: '削除', edit: '編集', archive: 'アーカイブ', restore: '復元',
+    select: '選択', selected: '選択済み', moreActions: 'その他の操作', fewerActions: '操作を減らす',
+    chooseNextWin: '次の達成を選びましょう。', todaySoFar: '今日ここまで',
+    completedAction: '完了したアクション', completedActions: '完了したアクション',
+    totalSparkPoints: 'Sparkポイント合計', viewProgress: '進捗を見る',
+    adjustSuggestions: '今日の候補を調整', suggestedNextActions: '次のおすすめアクション',
+    readyWhenYouAre: '準備ができたら', minutesRemaining: '分残り', oneTarget: '1つの目標',
+    thoughtOrTask: '考えやタスク', savedForLater: 'あとで見るために保存',
+    recentCompletedActions: '最近完了したアクション', reviewProgress: '進捗を確認',
+    myHabits: '自分の習慣', myRoutines: '自分のルーティン', manageSettings: '設定を管理',
+    languageCoverage: '「今日」「集中」「メモ」「進捗」のナビゲーションと主要操作はこの言語で表示されます。翻訳が含まれていない詳細ガイドと設定は英語で表示されます。'
+  },
+  ko: {
+    add: '추가', delete: '삭제', edit: '수정', archive: '보관', restore: '복원',
+    select: '선택', selected: '선택됨', moreActions: '더 많은 작업', fewerActions: '작업 줄이기',
+    chooseNextWin: '다음 성취를 선택하세요.', todaySoFar: '오늘 지금까지',
+    completedAction: '완료한 행동', completedActions: '완료한 행동', totalSparkPoints: '총 Spark 포인트',
+    viewProgress: '진행 보기', adjustSuggestions: '오늘의 추천 조정',
+    suggestedNextActions: '추천하는 다음 행동', readyWhenYouAre: '준비되면 시작하세요',
+    minutesRemaining: '분 남음', oneTarget: '하나의 목표', thoughtOrTask: '생각 또는 할 일',
+    savedForLater: '나중을 위해 저장됨', recentCompletedActions: '최근 완료한 행동',
+    reviewProgress: '진행 확인', myHabits: '내 습관', myRoutines: '내 루틴',
+    manageSettings: '설정 관리',
+    languageCoverage: '오늘, 집중, 기록, 진행 화면의 탐색과 주요 작업은 이 언어로 표시됩니다. 번역이 포함되지 않은 고급 안내와 설정은 영어로 표시됩니다.'
+  },
+  'zh-Hans': {
+    add: '添加', delete: '删除', edit: '编辑', archive: '归档', restore: '恢复',
+    select: '选择', selected: '已选择', moreActions: '更多操作', fewerActions: '收起操作',
+    chooseNextWin: '选择你的下一个成果。', todaySoFar: '今天到目前为止',
+    completedAction: '项已完成操作', completedActions: '项已完成操作', totalSparkPoints: 'Spark 总积分',
+    viewProgress: '查看进展', adjustSuggestions: '调整今天的建议',
+    suggestedNextActions: '建议的下一步', readyWhenYouAre: '准备好时开始',
+    minutesRemaining: '分钟剩余', oneTarget: '一个目标', thoughtOrTask: '想法或任务',
+    savedForLater: '已保存供稍后处理', recentCompletedActions: '最近完成的操作',
+    reviewProgress: '查看进展', myHabits: '我的习惯', myRoutines: '我的日程',
+    manageSettings: '管理设置',
+    languageCoverage: '“今天”、“专注”、“记录”和“进展”中的导航和主要操作使用此语言。尚未内置翻译的高级指南和设置将使用英语。'
+  },
+  hi: {
+    add: 'जोड़ें', delete: 'हटाएँ', edit: 'संपादित करें', archive: 'संग्रहित करें', restore: 'वापस लाएँ',
+    select: 'चुनें', selected: 'चुना गया', moreActions: 'और कार्रवाइयाँ', fewerActions: 'कम कार्रवाइयाँ',
+    chooseNextWin: 'अपनी अगली जीत चुनें।', todaySoFar: 'आज अब तक',
+    completedAction: 'पूरा किया गया काम', completedActions: 'पूरे किए गए काम',
+    totalSparkPoints: 'कुल Spark अंक', viewProgress: 'प्रगति देखें',
+    adjustSuggestions: 'आज के सुझाव बदलें', suggestedNextActions: 'सुझाए गए अगले काम',
+    readyWhenYouAre: 'जब आप तैयार हों', minutesRemaining: 'मिनट बाकी', oneTarget: 'एक लक्ष्य',
+    thoughtOrTask: 'विचार या काम', savedForLater: 'बाद के लिए सहेजा गया',
+    recentCompletedActions: 'हाल में पूरे किए गए काम', reviewProgress: 'प्रगति देखें',
+    myHabits: 'मेरी आदतें', myRoutines: 'मेरी दिनचर्याएँ', manageSettings: 'सेटिंग्स प्रबंधित करें',
+    languageCoverage: 'आज, ध्यान, लिखें और प्रगति में नेविगेशन और मुख्य कार्रवाइयाँ इस भाषा में दिखती हैं। जिन उन्नत गाइड और सेटिंग्स का अनुवाद शामिल नहीं है, वे अंग्रेज़ी में दिखती हैं।'
+  },
+  ar: {
+    add: 'إضافة', delete: 'حذف', edit: 'تعديل', archive: 'أرشفة', restore: 'استعادة',
+    select: 'تحديد', selected: 'محدد', moreActions: 'إجراءات إضافية', fewerActions: 'إجراءات أقل',
+    chooseNextWin: 'اختر إنجازك التالي.', todaySoFar: 'اليوم حتى الآن',
+    completedAction: 'إجراء مكتمل', completedActions: 'إجراءات مكتملة',
+    totalSparkPoints: 'إجمالي نقاط Spark', viewProgress: 'عرض التقدم',
+    adjustSuggestions: 'تعديل اقتراحات اليوم', suggestedNextActions: 'الإجراءات التالية المقترحة',
+    readyWhenYouAre: 'عندما تكون مستعدًا', minutesRemaining: 'دقائق متبقية', oneTarget: 'هدف واحد',
+    thoughtOrTask: 'فكرة أو مهمة', savedForLater: 'محفوظ لوقت لاحق',
+    recentCompletedActions: 'الإجراءات المكتملة مؤخرًا', reviewProgress: 'مراجعة التقدم',
+    myHabits: 'عاداتي', myRoutines: 'روتيني', manageSettings: 'إدارة الإعدادات',
+    languageCoverage: 'يستخدم التنقل والإجراءات الأساسية في اليوم والتركيز والتدوين والتقدم هذه اللغة. تستخدم الأدلة والإعدادات المتقدمة الإنجليزية عندما لا تكون الترجمة مضمنة.'
+  },
+  nl: {
+    add: 'Toevoegen', delete: 'Verwijderen', edit: 'Bewerken', archive: 'Archiveren', restore: 'Herstellen',
+    select: 'Selecteren', selected: 'Geselecteerd', moreActions: 'Meer acties', fewerActions: 'Minder acties',
+    chooseNextWin: 'Kies je volgende succes.', todaySoFar: 'Vandaag tot nu toe',
+    completedAction: 'voltooide actie', completedActions: 'voltooide acties',
+    totalSparkPoints: 'Spark-punten in totaal', viewProgress: 'Voortgang bekijken',
+    adjustSuggestions: 'Suggesties voor vandaag aanpassen', suggestedNextActions: 'Voorgestelde volgende acties',
+    readyWhenYouAre: 'Wanneer je er klaar voor bent', minutesRemaining: 'minuten resterend',
+    oneTarget: 'Eén doel', thoughtOrTask: 'Gedachte of taak', savedForLater: 'Opgeslagen voor later',
+    recentCompletedActions: 'Recent voltooide acties', reviewProgress: 'Voortgang bekijken',
+    myHabits: 'Mijn gewoonten', myRoutines: 'Mijn routines', manageSettings: 'Instellingen beheren',
+    languageCoverage: 'Navigatie en belangrijke acties in Vandaag, Focus, Vastleggen en Voortgang gebruiken deze taal. Geavanceerde handleidingen en instellingen gebruiken Engels als er geen vertaling is meegeleverd.'
+  },
+  tr: {
+    add: 'Ekle', delete: 'Sil', edit: 'Düzenle', archive: 'Arşivle', restore: 'Geri yükle',
+    select: 'Seç', selected: 'Seçildi', moreActions: 'Daha fazla işlem', fewerActions: 'Daha az işlem',
+    chooseNextWin: 'Sıradaki başarını seç.', todaySoFar: 'Bugün şu ana kadar',
+    completedAction: 'tamamlanan eylem', completedActions: 'tamamlanan eylem',
+    totalSparkPoints: 'toplam Spark puanı', viewProgress: 'İlerlemeyi gör',
+    adjustSuggestions: 'Bugünün önerilerini ayarla', suggestedNextActions: 'Önerilen sonraki eylemler',
+    readyWhenYouAre: 'Hazır olduğunda', minutesRemaining: 'dakika kaldı', oneTarget: 'Tek hedef',
+    thoughtOrTask: 'Düşünce veya görev', savedForLater: 'Sonrası için kaydedildi',
+    recentCompletedActions: 'Yakın zamanda tamamlanan eylemler', reviewProgress: 'İlerlemeyi gözden geçir',
+    myHabits: 'Alışkanlıklarım', myRoutines: 'Rutinlerim', manageSettings: 'Ayarları yönet',
+    languageCoverage: 'Bugün, Odak, Not al ve İlerleme ekranlarındaki gezinme ve temel işlemler bu dili kullanır. Çevirisi bulunmayan gelişmiş rehberler ve ayarlar İngilizce gösterilir.'
+  },
+  id: {
+    add: 'Tambah', delete: 'Hapus', edit: 'Edit', archive: 'Arsipkan', restore: 'Pulihkan',
+    select: 'Pilih', selected: 'Dipilih', moreActions: 'Tindakan lainnya', fewerActions: 'Lebih sedikit tindakan',
+    chooseNextWin: 'Pilih keberhasilan berikutnya.', todaySoFar: 'Hari ini sejauh ini',
+    completedAction: 'tindakan selesai', completedActions: 'tindakan selesai',
+    totalSparkPoints: 'total poin Spark', viewProgress: 'Lihat kemajuan',
+    adjustSuggestions: 'Sesuaikan saran hari ini', suggestedNextActions: 'Saran tindakan berikutnya',
+    readyWhenYouAre: 'Saat Anda siap', minutesRemaining: 'menit tersisa', oneTarget: 'Satu target',
+    thoughtOrTask: 'Pikiran atau tugas', savedForLater: 'Disimpan untuk nanti',
+    recentCompletedActions: 'Tindakan yang baru selesai', reviewProgress: 'Tinjau kemajuan',
+    myHabits: 'Kebiasaan saya', myRoutines: 'Rutinitas saya', manageSettings: 'Kelola pengaturan',
+    languageCoverage: 'Navigasi dan tindakan penting di Hari ini, Fokus, Catat, dan Kemajuan menggunakan bahasa ini. Panduan dan pengaturan lanjutan menggunakan bahasa Inggris jika terjemahan belum disertakan.'
+  },
+  vi: {
+    add: 'Thêm', delete: 'Xóa', edit: 'Sửa', archive: 'Lưu trữ', restore: 'Khôi phục',
+    select: 'Chọn', selected: 'Đã chọn', moreActions: 'Thêm thao tác', fewerActions: 'Bớt thao tác',
+    chooseNextWin: 'Chọn thành quả tiếp theo.', todaySoFar: 'Hôm nay đến lúc này',
+    completedAction: 'hành động đã hoàn thành', completedActions: 'hành động đã hoàn thành',
+    totalSparkPoints: 'tổng điểm Spark', viewProgress: 'Xem tiến độ',
+    adjustSuggestions: 'Điều chỉnh gợi ý hôm nay', suggestedNextActions: 'Hành động tiếp theo được gợi ý',
+    readyWhenYouAre: 'Khi bạn sẵn sàng', minutesRemaining: 'phút còn lại', oneTarget: 'Một mục tiêu',
+    thoughtOrTask: 'Ý nghĩ hoặc nhiệm vụ', savedForLater: 'Đã lưu để xem sau',
+    recentCompletedActions: 'Hành động vừa hoàn thành', reviewProgress: 'Xem lại tiến độ',
+    myHabits: 'Thói quen của tôi', myRoutines: 'Quy trình của tôi', manageSettings: 'Quản lý cài đặt',
+    languageCoverage: 'Điều hướng và các thao tác chính trong Hôm nay, Tập trung, Ghi lại và Tiến độ dùng ngôn ngữ này. Hướng dẫn và cài đặt nâng cao dùng tiếng Anh khi chưa có bản dịch đi kèm.'
   }
 };
 
@@ -237,13 +611,24 @@ function normalizeLocale(tag?: string | null): SupportedLocale {
   return base in translations ? base : 'en';
 }
 
-export function resolveLocale(setting: AppSettings['language']): SupportedLocale {
-  if (setting !== 'system') return setting;
+export function resolveLocale(setting?: AppSettings['language']): SupportedLocale {
+  if (setting && setting !== 'system') return setting;
   return normalizeLocale(getLocales()[0]?.languageTag);
 }
 
 export function translate(locale: SupportedLocale, key: TranslationKey): string {
-  return translations[locale][key] ?? en[key];
+  return dailyTranslations[locale][key] ?? translations[locale][key] ?? en[key];
+}
+
+export function hasBundledTranslation(
+  locale: SupportedLocale,
+  key: TranslationKey
+): boolean {
+  return locale === 'en' || Boolean(dailyTranslations[locale][key] ?? translations[locale][key]);
+}
+
+export function isRtlLocale(locale: SupportedLocale): boolean {
+  return locale === 'ar';
 }
 
 export function useI18n() {
@@ -251,6 +636,7 @@ export function useI18n() {
   const locale = resolveLocale(settings.language);
   return {
     locale,
+    isRTL: isRtlLocale(locale),
     t: (key: TranslationKey) => translate(locale, key)
   };
 }

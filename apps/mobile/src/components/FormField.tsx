@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { I18nManager, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { useTheme } from '../theme';
 
 export function FormField({
@@ -7,9 +7,13 @@ export function FormField({
   ...props
 }: TextInputProps & { label: string; hint?: string }) {
   const theme = useTheme();
+  const languageStyle = {
+    textAlign: I18nManager.isRTL ? ('right' as const) : ('left' as const),
+    writingDirection: I18nManager.isRTL ? ('rtl' as const) : ('ltr' as const)
+  };
   return (
     <View style={styles.wrapper}>
-      <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
+      <Text style={[styles.label, { color: theme.text }, languageStyle]}>{label}</Text>
       <TextInput
         {...props}
         accessibilityLabel={props.accessibilityLabel ?? label}
@@ -22,10 +26,11 @@ export function FormField({
             backgroundColor: theme.surface,
             borderColor: theme.border
           },
+          languageStyle,
           props.style
         ]}
       />
-      {hint ? <Text style={[styles.hint, { color: theme.textMuted }]}>{hint}</Text> : null}
+      {hint ? <Text style={[styles.hint, { color: theme.textMuted }, languageStyle]}>{hint}</Text> : null}
     </View>
   );
 }

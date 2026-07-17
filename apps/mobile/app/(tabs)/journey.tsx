@@ -16,10 +16,12 @@ import { Screen } from '../../src/components/Screen';
 import { Body, Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
 import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
+import { useI18n } from '../../src/i18n';
 
 export default function JourneyScreen() {
   const spark = useSpark();
   const theme = useTheme();
+  const { locale, t } = useI18n();
   const summary = rewardSummaryFromTotal(spark.completionTotals.totalSparks);
   const days = recentDateKeys(new Date(), spark.timeZone, 14);
   const winsByDay = days.map(
@@ -49,8 +51,8 @@ export default function JourneyScreen() {
   return (
     <Screen testID="journey-screen">
       <View>
-        <Eyebrow>Review progress</Eyebrow>
-        <H1>Your progress & habits</H1>
+        <Eyebrow>{t('reviewProgress')}</Eyebrow>
+        <H1>{t('journey')}</H1>
         <Muted>
           Celebrate completed actions, see where every point came from, and shape your habits
           around what works.
@@ -95,7 +97,7 @@ export default function JourneyScreen() {
       ) : null}
 
       <CollapsibleSection
-        title="Recent completed actions"
+        title={t('recentCompletedActions')}
         summary={`${recentCompletions.length} most recent ${recentCompletions.length === 1 ? 'action' : 'actions'}`}
       >
         <Muted>Each row is an action you deliberately marked Done.</Muted>
@@ -116,7 +118,7 @@ export default function JourneyScreen() {
                   <Text style={[styles.rhythmTitle, { color: theme.text }]}>
                     {habit?.icon ?? '✓'} {variant?.label ?? habit?.title ?? 'Logged action'}
                   </Text>
-                  <Muted>{new Date(completion.occurredAt).toLocaleString()}</Muted>
+                  <Muted>{new Date(completion.occurredAt).toLocaleString(locale)}</Muted>
                 </View>
                 {spark.settings.showRewards ? (
                   <Text style={[styles.points, { color: theme.primary }]}>+{completion.reward}</Text>
@@ -152,7 +154,7 @@ export default function JourneyScreen() {
                 ]}
               />
               <Text style={[styles.dayLabel, { color: theme.textMuted }]}>
-                {new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
+                {new Date(`${day}T12:00:00`).toLocaleDateString(locale, {
                   weekday: 'narrow'
                 })}
               </Text>
@@ -230,12 +232,12 @@ export default function JourneyScreen() {
       ) : null}
 
       <CollapsibleSection
-        title="My habits"
+        title={t('myHabits')}
         summary={`${activeHabits.length} active ${activeHabits.length === 1 ? 'habit' : 'habits'} · tap Show to manage`}
       >
       <Muted>Tap a habit to edit it, pause it, or review its full history.</Muted>
       <Button
-        label="Add a habit"
+        label={t('newHabit')}
         variant="secondary"
         onPress={() => router.push('/habit/new')}
       />
@@ -284,11 +286,11 @@ export default function JourneyScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="My routines"
+        title={t('myRoutines')}
         summary={`${activeRoutines.length} active ${activeRoutines.length === 1 ? 'routine' : 'routines'} · one step at a time`}
       >
       <Button
-        label="Create a routine"
+        label={t('newRoutine')}
         variant="secondary"
         onPress={() => router.push('/routine/new')}
       />
@@ -327,12 +329,12 @@ export default function JourneyScreen() {
               </Text>
               <View style={styles.archiveActions}>
                 <Button
-                  label="Restore"
+                  label={t('restore')}
                   variant="secondary"
                   onPress={() => void spark.restoreRoutine(routine)}
                 />
                 <Button
-                  label="Edit"
+                  label={t('edit')}
                   variant="ghost"
                   onPress={() => router.push(`/routine/${routine.id}/edit`)}
                 />
@@ -343,7 +345,7 @@ export default function JourneyScreen() {
       ) : null}
       </CollapsibleSection>
 
-      <Button label="Manage settings" variant="ghost" onPress={() => router.push('/settings')} />
+      <Button label={t('manageSettings')} variant="ghost" onPress={() => router.push('/settings')} />
       <CollapsibleSection
         title="Plan or share"
         summary="Plan the week, try one change, or share only the wins you choose"
@@ -355,12 +357,12 @@ export default function JourneyScreen() {
           onPress={() => router.push('/weekly-reset')}
         />
         <Button
-          label="Try a change for one week"
+          label={t('experiments')}
           variant="secondary"
           onPress={() => router.push('/experiments')}
         />
         <Button
-          label="Choose wins to share"
+          label={t('shareProgress')}
           variant="ghost"
           onPress={() => router.push('/share-progress')}
         />

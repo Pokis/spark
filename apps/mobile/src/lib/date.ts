@@ -2,16 +2,16 @@ export function deviceTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 }
 
-export function friendlyDate(date = new Date()): string {
-  return new Intl.DateTimeFormat(undefined, {
+export function friendlyDate(date = new Date(), locale?: string): string {
+  return new Intl.DateTimeFormat(locale, {
     weekday: 'long',
     month: 'short',
     day: 'numeric'
   }).format(date);
 }
 
-export function friendlyTime(iso: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+export function friendlyTime(iso: string, locale?: string): string {
+  return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit'
   }).format(new Date(iso));

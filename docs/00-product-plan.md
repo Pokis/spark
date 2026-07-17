@@ -103,7 +103,8 @@ optional cosmetic themes—not casino mechanics.
 - optional device-authentication lock, recent-app/screenshot protection, and notification privacy
 - password/recovery-code encrypted backup plus bounded automatic Android folder backup
 - Android Focus widget and four launcher shortcuts
-- bundled selection for 15 languages including Lithuanian
+- bundled selection for 19 languages including Lithuanian, with translated daily controls,
+  locale-aware dates/times, native per-app locale declarations, and RTL Arabic support
 - content-redacted diagnostics and a packaged Android startup Baseline Profile
 
 ## Features intentionally not in the first public release

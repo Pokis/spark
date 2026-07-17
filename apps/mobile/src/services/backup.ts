@@ -200,7 +200,11 @@ const currentSettingsSchema = z.object({
       'ko',
       'zh-Hans',
       'hi',
-      'ar'
+      'ar',
+      'nl',
+      'tr',
+      'id',
+      'vi'
     ])
     .default(defaultSettings.language),
   simpleMode: z.boolean().default(defaultSettings.simpleMode),

@@ -90,11 +90,13 @@ describe('Settings information architecture and optional creator support', () =>
     expect(view.queryByPlaceholderText('Optional')).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'Expand Profile' }));
     expect(view.getByPlaceholderText('Optional').props.value).toBe('Sam');
-    expect(view.queryByText(/Navigation and the main support tools/)).toBeNull();
+    expect(view.queryByText(/Navigation and essential actions/)).toBeNull();
 
     await fireEvent.press(view.getByRole('button', { name: 'Expand Language' }));
-    expect(view.getByText(/Navigation and the main support tools/)).toBeTruthy();
+    expect(view.getByText(/Navigation and essential actions/)).toBeTruthy();
     expect(view.getByRole('button', { name: 'Lietuvių' })).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Türkçe' })).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Tiếng Việt' })).toBeTruthy();
 
     await fireEvent.press(
       view.getByRole('button', { name: 'Expand Planning & extra tools' })

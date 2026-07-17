@@ -28,6 +28,7 @@ import { isQuietNow } from '../../src/lib/sensory';
 import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
 import { openCalendarExport } from '../../src/services/calendarBridge';
+import { useI18n } from '../../src/i18n';
 
 type TimerPhase = 'idle' | 'running' | 'paused' | 'finished';
 
@@ -139,6 +140,7 @@ async function scheduleFocusNotification(
 export default function FocusScreen() {
   const spark = useSpark();
   const theme = useTheme();
+  const { locale, t } = useI18n();
   const params = useLocalSearchParams<{ title?: string; minutes?: string }>();
   const durationOptions = spark.remoteConfig.defaults.focusMinutes.length
     ? spark.remoteConfig.defaults.focusMinutes
@@ -417,8 +419,8 @@ export default function FocusScreen() {
   return (
     <Screen testID="focus-screen">
       <View>
-        <Eyebrow>Focus timer</Eyebrow>
-        <H1>Focus with a quiet companion.</H1>
+        <Eyebrow>{t('focus')}</Eyebrow>
+        <H1>{t('startFocus')}</H1>
         <Muted>
           Pick one task and a time. If you leave Spark, the timer continues from its saved time
           when you return.
@@ -433,14 +435,14 @@ export default function FocusScreen() {
         />
         <Text
           accessibilityRole="timer"
-          accessibilityLabel={`${Math.ceil(remaining / 60)} minutes remaining`}
+          accessibilityLabel={`${Math.ceil(remaining / 60)} ${t('minutesRemaining')}`}
           style={[styles.timer, { color: theme.text }]}
         >
           {secondsLabel(remaining)}
         </Text>
         <Text style={[styles.state, { color: theme.textMuted }]}>
           {phase === 'idle'
-            ? 'Ready when you are'
+            ? t('readyWhenYouAre')
             : phase === 'paused'
               ? 'Paused · resume when ready'
               : phase === 'finished'
@@ -459,14 +461,14 @@ export default function FocusScreen() {
               <SectionHeading>Beginning is the only job.</SectionHeading>
               <Muted>Start now or choose Not yet to return to the setup.</Muted>
               <Button
-                label="Start now"
+              label={t('start')}
                 onPress={() => {
                   setLaunchCountdown(null);
                   void beginSession();
                 }}
               />
               <Button
-                label="Not yet"
+              label={t('cancel')}
                 variant="ghost"
                 onPress={() => setLaunchCountdown(null)}
               />
@@ -474,7 +476,7 @@ export default function FocusScreen() {
           ) : (
             <>
             <FormField
-              label="One target"
+              label={t('oneTarget')}
               placeholder="e.g. Open the document"
               value={title}
               onChangeText={setTitle}
@@ -499,9 +501,9 @@ export default function FocusScreen() {
                 {Math.round(spark.settings.soundscapeVolume * 100)}%
               </Muted>
             ) : null}
-            <Button label="Start focus" onPress={start} testID="start-focus" />
+            <Button label={t('startFocus')} onPress={start} testID="start-focus" />
             <Button
-              label="Add this focus block to calendar"
+              label={t('calendarExport')}
               variant="ghost"
               onPress={() => {
                 const startAt = new Date();
@@ -544,12 +546,12 @@ export default function FocusScreen() {
                 />
               </View>
             ) : null}
-            <Button label="Done" onPress={reset} />
+            <Button label={t('done')} onPress={reset} />
           </View>
         ) : (
           <View style={styles.timerActions}>
             <Button
-              label={phase === 'paused' ? 'Resume' : 'Pause'}
+              label={phase === 'paused' ? t('resume') : t('pause')}
               onPress={() => void (phase === 'paused' ? resume() : pause())}
               icon={
                 <Ionicons
@@ -607,7 +609,7 @@ export default function FocusScreen() {
                 <Text style={[styles.historyTitle, { color: theme.text }]}>{item.title}</Text>
                 <Muted>
                   planned {Math.round(item.plannedSeconds / 60)} min · actual{' '}
-                  {actualMinutes(item)} min · {friendlyTime(item.startedAt)}
+                  {actualMinutes(item)} min · {friendlyTime(item.startedAt, locale)}
                 </Muted>
               </View>
             </View>

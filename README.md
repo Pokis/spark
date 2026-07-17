@@ -130,7 +130,8 @@ care for ADHD or any other condition.
   launcher shortcuts;
 - collapsible Settings/Progress sections, width-safe add controls, history-aware Back fallbacks,
   and eleven skippable, dismissible, fully replayable feature tutorials;
-- bundled language selection for 15 languages, including Lithuanian, with English fallback;
+- bundled language selection for 19 languages, including Lithuanian, with localized navigation,
+  essential daily actions, dates/times, RTL Arabic support, and safe English fallback;
 - privacy-safe content-redacted diagnostics and an Android startup Baseline Profile;
 - privacy policy and data-boundary screens;
 - premium supporter themes, badge control, companions, celebration styles, offline soundscapes,

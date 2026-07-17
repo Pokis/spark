@@ -28,6 +28,7 @@ describe('plain-language information architecture', () => {
     '../components/HabitCard.tsx',
     '../components/MomentumCard.tsx',
     '../components/SparkBurst.tsx',
+    '../i18n/index.ts',
     '../lib/tutorials.ts',
     '../services/widget.tsx',
     '../services/notifications.ts'
@@ -88,11 +89,11 @@ describe('plain-language information architecture', () => {
   });
 
   it('keeps the important Today controls clearly named and reversible', () => {
-    const today = read('../../app/(tabs)/index.tsx');
-    expect(today).toContain('Adjust today’s suggestions');
-    expect(today).toContain('Done adjusting');
-    expect(today).toContain('Suggested next actions');
-    expect(today).toContain('Need fewer choices?');
+    const todayAndCatalog = `${read('../../app/(tabs)/index.tsx')}\n${read('../i18n/index.ts')}`;
+    expect(todayAndCatalog).toContain('Adjust today’s suggestions');
+    expect(todayAndCatalog).toContain('Done adjusting');
+    expect(todayAndCatalog).toContain('Suggested next actions');
+    expect(todayAndCatalog).toContain('Need fewer choices?');
   });
 
   it('groups learning and settings by the user’s purpose', () => {

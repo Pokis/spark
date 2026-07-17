@@ -191,8 +191,11 @@ timing vary.
     and confirm its last page shows Done rather than another Next button.
 39. Open nested screens from Today, Progress, Settings, a widget, and a cold deep link. Back must
     return to the actual prior screen when one exists and to the documented fallback otherwise.
-40. Switch through every bundled language, including Lithuanian and an RTL Arabic device. Verify
-    navigation never becomes blank and legacy copy falls back to English.
+40. Switch through all 19 bundled languages, including Lithuanian, Dutch, Turkish, Indonesian,
+    Vietnamese, and an RTL Arabic device. Verify navigation and essential Today/Focus/Capture/
+    Progress actions change language, dates and times use the locale, no label becomes blank, and
+    advanced copy falls back to English. In a fresh native build on Android 13+, also confirm the
+    same locale list appears under **App info → Language**.
 41. Export diagnostics and inspect the JSON: no habit, focus, routine, Capture, weekly-reflection,
     departure, experiment-note, display-name, file-path, or content-URI text should appear.
 

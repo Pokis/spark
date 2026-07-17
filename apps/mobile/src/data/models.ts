@@ -35,7 +35,11 @@ export interface AppSettings {
     | 'ko'
     | 'zh-Hans'
     | 'hi'
-    | 'ar';
+    | 'ar'
+    | 'nl'
+    | 'tr'
+    | 'id'
+    | 'vi';
   simpleMode: boolean;
   progressiveHelpEnabled: boolean;
   reducedMotion: boolean;

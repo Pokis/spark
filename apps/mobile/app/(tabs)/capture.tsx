@@ -12,10 +12,12 @@ import { useLocalDraft } from '../../src/hooks/useLocalDraft';
 import { friendlyTime } from '../../src/lib/date';
 import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
+import { useI18n } from '../../src/i18n';
 
 export default function CaptureScreen() {
   const spark = useSpark();
   const theme = useTheme();
+  const { locale, t } = useI18n();
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,8 +85,8 @@ export default function CaptureScreen() {
   return (
     <Screen testID="capture-screen">
       <View>
-        <Eyebrow>Quick capture</Eyebrow>
-        <H1>Save it for later.</H1>
+        <Eyebrow>{t('quickCapture')}</Eyebrow>
+        <H1>{t('capture')}</H1>
         <Muted>
           Capture a thought now and organize it later if useful. Text shared from other Android
           apps lands here locally.
@@ -92,7 +94,7 @@ export default function CaptureScreen() {
       </View>
       <Card style={[styles.captureCard, { borderColor: theme.purple }]}>
         <FormField
-          label="Thought or task"
+          label={t('thoughtOrTask')}
           placeholder="A thought, task, worry, idea…"
           multiline
           value={text}
@@ -102,7 +104,7 @@ export default function CaptureScreen() {
           testID="capture-input"
         />
         <Button
-          label="Save"
+          label={t('save')}
           disabled={!text.trim()}
           onPress={() => void capture()}
           icon={<Ionicons name="flash" size={18} color="#FFFFFF" />}
@@ -121,7 +123,7 @@ export default function CaptureScreen() {
       ) : null}
 
       <View style={styles.heading}>
-        <SectionHeading>Saved for later</SectionHeading>
+        <SectionHeading>{t('savedForLater')}</SectionHeading>
         <Text style={[styles.count, { color: theme.textMuted }]}>{active.length}</Text>
       </View>
       {selected.length ? (
@@ -129,11 +131,11 @@ export default function CaptureScreen() {
           <Muted>{selected.length} selected</Muted>
           <View style={styles.actions}>
             <Button
-              label="Archive selected"
+              label={t('archive')}
               variant="secondary"
               onPress={() => void releaseSelected()}
             />
-            <Button label="Cancel" variant="ghost" onPress={() => setSelected([])} />
+            <Button label={t('cancel')} variant="ghost" onPress={() => setSelected([])} />
           </View>
         </Card>
       ) : null}
@@ -150,7 +152,7 @@ export default function CaptureScreen() {
             {editingId === item.id ? (
               <>
                 <FormField
-                  label="Edit thought"
+                  label={t('edit')}
                   value={editingText}
                   onChangeText={setEditingText}
                   multiline
@@ -159,7 +161,7 @@ export default function CaptureScreen() {
                 />
                 <View style={styles.actions}>
                   <Button
-                    label="Save edit"
+                    label={t('save')}
                     variant="secondary"
                     disabled={!editingText.trim()}
                     onPress={() =>
@@ -170,17 +172,17 @@ export default function CaptureScreen() {
                       })
                     }
                   />
-                  <Button label="Cancel" variant="ghost" onPress={() => setEditingId(null)} />
+                  <Button label={t('cancel')} variant="ghost" onPress={() => setEditingId(null)} />
                 </View>
               </>
             ) : (
               <>
                 <Text style={[styles.itemText, { color: theme.text }]}>{item.text}</Text>
-                <Muted>{friendlyTime(item.createdAt)}</Muted>
+                <Muted>{friendlyTime(item.createdAt, locale)}</Muted>
                 <View style={styles.actions}>
                   <SmallAction
                     icon="timer-outline"
-                    label="Focus"
+                    label={t('focus')}
                     onPress={() =>
                       router.push({
                         pathname: '/(tabs)/focus',
@@ -190,13 +192,13 @@ export default function CaptureScreen() {
                   />
                   <SmallAction
                     icon={selected.includes(item.id) ? 'checkmark-circle' : 'square-outline'}
-                    label={selected.includes(item.id) ? 'Selected' : 'Select'}
+                    label={selected.includes(item.id) ? t('selected') : t('select')}
                     success={selected.includes(item.id)}
                     onPress={() => toggleSelected(item.id)}
                   />
                   <SmallAction
                     icon={expandedItemId === item.id ? 'chevron-up' : 'ellipsis-horizontal'}
-                    label={expandedItemId === item.id ? 'Fewer actions' : 'More actions'}
+                    label={expandedItemId === item.id ? t('fewerActions') : t('moreActions')}
                     onPress={() =>
                       setExpandedItemId((current) => (current === item.id ? null : item.id))
                     }
@@ -208,7 +210,7 @@ export default function CaptureScreen() {
                     <View style={styles.actions}>
                       <SmallAction
                         icon="create-outline"
-                        label="Edit"
+                        label={t('edit')}
                         onPress={() => {
                           setEditingId(item.id);
                           setEditingText(item.text);
@@ -236,13 +238,13 @@ export default function CaptureScreen() {
                       />
                       <SmallAction
                         icon="archive-outline"
-                        label="Archive"
+                        label={t('archive')}
                         success
                         onPress={() => void archiveItem(item)}
                       />
                       <SmallAction
                         icon="trash-outline"
-                        label="Delete"
+                        label={t('delete')}
                         danger
                         onPress={() => confirmDelete(item)}
                       />
@@ -273,12 +275,12 @@ export default function CaptureScreen() {
               <View style={styles.actions}>
                 <SmallAction
                   icon="arrow-undo-outline"
-                  label="Put back"
+                  label={t('restore')}
                   onPress={() => void spark.updateCapture({ ...item, resolvedAt: undefined }, item.text)}
                 />
                 <SmallAction
                   icon="trash-outline"
-                  label="Delete"
+                  label={t('delete')}
                   danger
                   onPress={() => confirmDelete(item)}
                 />

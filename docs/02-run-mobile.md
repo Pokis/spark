@@ -91,7 +91,15 @@ typed confirmation. Use `.\spark.cmd release -Help` to see every release utility
 - Simple mode, Help me now, weekly reset, friction plans, Leave on time, selected-progress sharing,
   and one-week changes
 - device authentication/app-preview protection and privacy-safe diagnostics
-- 15 bundled languages including Lithuanian
+- 19 bundled languages including Lithuanian, Dutch, Turkish, Indonesian, and Vietnamese
+
+To test localization, open **Settings → Language** and choose a language. Navigation, dates and
+times, and the essential actions on Today, Focus, Capture, and Progress change immediately.
+Advanced screens fall back to English wherever a reviewed translation is not bundled, so labels
+never disappear. A new native build also advertises the same languages to Android 13+ under
+**App info → Language** and enables Android/iOS right-to-left layout for Arabic. If you changed
+the native configuration after installing an older development build, rebuild it with
+`\.\spark.cmd android -Device <device-id>` before testing the system-level language picker.
 
 Support, admin, and verified purchase buttons remain safely disabled.
 

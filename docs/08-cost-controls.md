@@ -32,7 +32,7 @@ count**:
 | Six Android widgets and launcher shortcuts | $0 | $0 | $0 | $0 | Today, Capture, Focus, Routine, Progress, and Toolkit use local snapshots/static links; no background server |
 | Optional creator-tip link | $0 | $0 | $0 | $0 | Build flag defaults off; no automated spend and no entitlement. A user may voluntarily pay Buy Me a Coffee; current service/processing fees are deducted from the contribution or passed to the supporter according to creator settings. |
 | Feature tutorials and collapsible navigation | $0 | $0 | $0 | $0 | Bundled copy, local dismissed-tip IDs, and UI state; no CMS, analytics, or experimentation service |
-| Bundled localization | $0 | $0 | $0 | $0 | Bundled strings; no translation API |
+| Bundled localization | $0 | $0 | $0 | $0 | 19 language catalogs, native locale declarations, and RTL support are bundled in the app; no translation API, server, or network request |
 | Privacy-safe diagnostics | $0 | $0 | $0 | $0 | Local self-check and explicit file share |
 | Startup Baseline Profile | $0 | $0 | $0 | $0 | Packaged build artifact |
 | Optional streaks, streak saves, and planned breaks | $0 | $0 | $0 | $0 | Per-habit opt-in; encrypted local JSON plus on-device calculation; no feature flag is required because it cannot create a third-party charge |

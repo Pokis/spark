@@ -42,7 +42,7 @@ boundary:
 | Self-knowledge | User-created one-week experiments compare local before/during counts neutrally. |
 | Safe sharing | Only user-selected completed actions become an image/text share; no account connection or automatic reports. |
 | Calendar | Spark can hand one focus/departure block to the system calendar without reading calendars. |
-| Localization | Bundled selection for 15 languages, including English and Lithuanian; untranslated legacy strings fall back to English. |
+| Localization | Bundled selection for 19 languages, including English and Lithuanian. Navigation, core daily actions, and locale-aware dates/times are translated; native builds advertise supported app languages; Arabic supports RTL; untranslated advanced copy falls back to English. |
 | Diagnostics/performance | Content-redacted local diagnostics and a packaged Android startup Baseline Profile. |
 | Victory-first language | Everyday screens now lead with completed actions, milestones, repeatable wins, and direct next steps. Deferral and protection controls state what they do without repeatedly emphasizing missed days, failure, or “taking it easy.” |
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { I18nManager, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useTheme } from '../theme';
 
 export function SettingRow({
@@ -18,12 +18,16 @@ export function SettingRow({
   trailing?: ReactNode;
 }) {
   const theme = useTheme();
+  const languageStyle = {
+    textAlign: I18nManager.isRTL ? ('right' as const) : ('left' as const),
+    writingDirection: I18nManager.isRTL ? ('rtl' as const) : ('ltr' as const)
+  };
   const content = (
     <>
       <View style={styles.text}>
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+        <Text style={[styles.title, { color: theme.text }, languageStyle]}>{title}</Text>
         {description ? (
-          <Text style={[styles.description, { color: theme.textMuted }]}>{description}</Text>
+          <Text style={[styles.description, { color: theme.textMuted }, languageStyle]}>{description}</Text>
         ) : null}
       </View>
       {onValueChange ? (

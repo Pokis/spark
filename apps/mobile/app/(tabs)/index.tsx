@@ -26,6 +26,7 @@ import { Body, Eyebrow, H1, Muted, SectionHeading } from '../../src/components/T
 import { friendlyDate } from '../../src/lib/date';
 import { useSpark } from '../../src/state/SparkProvider';
 import { isQuietNow } from '../../src/lib/sensory';
+import { useI18n } from '../../src/i18n';
 import { activeExperimentForHabit } from '../../src/lib/experiments';
 import {
   currentWeeklyPlan,
@@ -54,6 +55,7 @@ function currentPeriod(): 'morning' | 'afternoon' | 'evening' {
 export default function TodayScreen() {
   const spark = useSpark();
   const theme = useTheme();
+  const { locale, t } = useI18n();
   const today = localDateKey(new Date(), spark.timeZone);
   const yesterday = addCalendarDays(today, -1);
   const checkIn = spark.dailyCheckIns.find((item) => item.localDate === today);
@@ -297,14 +299,14 @@ export default function TodayScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Eyebrow>{friendlyDate()}</Eyebrow>
+            <Eyebrow>{friendlyDate(new Date(), locale)}</Eyebrow>
             <H1>
               {spark.entitlement.premium
                 ? `${spark.settings.appIconStyle === 'calm' ? '◌' : spark.settings.appIconStyle === 'midnight' ? '✧' : '✦'} `
                 : ''}
               {spark.settings.displayName
                 ? `Hi ${spark.settings.displayName}`
-                : 'Choose your next win.'}
+                : t('chooseNextWin')}
             </H1>
             {spark.entitlement.premium && spark.settings.supporterBadgeVisible ? (
               <Eyebrow>✦ Spark supporter</Eyebrow>
@@ -327,12 +329,12 @@ export default function TodayScreen() {
             <Muted>Only one suggested action and a few quick tools are shown.</Muted>
             <View style={styles.quickActions}>
               <Button
-                label="Quick capture"
+                label={t('quickCapture')}
                 variant="secondary"
                 onPress={() => router.push('/quick-capture')}
               />
               <Button
-                label="Start 2-minute focus"
+                label={`${t('startFocus')} · 2 min`}
                 variant="secondary"
                 onPress={() =>
                   router.push({ pathname: '/(tabs)/focus', params: { minutes: '2' } })
@@ -341,12 +343,12 @@ export default function TodayScreen() {
             </View>
             {spark.routineRuns[0] ? (
               <Button
-                label="Resume running routine"
+                label={t('runningRoutine')}
                 variant="secondary"
                 onPress={() => router.push(`/routine/${spark.routineRuns[0]!.routineId}`)}
               />
             ) : null}
-            <Button label="Help me now" variant="ghost" onPress={() => router.push('/help')} />
+            <Button label={t('helpNow')} variant="ghost" onPress={() => router.push('/help')} />
           </Card>
         ) : null}
 
@@ -369,14 +371,15 @@ export default function TodayScreen() {
           >
             <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
               <View style={styles.scoreDetails}>
-                <Eyebrow>Today so far</Eyebrow>
+                <Eyebrow>{t('todaySoFar')}</Eyebrow>
                 <Text style={[styles.score, { color: theme.text }]}>
-                  {winsToday.length} {winsToday.length === 1 ? 'completed action' : 'completed actions'}
+                  {winsToday.length}{' '}
+                  {winsToday.length === 1 ? t('completedAction') : t('completedActions')}
                 </Text>
-                <Muted>{rewards.totalSparks} total Spark points</Muted>
+                <Muted>{rewards.totalSparks} {t('totalSparkPoints')}</Muted>
               </View>
               <View style={styles.todayScore}>
-                <Text style={[styles.textAction, { color: theme.primary }]}>View Progress →</Text>
+                <Text style={[styles.textAction, { color: theme.primary }]}>{t('viewProgress')} →</Text>
               </View>
             </Card>
           </Pressable>
@@ -393,7 +396,7 @@ export default function TodayScreen() {
         ) : null}
 
         <CollapsibleSection
-          title="Adjust today’s suggestions"
+          title={t('adjustSuggestions')}
           summary={`Energy: ${capacityLabel} · Time: ${timeLabel} · Place: ${contextLabel}`}
           expanded={checkInExpanded}
           onExpandedChange={setCheckInExpanded}
@@ -485,7 +488,7 @@ export default function TodayScreen() {
 
         <View style={styles.sectionTitle}>
           <View style={styles.sectionTitleText}>
-            <SectionHeading>Suggested next actions</SectionHeading>
+            <SectionHeading>{t('suggestedNextActions')}</SectionHeading>
             <Muted>Choose one that fits. Tap Done only after you do it.</Muted>
           </View>
           <Pressable
@@ -496,7 +499,7 @@ export default function TodayScreen() {
             style={[styles.addHabit, { backgroundColor: theme.surfaceAlt }]}
           >
             <Ionicons name="add" size={20} color={theme.primary} />
-            <Text style={[styles.addHabitText, { color: theme.primary }]}>Add</Text>
+            <Text style={[styles.addHabitText, { color: theme.primary }]}>{t('add')}</Text>
           </Pressable>
         </View>
 

@@ -1,11 +1,19 @@
 import type { PropsWithChildren } from 'react';
-import { StyleSheet, Text, type TextProps } from 'react-native';
+import { I18nManager, StyleSheet, Text, type TextProps } from 'react-native';
 import { useTheme } from '../theme';
+
+function useLanguageTextStyle() {
+  return {
+    textAlign: I18nManager.isRTL ? ('right' as const) : ('left' as const),
+    writingDirection: I18nManager.isRTL ? ('rtl' as const) : ('ltr' as const)
+  };
+}
 
 export function H1({ children, style, ...props }: TextProps) {
   const theme = useTheme();
+  const languageStyle = useLanguageTextStyle();
   return (
-    <Text accessibilityRole="header" {...props} style={[styles.h1, { color: theme.text }, style]}>
+    <Text accessibilityRole="header" {...props} style={[styles.h1, { color: theme.text }, languageStyle, style]}>
       {children}
     </Text>
   );
@@ -13,8 +21,9 @@ export function H1({ children, style, ...props }: TextProps) {
 
 export function H2({ children, style, ...props }: TextProps) {
   const theme = useTheme();
+  const languageStyle = useLanguageTextStyle();
   return (
-    <Text accessibilityRole="header" {...props} style={[styles.h2, { color: theme.text }, style]}>
+    <Text accessibilityRole="header" {...props} style={[styles.h2, { color: theme.text }, languageStyle, style]}>
       {children}
     </Text>
   );
@@ -22,8 +31,9 @@ export function H2({ children, style, ...props }: TextProps) {
 
 export function Body({ children, style, ...props }: TextProps) {
   const theme = useTheme();
+  const languageStyle = useLanguageTextStyle();
   return (
-    <Text {...props} style={[styles.body, { color: theme.text }, style]}>
+    <Text {...props} style={[styles.body, { color: theme.text }, languageStyle, style]}>
       {children}
     </Text>
   );
@@ -31,8 +41,9 @@ export function Body({ children, style, ...props }: TextProps) {
 
 export function Muted({ children, style, ...props }: TextProps) {
   const theme = useTheme();
+  const languageStyle = useLanguageTextStyle();
   return (
-    <Text {...props} style={[styles.muted, { color: theme.textMuted }, style]}>
+    <Text {...props} style={[styles.muted, { color: theme.textMuted }, languageStyle, style]}>
       {children}
     </Text>
   );
@@ -40,8 +51,9 @@ export function Muted({ children, style, ...props }: TextProps) {
 
 export function Eyebrow({ children, style, ...props }: TextProps) {
   const theme = useTheme();
+  const languageStyle = useLanguageTextStyle();
   return (
-    <Text {...props} style={[styles.eyebrow, { color: theme.primary }, style]}>
+    <Text {...props} style={[styles.eyebrow, { color: theme.primary }, languageStyle, style]}>
       {children}
     </Text>
   );
@@ -53,8 +65,9 @@ export function SectionHeading({
   ...props
 }: PropsWithChildren<TextProps>) {
   const theme = useTheme();
+  const languageStyle = useLanguageTextStyle();
   return (
-    <Text accessibilityRole="header" {...props} style={[styles.section, { color: theme.text }, style]}>
+    <Text accessibilityRole="header" {...props} style={[styles.section, { color: theme.text }, languageStyle, style]}>
       {children}
     </Text>
   );

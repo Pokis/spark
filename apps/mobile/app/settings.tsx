@@ -31,7 +31,7 @@ import { clearDiagnostics, shareDiagnostics } from '../src/services/diagnostics'
 import { requestNotificationPermission } from '../src/services/notifications';
 import { useSpark } from '../src/state/SparkProvider';
 import { useTheme } from '../src/theme';
-import { supportedLocales } from '../src/i18n';
+import { supportedLocales, useI18n } from '../src/i18n';
 import { endOfToday, isQuietNow } from '../src/lib/sensory';
 import {
   creatorTipLinkEnabled,
@@ -41,6 +41,7 @@ import {
 export default function SettingsScreen() {
   const spark = useSpark();
   const theme = useTheme();
+  const { t } = useI18n();
   const cloudAvailable = cloudConfigured();
   const supportAvailable = cloudAvailable && spark.remoteConfig.defaults.supportEnabled;
   const creatorTipAvailable = creatorTipLinkEnabled();
@@ -226,7 +227,7 @@ export default function SettingsScreen() {
     <Screen>
       <View>
         <Eyebrow>Make Spark yours</Eyebrow>
-        <H1>Settings</H1>
+        <H1>{t('settings')}</H1>
       </View>
 
       <CollapsibleSection
@@ -264,13 +265,10 @@ export default function SettingsScreen() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Language"
+        title={t('language')}
         summary={supportedLocales.find((locale) => locale.code === spark.settings.language)?.label ?? 'Use device language'}
       >
-        <Muted>
-          Navigation and the main support tools use your chosen language. Some longer screens
-          are still shown in English.
-        </Muted>
+        <Muted>{t('languageCoverage')}</Muted>
         <View style={styles.choiceRow}>
           {supportedLocales.map((locale) => (
             <Chip

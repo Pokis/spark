@@ -132,7 +132,7 @@ listed separately so release evidence can identify exactly which check failed.
 - [ ] Shared-progress PNG/text contains only explicitly selected completed actions
 - [ ] One-week change starts/stops at its local date window and uses neutral comparison language
 - [ ] Simple mode, Help me now, Weekly reset, friction fields, and Leave on time survive restart
-- [ ] All 15 language choices open; Lithuanian and Arabic/RTL device QA completed
+- [ ] All 19 language choices open; Lithuanian and Arabic/RTL device QA completed
 - [ ] Privacy-safe diagnostics manually inspected for content/path/URI redaction
 - [ ] Packaged Baseline Profile exists; startup/ANR results reviewed in Play pre-launch and vitals
 - [ ] Android target API re-checked

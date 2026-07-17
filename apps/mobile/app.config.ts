@@ -121,7 +121,33 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
-    'expo-localization',
+    [
+      'expo-localization',
+      {
+        supportedLocales: [
+          'en',
+          'es',
+          'pt-BR',
+          'fr',
+          'de',
+          'it',
+          'pl',
+          'uk',
+          'ru',
+          'lt',
+          'ja',
+          'ko',
+          'zh-Hans',
+          'hi',
+          'ar',
+          'nl',
+          'tr',
+          'id',
+          'vi'
+        ],
+        supportsRTL: true
+      }
+    ],
     [
       'expo-local-authentication',
       {

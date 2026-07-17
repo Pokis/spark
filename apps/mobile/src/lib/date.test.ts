@@ -18,6 +18,12 @@ describe('date presentation helpers', () => {
     expect(friendlyTime('2026-07-16T12:05:00.000Z')).toEqual(
       expect.any(String)
     );
+    expect(friendlyDate(new Date('2026-07-16T12:00:00.000Z'), 'lt')).toMatch(
+      /liep|ketvirt/i
+    );
+    expect(friendlyTime('2026-07-16T12:05:00.000Z', 'de')).toEqual(
+      expect.any(String)
+    );
     expect(friendlyDate(new Date('2026-07-16T12:00:00.000Z'))).not.toContain(
       'Invalid'
     );
