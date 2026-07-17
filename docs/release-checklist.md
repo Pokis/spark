@@ -27,10 +27,14 @@ devices:
       itself can be started before every listing/form is complete.
 - [x] Run `.\spark.cmd check -Level Release` and understand every warning.
 - [ ] Test a native release-like APK on a real Android device; Expo Go is not sufficient.
-- [ ] Create the production EAS `.aab` with
-      `.\spark.cmd release -Action Build -Profile production`, then list/download the exact build
-      ID as described in the release guide. Securely retain access to the Expo/EAS account and
-      upload credentials.
+- [ ] Create and back up the local upload key once with
+      `.\spark.cmd release -Action LocalSetup`. Store both
+      `apps/mobile/credentials/spark-upload.p12` and its unique 20+ character password in
+      LastPass; the password is not stored by the repository.
+- [ ] Create the production `.aab` locally with
+      `.\spark.cmd release -Action LocalBuild`. Confirm it reports package
+      `com.djpokis.sparkhabits.app`, the intended version/code, a production certificate, and a
+      SHA-256 hash. The result is under `artifacts/release`; this uses no EAS hosted build.
 - [ ] In Play Console create a **Free / App** entry, enable Play App Signing, and upload only to
       **Testing → Internal testing**.
 - [ ] Add tester Google accounts, open the opt-in link with an allowed account, and install the

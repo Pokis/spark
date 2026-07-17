@@ -43,6 +43,18 @@ steps, impact, and any suggested mitigation.
 ## Operational rules
 
 - Never place service-account JSON in this repository.
+- Keep the Spark application's Android upload key at the ignored
+  `apps/mobile/credentials/spark-upload.p12` path only while building. Back up the `.p12`, its
+  unique 20+ character password, alias `spark-upload`, and printed SHA-256 file hash in LastPass.
+  Never commit, email, chat, screenshot, or place the password in `.env`, Gradle properties, or a
+  command-line argument.
+- Create the upload key only with `.\spark.cmd release -Action LocalSetup`. Build with
+  `LocalBuild`, which requests the password through a hidden prompt, uses one non-daemon Gradle
+  process, clears the temporary process environment, and verifies the resulting AAB is not signed
+  by the Android debug certificate.
+- Do not generate a replacement upload key when moving PCs. Restore the same key/password from
+  LastPass. If the upload key is truly lost or compromised after Play enrollment, follow Google
+  Play's authenticated upload-key reset process and record the incident.
 - Use Cloud Run's service identity and Application Default Credentials.
 - Keep Firestore client rules deny-by-default; all cloud data access goes through the API.
 - Restrict admin access with the email allowlist and Firebase custom roles.
@@ -98,3 +110,8 @@ steps, impact, and any suggested mitigation.
 - Gradle successfully produced the native release APK after the package rename and manifest
   hardening. Upstream
   Gradle/Kotlin deprecation warnings remain dependency-maintenance items, not build failures.
+- The local production AAB workflow was also exercised end to end with a disposable PKCS#12 key:
+  the non-debug signature and Gradle-emitted bundle/package/version metadata were verified, then
+  both the disposable key and test AAB were deleted. The real upload key remains user-created so
+  its password can go directly from LastPass into hidden prompts without appearing in automation
+  logs.

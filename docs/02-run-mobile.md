@@ -55,14 +55,17 @@ For later sessions:
 
 Then open the already installed Spark development client.
 
-## EAS development build without local Android compilation
+## Optional EAS development build without local Android compilation
 
-Create a free Expo account and let Spark run the EAS CLI through `npx`. Initialize the project
+EAS means Expo Application Services and is not needed for local development or local Play builds.
+If you deliberately want a hosted development APK, create an Expo account and let the `spark.cmd`
+launcher run the EAS CLI through `npx`. Initialize the project
 once, then request a development build from the repository root:
 
 ```powershell
-.\spark.cmd release -Action Setup
-.\spark.cmd release -Action Build -Profile development -Message "Development phone"
+$env:SPARK_ALLOW_EAS_RELEASES = 'true' # process-scoped cost guard; review pricing/signing first
+.\spark.cmd release -Action EasSetup
+.\spark.cmd release -Action EasBuild -Profile development -Message "Development phone"
 ```
 
 Store the resulting Expo owner and project ID in `apps/mobile/.env.local` for local configuration

@@ -18,6 +18,8 @@ or private service-account material.
 | Privacy hosting | Live at `https://djpokis-spark-habits.web.app/privacy.html` from Firebase Hosting project `djpokis-spark-habits`; no other runtime enabled |
 | Google Cloud billing | Disabled; no billing account attached when verified July 17, 2026 |
 | Expo account/project | `@djpokis-team/spark-adhd-habits`; EAS project ID `d13c96e7-3533-4fdb-88da-48e0b5a4f932` |
+| Android build path | Local Windows/Gradle build through `spark.cmd`; EAS is optional and unused by default |
+| Local upload-key alias/path | `spark-upload`; ignored file `apps/mobile/credentials/spark-upload.p12` |
 | Default Play language | English |
 | Additional listings | Every language bundled by Spark |
 | Price | Free initial app download |
@@ -26,9 +28,10 @@ or private service-account material.
 | Health declaration | Stress Management, Relaxation, Mental Acuity; non-clinical planning/self-management |
 | Initial network features | Cloud account/sync, support chat, remote config, analytics, crash upload, ads, purchases, and creator tip all disabled |
 
-## Values that still come from authenticated services
+## Values that still come from authenticated services or private local setup
 
-- EAS build ID and Android upload/signing credentials.
+- The local upload-key file/password and its certificate fingerprint. They belong in LastPass,
+  never in Git; they do not come from EAS.
 - Google Play application ID/track state, tester list, content-rating result, and submitted form
   attestations.
 

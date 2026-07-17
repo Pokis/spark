@@ -96,68 +96,92 @@ Start with the built-in action list:
 .\spark.cmd release -Help
 ```
 
+The **Spark application** is the mobile product. The **`spark.cmd` launcher** is only the Windows
+helper that runs repository commands. EAS means **Expo Application Services**, an optional hosted
+build provider; it is not used by the normal local Android process below.
+
 The normal first-release sequence is:
 
 ```powershell
-# 1. Fast, read-only summary of IDs, versions, flags, privacy, EAS, and Git state.
+# 1. Show whether the private local upload key and generated signing guard exist.
+.\spark.cmd release -Action LocalStatus
+
+# 2. One time only: create the private upload key on this PC.
+# First create a unique 20+ character password in LastPass.
+.\spark.cmd release -Action LocalSetup
+
+# 3. Fast, read-only identity, version, feature-flag, privacy, and Git summary.
 .\spark.cmd release -Action Inspect
 
-# 2. Full local validation. This can take several minutes.
+# 4. Full local validation. This can take several minutes.
 .\spark.cmd release -Action Verify
 
-# 3. Regenerate and validate the upload-ready Play graphics. Local-only and free.
+# 5. Regenerate and validate the upload-ready Play graphics. Local-only and free.
 .\spark.cmd release -Action Assets
 
-# 4. One-time Expo/EAS login and project link.
-.\spark.cmd release -Action Setup
-
-# 5. Queue a signed production AAB build after a typed confirmation.
-.\spark.cmd release -Action Build -Profile production -Message "First internal test"
-
-# 6. Review recent builds and copy the exact successful build ID.
-.\spark.cmd release -Action List -Profile production
-
-# 7. Download that exact AAB to the ignored artifacts\eas folder.
-.\spark.cmd release -Action Download -BuildId YOUR_EAS_BUILD_ID
+# 6. Build and verify the signed production AAB on this PC.
+.\spark.cmd release -Action LocalBuild
 ```
+
+`LocalSetup` calls Android Studio's `keytool` locally. It creates
+`apps/mobile/credentials/spark-upload.p12`, which is ignored by Git. The command never receives or
+stores the password: `keytool` asks for it through hidden prompts. Immediately attach the `.p12`
+file to the LastPass item containing that password, and record alias `spark-upload` plus the
+printed SHA-256 file hash. If the file already exists, setup refuses to replace it.
+
+`LocalBuild` regenerates the ignored native Android project from `app.config.ts`, runs the release
+gate, asks for the upload-key password through a hidden PowerShell prompt, unlocks the key in
+memory, and starts one non-daemon Gradle build. It then verifies:
+
+- that the App Bundle has a valid non-debug signature;
+- package ID `com.djpokis.sparkhabits.app`;
+- package/version metadata emitted by the same Gradle bundle build; and
+- a SHA-256 artifact hash.
+
+The output is `artifacts/release/spark-application-android-VERSION-CODE.aab` plus a matching
+`.sha256` file. The password is removed from the process environment when Gradle finishes. No EAS
+request is made and no EAS hosted-build allowance is used.
 
 `Inspect` does not contact Expo or Google. It reports values without printing API URLs, Firebase
-configuration, or other environment values. Local `.env` status is shown separately because
-those ignored files are not proof of the environment configured in EAS.
+configuration, or other environment values. `Assets` locally regenerates and validates the
+tracked 512×512 icon, 1024×500 feature graphic, and six 1080×1920 screenshots. Neither action
+signs in, uploads, deploys, or creates a bill.
 
-`Assets` locally regenerates and validates the tracked 512×512 icon, 1024×500 feature graphic,
-and six 1080×1920 screenshots. It does not sign in, upload, deploy, or create a bill. The upload
-map, listing copy, and declaration worksheet are in `store/android/README.md`.
-
-`Build -Profile production` first runs the fast release check, then requires typing
-`BUILD production`. Development/preview builds run the mobile type check instead, so unfinished
-store-listing text does not block ordinary device testing. Hosted EAS quota or charges can apply;
-build cost is related to build frequency, not app user count.
-`-NoWait` returns after queueing and `-ClearCache` requests a clean EAS build. Use `-Yes` only in
-deliberate automation because it skips the typed confirmation.
-
-For the **first** Google Play upload, download the AAB and upload it manually through Play Console.
-Google requires at least one manual upload before API submissions work. For later releases, after
-a least-privilege Google service-account key is configured for EAS Submit:
+For phone testing without using the production key:
 
 ```powershell
-.\spark.cmd release -Action Submit -Track internal -BuildId YOUR_EAS_BUILD_ID
+.\spark.cmd release -Action Native -Device THE_DEVICE_VALUE
 ```
 
-Submission always requires an exact build ID; Spark never submits an ambiguous “latest” build.
-The wrapper displays the build and track and requires typing a confirmation containing both.
-`internal`, `alpha`, `beta`, and `production` map to explicit profiles in
-`apps/mobile/eas.json`. Production is never the default.
+This produces an optimized, debug-signed APK and installs it on the chosen device. It is useful
+for behavior QA but must never be uploaded to Google Play.
 
-To inspect, create, or securely download a backup of Android signing credentials, use the EAS
-interactive manager through Spark:
+For the **first** Google Play upload, upload the locally produced `.aab` manually through Play
+Console. The local build does not require an Expo login, Google Cloud, a Play API service account,
+or EAS.
+
+### Optional EAS hosted-build commands
+
+Only use these explicitly named actions if you later choose Expo Application Services as a hosted
+alternative. They are not part of the local process and `EasBuild` may consume quota or cost
+money. The cost guard is off by default; after reviewing current Expo pricing and how the local
+upload key will be migrated, enable it only in the current PowerShell process:
 
 ```powershell
-.\spark.cmd release -Action Credentials
+$env:SPARK_ALLOW_EAS_RELEASES = 'true'
+.\spark.cmd release -Action EasSetup
+.\spark.cmd release -Action EasProject
+.\spark.cmd release -Action EasCredentials
+.\spark.cmd release -Action EasBuild -Profile production
+.\spark.cmd release -Action EasList -Profile production
+.\spark.cmd release -Action EasDownload -BuildId YOUR_EAS_BUILD_ID
+.\spark.cmd release -Action EasSubmit -Track internal -BuildId YOUR_EAS_BUILD_ID
 ```
 
-Read every EAS prompt. Store any downloaded keystore and passwords in a password manager or secure
-vault, never in this repository.
+The old ambiguous `Setup`, `Build`, `List`, and similar action names now stop with an explanation;
+they cannot accidentally start a hosted build. The `EasBuild` action shows a quota/cost warning
+and requires both the process-scoped flag and a typed confirmation before contacting EAS. Close
+the PowerShell window or run `Remove-Item Env:SPARK_ALLOW_EAS_RELEASES` to disable it again.
 
 ## Deployment utilities
 
@@ -252,8 +276,8 @@ new Terraform plan.
 
 These actions can change external state and therefore ask for typed confirmation:
 
-- `release -Action Build`;
-- `release -Action Submit`;
+- `release -Action EasBuild`;
+- `release -Action EasSubmit`;
 - `deploy -Action Hosting`;
 - `deploy -Action Firebase`;
 - `deploy -Action Image`; and

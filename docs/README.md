@@ -16,8 +16,8 @@ graphics, listings for all 19 bundled languages, screenshot descriptions, and fo
 declarations in one place.
 
 On Windows, [PowerShell command helper](./12-powershell-tools.md) provides guided commands for
-setup, running, testing, Android utilities, EAS releases, guarded Firebase/Google Cloud deployment,
-and optional local services.
+setup, running, testing, local signed Android releases, explicitly optional EAS hosted builds,
+guarded Firebase/Google Cloud deployment, and optional local services.
 
 Cloud is optional. Read the [cost register](./08-cost-controls.md) before the
 [Google Cloud guide](./04-google-cloud.md).
@@ -61,6 +61,8 @@ path, and what “done” looks like. Each detailed section begins with the same
 only need the longer explanation when a check fails or a console screen is unfamiliar. Stop after
 the Internal-testing steps for the first release.
 The first free release can remain completely offline and have a $0 cloud runtime.
+The signed Android App Bundle is built on your PC with the `spark.cmd` launcher; EAS (Expo
+Application Services) is not required and its hosted-build quota is not consumed.
 
 ### I want support, grants, purchases, or the admin dashboard
 

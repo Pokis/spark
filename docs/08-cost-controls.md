@@ -3,7 +3,7 @@
 Pricing checked: **2026-07-16**. Currency: **USD**. Cloud prices and Google Play
 fees can change, so re-check the linked official pages before a production launch.
 
-This is Spark's authoritative cost register. Every implemented capability that can
+This is the Spark application's authoritative cost register. Every implemented capability that can
 cause a third-party bill is listed here with its switch, default, usage assumption,
 and approximate cost. The feature catalog links back to this register rather than
 repeating estimates in multiple places.
@@ -78,7 +78,7 @@ A Cloud Run URL by itself therefore does not turn features on.
 | Email monitoring channel | `alert_email` | blank | Terraform variables and apply |
 | Billing alerts | `billing_account_id` | blank | Terraform variables and apply |
 | Manual GitHub cloud deployment | `deploy_api` / `deploy_admin` workflow inputs | both `false` | GitHub Actions manual dispatch |
-| EAS cloud builds | operational choice | unused by default | use local Android builds, or deliberately invoke EAS |
+| EAS hosted builds/submission | `SPARK_ALLOW_EAS_RELEASES` | unset / blocked | current PowerShell process only; use local Android builds, or deliberately set `true` after reviewing signing migration and current Expo pricing |
 | Google Play sales fees | controlled by `purchasesEnabled` and whether a product is sold | no sales | Play Console and Admin → App config |
 
 The API enforces support, purchase, user-review, grant, promo, and role switches;
@@ -183,6 +183,7 @@ These depend on deployments rather than user count:
 | Monitoring alert policy | Google lists $0.35/month per metric reference plus query points effective September 1, 2026 | Allow about $0.35+ monthly for the one 5xx condition after that date |
 | Cloud Logging | First 50 GiB/project/month currently free; then $0.50/GiB for standard log-bucket ingestion | Shared `enable_cloud_runtime` control; structured logs are small and default retention is used |
 | EAS Build | Current Free plan lists 15 Android and 15 iOS builds | Optional; local Android builds avoid this dependency entirely |
+| Local Android/Gradle build | No hosted provider | $0 per build and no per-user infrastructure cost; uses this PC's electricity, storage, and CPU |
 
 Official pricing:
 

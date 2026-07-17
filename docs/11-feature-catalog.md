@@ -399,7 +399,7 @@ companions live in Focus where they do not pressure home-screen engagement.
 
 ## Automated coverage
 
-The repository includes **258 automated tests** and a root coverage gate:
+The repository includes **261 automated tests** and a root coverage gate:
 
 ```powershell
 npm.cmd run test:coverage

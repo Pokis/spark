@@ -6,7 +6,7 @@
 npm.cmd run test:ci
 ```
 
-This runs **258 automated tests**: 191 mobile, 26 domain, 25 control-plane API, and 16 admin
+This runs **261 automated tests**: 194 mobile, 26 domain, 25 control-plane API, and 16 admin
 dashboard tests.
 
 The suites cover:

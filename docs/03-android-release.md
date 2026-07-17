@@ -1,6 +1,9 @@
 # Android and Google Play release guide
 
-This is the beginner path from the working Spark project to Google Play. It explains what each
+This is the beginner path from the working **Spark application** project to Google Play. The
+**`spark.cmd` launcher** is the Windows command helper; it is not another product or service. EAS
+means **Expo Application Services**, an optional hosted build provider that the primary local
+process does not need. This guide explains what each
 store item means, what already exists, what you must provide yourself, and which cloud/payment
 steps can wait.
 
@@ -11,8 +14,8 @@ guide.
 ## Short version: get the first Internal test into Google Play
 
 **TL;DR:** follow the table from top to bottom. The package ID, publisher details, retention,
-audience, and store positioning are confirmed. The remaining account task is publishing the
-prepared privacy page and creating the signed Play bundle.
+audience, and store positioning are confirmed. The privacy page is published. The remaining
+private setup is creating and backing up your local upload key, then building the signed bundle.
 
 Start here. All PowerShell commands below are run in **PowerShell at `D:\AI\Spark`** unless a row
 says otherwise. Do not start Google Cloud, Firebase, Premium, or the admin dashboard for this
@@ -25,8 +28,8 @@ first release.
 | 3. Publish the privacy page | **Done July 17, 2026** | Static Firebase Hosting only; no database or server runtime was enabled. | `https://djpokis-spark-habits.web.app/privacy.html` returned HTTP 200 without login and contained the approved operator details. |
 | 4. Run the release gate | **Codex or you**, PowerShell at `D:\AI\Spark` | Run `.\spark.cmd release -Action Verify`. | The command exits successfully. Decision reminders may remain; red failures may not. |
 | 5. Test native Android | **You**, connected phone plus PowerShell | Run `.\spark.cmd devices`, copy the printed model/ID, then run `.\spark.cmd release -Action Native -Device "THE_PRINTED_VALUE"` and complete the physical-device checklist. | Onboarding, widgets, reminders, backup, app lock, calendar handoff, and airplane mode pass. |
-| 6. Build the Play bundle | **EAS link done; build remains**, PowerShell | Run `.\spark.cmd release -Action Project` to confirm the existing link, then `.\spark.cmd release -Action Build -Profile production -Message "First internal test"`. | EAS reports a successful Android `.aab` build. |
-| 7. Download one exact bundle | **You**, PowerShell | Run `.\spark.cmd release -Action List -Profile production`, copy its build ID, then run `.\spark.cmd release -Action Download -BuildId THE_ID`. | One `.aab` exists under `artifacts\eas`. |
+| 6. Create the upload key once | **You**, LastPass plus PowerShell | Create a unique 20+ character password in LastPass, run `.\spark.cmd release -Action LocalSetup`, enter it twice in the hidden prompts, then attach `apps/mobile/credentials/spark-upload.p12` to that LastPass item. | `LocalStatus` says the private key exists; LastPass has the password, `.p12`, alias `spark-upload`, and printed hash. |
+| 7. Build the Play bundle locally | **You**, PowerShell | Run `.\spark.cmd release -Action LocalBuild`, enter the LastPass password at the hidden prompt, and wait for verification. | A verified `.aab` and `.sha256` exist under `artifacts\release`; the command reports the exact package/version and says no EAS build was consumed. |
 | 8. Create the Play app | **You**, [Play Console](https://play.google.com/console/) | **Home → Create app**; use name `Spark`, type `App`, price `Free`, your default listing language, and a monitored support email. | Spark's Play Console dashboard opens. |
 | 9. Upload to Internal | **You**, Play Console | Open **Test and release → Internal testing** (or search the left menu for **Internal testing**), add your tester account, create a release, and upload the exact `.aab`. | Play gives you an Internal-test opt-in link. |
 | 10. Install from Play | **You**, Android phone | Open the opt-in link with the tester Google account and install Spark from Google Play. | The Play-installed build passes section 11. |
@@ -35,30 +38,30 @@ first release.
 ### Current local status—already checked by Codex
 
 **TL;DR:** code, tests, Android tooling, identity, privacy text, graphics, and AAB configuration
-are ready locally. Firebase Hosting and EAS project linking are complete. EAS signing/build,
-physical-device sign-off, Play upload, and console attestations remain.
+are ready locally. Firebase Hosting is complete. The local signing/build automation is ready;
+private upload-key creation, physical-device sign-off, Play upload, and console attestations remain.
 
 The commands `.\spark.cmd release -Action Inspect`, `.\spark.cmd release`, and the complete
 `.\spark.cmd release -Action Verify` were run on **July 17, 2026**. Re-run `Inspect` whenever you
-want a fresh status. Doctor, TypeScript, 258 tests, coverage, production builds, identity,
+want a fresh status. Doctor, TypeScript, 261 tests, coverage, production builds, identity,
 privacy, listing, and graphics checks form the local release gate.
 
 | Item | Current result |
 | --- | --- |
 | Package ID consistency | Confirmed: Expo, PowerShell helpers, Maestro, cloud templates, tests, and regenerated Android use `com.djpokis.sparkhabits.app`. |
 | Version | Ready: public/mobile/native version `0.1.0`; native version code `1`. |
-| Bundle configuration | Ready: EAS production output is an Android App Bundle and the default submit track is Internal. |
-| Automated verification | Doctor, all workspace types, 258 tests, coverage, builds, identity, listing limits, and graphics checks are automated. |
-| Local Android release build | `assembleRelease` passed July 17, 2026; the APK reports package `com.djpokis.sparkhabits.app`, version `0.1.0` / code `1`, target API 36, and no forbidden calendar/media/storage/overlay/camera/microphone/location permission. Physical-device sign-off remains. |
-| First-build cloud boundary | Ready locally: API blank, remote config off, creator-tip link off. Re-check the separate EAS environment before building. |
+| Bundle configuration | Ready: local Gradle production output is a signed Android App Bundle. A generated guard rejects release output without the private upload key/password. |
+| Automated verification | Doctor, all workspace types, 261 tests, coverage, builds, identity, listing limits, and graphics checks are automated. |
+| Local Android release build | The complete production AAB path passed July 17, 2026 with a disposable local key: production signature, package `com.djpokis.sparkhabits.app`, version `0.1.0` / code `1`, and Gradle bundle metadata were verified. The disposable key/AAB were deleted; your LastPass-backed upload key and physical-device sign-off remain. |
+| First-build cloud boundary | Ready locally: API blank, remote config off, creator-tip link off. `LocalBuild` uses this local configuration. |
 | Privacy policy | Filled consistently and live at `https://djpokis-spark-habits.web.app/privacy.html`; HTTP 200 and approved operator details verified July 17, 2026. |
-| EAS link | **Ready:** `@djpokis-team/spark-adhd-habits`, project ID `d13c96e7-3533-4fdb-88da-48e0b5a4f932`; no hosted build has been started. |
+| Optional EAS link | Existing but unused by the local path: `@djpokis-team/spark-adhd-habits`; no hosted build is required. |
 | Store assets | **Ready:** six real-app screenshots, icon, feature graphic, listings for all 19 bundled languages, alt text, and an upload manifest are in `store/android`. |
 | Play forms/testing | **Prepared but manual:** recommended answers are in `store/android/declarations.md`; your account, legal attestations, final policy URL, and tester actions cannot be automated. |
 
 If you only want the next action, run `.\spark.cmd release -Action Verify`, then complete the
-physical-device checks and create the production EAS build. The signed AAB and Play upload still
-require deliberate authenticated actions.
+physical-device checks, run `LocalSetup` once, and run `LocalBuild`. The private password entry
+and Play upload still require your deliberate action.
 
 ## The recommended first release
 
@@ -70,15 +73,16 @@ Start with a **free, offline build on the Internal testing track**.
 
 ### Cost of this release path
 
-**TL;DR:** Spark cloud runtime is `$0` while the documented flags are off. Before starting an EAS
-build or Firebase Hosting deploy, read the price/quota screen; those services can charge based on
-build or hosting usage, not Spark user count.
+**TL;DR:** the Spark application cloud runtime is `$0` while the documented flags are off. The
+local Android build costs `$0` and does not consume EAS quota. Before any optional hosted build or
+Firebase deployment, read that provider's current price/quota screen.
 
 | Item | Initial recommendation | Cost behavior |
 | --- | --- | --- |
 | Spark app runtime | All cloud features off | **$0 Spark cloud runtime** for 1, 10,000, or 1,000,000 users; Google Play distributes the app and data stays on devices. |
 | Google Play developer account | Use the account you already own | No new Spark per-upload or per-user server cost; your existing developer registration is the prerequisite. |
-| EAS hosted build | Use the available free quota first | Build-service usage depends on build frequency, not user count. It can be $0 within Expo's current allowance; review the price shown before choosing a paid plan or priority build. |
+| Local Android build | Primary path on this PC | **$0 per build**, regardless of app user count; uses your electricity/disk/CPU and installed Android tools only. |
+| Optional EAS hosted build | Disabled/unused | Not required. If deliberately used later, cost/quota depends on build frequency rather than app user count. |
 | Privacy-policy hosting | Existing public site or minimal Firebase Hosting | Normally $0 for a tiny static page within provider allowances; traffic beyond allowance follows that provider's pricing. This does not require Cloud Run or Firestore. |
 | Premium/admin/support | Do not enable for the first release | $0 while disabled. Their user-scale estimates and switches are in the [cost register](./08-cost-controls.md). |
 
@@ -116,12 +120,13 @@ The shortest order is:
 
 1. Keep the confirmed `com.djpokis.sparkhabits.app` identity unchanged.
 2. Publish the completed HTML privacy policy on the selected Firebase Hosting project.
-3. Run Spark's release checks and native-device tests.
-4. Use EAS Build to create a signed `.aab`.
-5. Create the Play Console app and upload the `.aab` to **Internal testing**.
-6. Run `.\spark.cmd release -Action Assets`, then use the exact upload map and policy worksheet in
+3. Run the `spark.cmd` release checks and native-device tests.
+4. Run `.\spark.cmd release -Action LocalSetup` once and protect the generated upload key/password in LastPass.
+5. Run `.\spark.cmd release -Action LocalBuild` to create and verify the signed `.aab` locally.
+6. Create the Play Console app and upload the `.aab` to **Internal testing**.
+7. Run `.\spark.cmd release -Action Assets`, then use the exact upload map and policy worksheet in
    `store/android/README.md` to complete the listing and forms shown in Play Console.
-7. Test the Play-installed build, then prepare a Closed test before production.
+8. Test the Play-installed build, then prepare a Closed test before production.
 
 ## Important terms that look similar
 
@@ -129,12 +134,12 @@ The shortest order is:
 > verify it:** run `.\spark.cmd release -Action Inspect`. The store name and version can change;
 > `com.djpokis.sparkhabits.app` must not change after the first Play artifact upload.
 
-| Term | Spark value/example | What it means | Can it change later? |
+| Term | Project value/example | What it means | Can it change later? |
 | --- | --- | --- | --- |
 | Store app name | `Spark` | The public name users see in Google Play. | Yes. |
 | Android package ID / application ID | `com.djpokis.sparkhabits.app` | The confirmed permanent technical identity inside the Android bundle and Play listing. | Do not change after the first uploaded artifact. |
-| Expo slug | `spark-adhd-habits` | Expo's project-friendly name. It is not the Play package ID. | Possible, but avoid unnecessary changes after EAS setup. |
-| EAS project ID | Generated by Expo | Connects this folder to an Expo project/build history. | Do not casually replace after setup. |
+| Expo slug | `spark-adhd-habits` | Optional Expo/EAS project-friendly name. It is not the product name or Play package ID. | Irrelevant to local Android builds. |
+| EAS project ID | Existing optional hosted-service identifier | Connects this folder to optional EAS history. | Irrelevant to local Android builds. |
 | Google Cloud project ID | Example: `spark-production-123` | Optional cloud infrastructure identifier. It is not the Play package ID. | The chosen project remains separate from the app identity. |
 | Version name | `0.1.0` | Public version shown to people and support staff. | Yes; change intentionally for releases. |
 | Version code | `1` | Android's always-increasing internal release number. | Must increase for every new Play upload. |
@@ -363,8 +368,8 @@ policy.
 
 ## 3. Decide the exact first-build feature boundary
 
-> **TL;DR — free/offline build. Where:** local `apps/mobile/.env.local` if present and the EAS
-> production environment after EAS Setup. **Do:** leave the API/Firebase values blank and both
+> **TL;DR — free/offline build. Where:** local `apps/mobile/.env.local` if present. **Do:** leave
+> the API/Firebase values blank and both
 > feature switches `false`. **Verify local state:** `.\spark.cmd release -Action Inspect` says
 > API blank/offline, remote config disabled, and creator tip disabled.
 
@@ -381,7 +386,7 @@ EXPO_PUBLIC_FIREBASE_APP_ID=
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 ```
 
-Blank means blank; do not put quotation marks or sample credentials into EAS environment values.
+Blank means blank; do not put quotation marks or sample credentials into local environment values.
 This keeps habits, focus, routines, reminders, widgets, and backups local and avoids Spark cloud
 runtime costs.
 
@@ -459,51 +464,82 @@ development signing. Follow [Testing](./testing.md) and the device sections of t
 - calendar create-event screens without calendar read permission; and
 - airplane-mode use of all free core features.
 
-## 6. Create the production Android App Bundle with EAS
+## 6. Create the production Android App Bundle locally
 
-> **TL;DR — where:** PowerShell at `D:\AI\Spark`, using your Expo account. **Setup is done:**
-> `.\spark.cmd release -Action Project` shows `@djpokis-team/spark-adhd-habits`. **Build:** `.\spark.cmd release -Action Build -Profile
-> production -Message "First internal test"`. **Download:** List, copy the exact build ID, then
-> Download it. **Done when:** `artifacts\eas` contains the successful `.aab`. Hosted quota/cost
-> may apply, so read the confirmation before typing it.
+> **TL;DR — where:** PowerShell at `D:\AI\Spark`. **Once:** create a unique 20+ character
+> password in LastPass and run `.\spark.cmd release -Action LocalSetup`; then attach the generated
+> `.p12` file to the LastPass item. **Every release:** run `.\spark.cmd release -Action
+> LocalBuild` and enter that password at the hidden prompt. **Done when:** `artifacts\release`
+> contains a verified `.aab` and `.sha256`. This does not contact EAS or consume hosted quota.
 
-EAS Build is recommended for a beginner because it can create and manage the upload keystore and
-produce the Play-ready bundle. Hosted EAS builds are subject to Expo's current quotas/pricing;
-check [EAS Build](https://docs.expo.dev/build/) before starting. A local build avoids hosted-build
-usage but requires more signing setup.
+### One-time upload-key setup
 
-From the repository root, use Spark's guarded wrapper:
+The upload key proves to Google Play that a bundle came from you. Generate it on this PC:
+
+1. In LastPass, create a secure note named `Spark application — Android upload key`.
+2. Generate and save a unique password containing at least 20 characters. Do not reuse it.
+3. Run:
+
+   ```powershell
+   .\spark.cmd release -Action LocalSetup
+   ```
+
+4. Type `CREATE LOCAL UPLOAD KEY` when the launcher asks for confirmation.
+5. Paste the LastPass password at both hidden `keytool` prompts. Nothing appears while typing.
+6. When setup finishes, attach this ignored private file to the LastPass item:
+
+   ```text
+   D:\AI\Spark\apps\mobile\credentials\spark-upload.p12
+   ```
+
+7. Record alias `spark-upload`, package `com.djpokis.sparkhabits.app`, certificate owner
+   `Domantas Judeikis`, and the exact SHA-256 file hash printed by the command.
+8. Run `.\spark.cmd release -Action LocalStatus`; it must report that the private key exists.
+
+The `spark.cmd` launcher never receives or writes the setup password because `keytool` owns those
+hidden prompts. Setup refuses to overwrite an existing key. Do not regenerate the key merely
+because you changed PCs: restore the same `.p12` and password from LastPass.
+
+### Build each Play bundle
+
+Run:
 
 ```powershell
-.\spark.cmd release -Action Inspect
-.\spark.cmd release -Action Setup
-.\spark.cmd release -Action Build -Profile production -Message "First internal test"
+.\spark.cmd release -Action LocalBuild
 ```
 
-What each action does:
+The command:
 
-- `Inspect`: locally summarizes the package IDs, versions, privacy placeholders, offline/cloud
-  flags, EAS configuration, and Git state without contacting Expo.
-- `Setup`: signs into Expo and links Spark to one EAS project. Run it once and review any proposed
-  changes. It creates the project UUID used by `app.config.ts`.
-- `Build`: reruns the fast release gate, shows the build profile/cost warning, requires typing
-  `BUILD production`, uploads the source to EAS, signs it, and returns a build link.
+1. regenerates the ignored `apps/mobile/android` project from `app.config.ts`;
+2. checks package identity, policies, assets, and the production-signing guard;
+3. asks for the LastPass password through a hidden PowerShell prompt;
+4. unlocks the key in memory and passes it only to one non-daemon Gradle process;
+5. builds `:app:bundleRelease` locally;
+6. verifies the AAB signature is not the Android debug certificate;
+7. verifies the bundle/manifest metadata emitted by that Gradle build contains the intended
+   package ID, version name, and version code; and
+8. copies the AAB plus a SHA-256 checksum to `artifacts\release`.
 
-To see the underlying commands or every optional parameter, run:
+The default output name is:
 
-```powershell
-.\spark.cmd release -Help
+```text
+spark-application-android-VERSION-VERSIONCODE.aab
 ```
 
-The existing `production` profile in `apps/mobile/eas.json` explicitly requests an app bundle and
-auto-increments the Android build number.
+Use `-OutputDirectory` only if you deliberately want another ignored output folder. The password
+is removed from the process environment when Gradle finishes. It is never written to a Gradle
+properties file, source file, command history, or build artifact.
+
+The generated Gradle configuration deliberately refuses `bundleRelease` and `assembleRelease`
+when the real key/password are unavailable. This prevents an accidentally debug-signed file from
+being mistaken for the production bundle.
 
 ### Last package-ID check before building
 
 **TL;DR:** run `.\spark.cmd release -Action Inspect`. Continue only if Expo and generated native
 Android show the permanent package ID, version `0.1.0`, and production output `app-bundle`.
 
-First inspect Expo's production source value:
+First inspect Expo's local source value:
 
 ```powershell
 Set-Location apps/mobile
@@ -511,59 +547,25 @@ npx.cmd expo config --type public
 Set-Location ..\..
 ```
 
-Find `android.package`; this is the identity EAS will use when it generates the ignored Android
-folder. If you have already generated Android for local testing, also check it:
+Find `android.package`; this is the identity the local prebuild uses when it generates the ignored
+Android folder. Also check the generated native file:
 
 ```powershell
 Select-String -Path apps/mobile/android/app/build.gradle -Pattern "applicationId"
 ```
 
 The Gradle value is the identity used by your current local native build. If it disagrees with
-Expo, stop and follow the regeneration steps in section 1. If the file does not exist, there is no
-local native folder to compare; EAS can still generate one during its build.
+Expo config, stop and follow the regeneration steps in section 1. `LocalBuild` normally generates
+this folder before validating it.
 
-Spark's generated project currently targets API 36. Google requires API 35 through August 30,
+The Spark application's generated project currently targets API 36. Google requires API 35 through August 30,
 2026 and has announced API 36 for new apps and updates from August 31, 2026. No SDK edit is needed
 for the current project, but confirm the target reported by Play for every uploaded bundle. See
 the [live target API requirement](https://developer.android.com/google/play/requirements/target-sdk).
 
-Spark uses a dynamic `app.config.ts`. The confirmed EAS owner and public project UUID are now safe
-fallbacks in that tracked configuration, and the local ignored `apps/mobile/.env` contains the
-same values:
-
-```text
-EXPO_OWNER=djpokis-team
-EXPO_PROJECT_ID=d13c96e7-3533-4fdb-88da-48e0b5a4f932
-```
-
-Confirm the link with `.\spark.cmd release -Action Project`. The project UUID and owner slug are
-public identifiers and are also present in `.env.example`; passwords, signing credentials, and
-service keys must never be committed.
-
-After the build finishes, list and download one exact build rather than relying on an ambiguous
-latest file:
-
-```powershell
-.\spark.cmd release -Action List -Profile production
-.\spark.cmd release -Action Download -BuildId YOUR_EAS_BUILD_ID
-```
-
-The download goes to the ignored `artifacts/eas` folder by default.
-
-When EAS asks about Android credentials, choosing a newly generated keystore is the simplest path
-for a new app. Afterward, use EAS's credentials command/dashboard to download a protected backup
-of the upload keystore and its passwords:
-
-```powershell
-.\spark.cmd release -Action Credentials
-```
-
-Store it in a password manager or secure vault; never put it in this repository, email, chat, or
-a public drive.
-
 There are two signing keys:
 
-- the **upload key** proves bundles uploaded by you/EAS; and
+- the **upload key** created locally proves bundles uploaded by you; and
 - the **app-signing key** is held by Google Play and signs the optimized APKs delivered to users.
 
 For a new app, Play App Signing normally creates and protects the final signing key when the first
@@ -573,11 +575,21 @@ material is much more serious. See [Use Play App Signing](https://support.google
 An `.aab` cannot be directly tapped and installed on a phone. Test the delivered version through
 Play Internal testing or download Play-generated device APKs from App bundle explorer.
 
+### Optional hosted alternative
+
+EAS (Expo Application Services) configuration remains in the repository only as an optional
+fallback. If you deliberately choose it later, all hosted actions start with `Eas`, such as
+`EasBuild`; run `.\spark.cmd release -Help`. Hosted build/submission is additionally blocked until
+you set the process-scoped `SPARK_ALLOW_EAS_RELEASES=true` cost flag after reviewing pricing and
+signing migration. Old ambiguous actions such as `Build` stop with an explanation, so they cannot
+accidentally consume a hosted build. The local process above does not need an Expo login or EAS
+project.
+
 ## 7. Create the Play Console app
 
 > **TL;DR — where:** [Google Play Console](https://play.google.com/console/), **Home → Create
 > app**. **Enter:** default language you will maintain, `Spark`, `App`, `Free`, and your monitored
-> public support email; accept the shown declarations. **Done when:** Spark's dashboard exists.
+> public support email; accept the shown declarations. **Done when:** the Spark application's Play dashboard exists.
 > Do not upload until you have re-confirmed the permanent package ID.
 
 In [Google Play Console](https://play.google.com/console/):
@@ -824,7 +836,8 @@ required account, and no financial-services feature. Answer the exact Play wordi
 
 Manual upload is simplest and does not require a Google Play API service account:
 
-1. Download the `.aab` with `.\spark.cmd release -Action Download -BuildId YOUR_EAS_BUILD_ID`.
+1. Run `.\spark.cmd release -Action LocalBuild` and use the verified `.aab` printed by the command
+   under `artifacts\release`.
 2. In Play Console open **Test and release → Internal testing** (or use the left-menu search).
 3. Open the **Testers** tab and create an email list or Google Group. Testers need Google accounts.
 4. Open the **Releases** tab and choose **Create new release**.
@@ -849,12 +862,12 @@ complete. The first test link can take time to appear. Details are in
 [Set up an internal test](https://support.google.com/googleplay/android-developer/answer/9845334)
 and [Prepare a release](https://support.google.com/googleplay/android-developer/answer/9859348/prepare-and-roll-out-a-release).
 
-The first upload must be manual because Google Play does not allow API submission before one
-manual artifact exists. For later updates, after configuring a least-privilege Google service
-account for EAS Submit, Spark can submit one exact build to a non-production track:
+The first upload is manual. For later updates, manual upload remains the simplest and avoids a
+service-account credential. If you deliberately opt into EAS Submit after configuring a
+least-privilege Google service account, its explicit optional command is:
 
 ```powershell
-.\spark.cmd release -Action Submit -Track internal -BuildId YOUR_EAS_BUILD_ID
+.\spark.cmd release -Action EasSubmit -Track internal -BuildId YOUR_EAS_BUILD_ID
 ```
 
 Submission defaults to Internal, never Production, and requires a confirmation containing both
@@ -937,27 +950,29 @@ At that later stage you will need to:
 7. configure and authenticate RTDN for refunds/revocations; and
 8. update Data safety and privacy disclosures before distributing that behavior.
 
-EAS manual AAB upload does not require that service account. The account is needed for Spark's
-server-side purchase verification and/or automated store submission, not for the initial manual
-Internal upload.
+Local/manual AAB upload does not require that service account. The account is needed for the Spark
+application's server-side purchase verification and/or optional automated store submission, not
+for the initial manual Internal upload.
 
 ## 14. Versions for later uploads
 
 > **TL;DR — where:** `apps/mobile/package.json` and `apps/mobile/app.config.ts`. **Do:** set the
-> same meaningful public version in both; EAS production auto-increments `versionCode`. **Verify:**
-> `.\spark.cmd release -Action Inspect` before every build and confirm Play shows a higher code.
+> same meaningful public version in both and increase `android.versionCode` in `app.config.ts`.
+> **Verify:** `.\spark.cmd release -Action Inspect` before every build and confirm Play shows a
+> higher code.
 
-Every uploaded update must have a higher Android `versionCode`. Spark's EAS production profile has
-`autoIncrement: true`, but still set a meaningful public version.
+Every uploaded update must have a higher Android `versionCode`. The local build intentionally does
+not alter source files or choose a version for you.
 
 Update and keep consistent:
 
 - `version` in `apps/mobile/package.json`;
 - `version` in `apps/mobile/app.config.ts`; and
+- `android.versionCode` in `apps/mobile/app.config.ts` (increase it for every Play upload); and
 - the local native Android `versionName` by regenerating `apps/mobile/android` before local
   release-like tests, if that ignored folder already exists.
 
-Before uploading, inspect the version displayed by EAS and Play Console. Never reuse a
+Before uploading, inspect the version printed by `LocalBuild` and displayed by Play Console. Never reuse a
 `versionCode`, even if the older release was only a draft or test.
 
 ## Final pre-upload checkpoint
@@ -974,7 +989,8 @@ Before the **first Internal AAB upload**, you should be able to answer yes to th
 - [ ] The first build's cloud and creator-tip flags are deliberately off or accurately disclosed.
 - [ ] `.\spark.cmd check -Level Release` passes except for understood decision warnings.
 - [ ] I tested a native release-like build on Android.
-- [ ] I have an Expo/EAS account and a protected backup of the upload credentials.
+- [ ] LastPass has the local upload-key `.p12`, its unique password, alias `spark-upload`, and
+      printed SHA-256 file hash.
 - [ ] Any store copy/screenshots already entered show only features present in this build.
 - [ ] I know whether my Play account requires the 12-testers/14-days Closed test.
 - [ ] I will upload to Internal testing, not directly to Production.
@@ -984,7 +1000,8 @@ After upload, continue with the more detailed [release checklist](./release-chec
 ## Official references
 
 > **TL;DR:** you do not need to read every link. Use the matching official link only when a Play
-> or EAS screen differs from this guide; Google/Expo documentation overrides stale menu labels.
+> or optional EAS screen differs from this guide; official Google/Expo documentation overrides
+> stale menu labels.
 
 - [Create and set up a Play app](https://support.google.com/googleplay/android-developer/answer/9859152)
 - [Play testing tracks](https://support.google.com/googleplay/android-developer/answer/9845334)

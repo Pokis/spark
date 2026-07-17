@@ -1,6 +1,13 @@
 # Start here
 
-You do not need previous mobile-development experience to run Spark.
+You do not need previous mobile-development experience to run the **Spark application**.
+
+Naming used throughout these guides:
+
+- **Spark application** means the ADHD habit-tracker product.
+- **`spark.cmd` launcher** means the Windows command helper in this repository.
+- **EAS** means Expo Application Services, an optional hosted build service. The Android release
+  process described here builds locally and does not require it.
 
 ## What is already separated for you
 
@@ -56,6 +63,18 @@ screenshots, listings for all 19 bundled languages, and declaration worksheet ar
 
 This command is local-only and does not deploy or create a cloud bill.
 
+To build the signed Google Play bundle locally, use:
+
+```powershell
+.\spark.cmd release -Action LocalStatus
+.\spark.cmd release -Action LocalSetup # once; creates the private upload key on this PC
+.\spark.cmd release -Action LocalBuild # every release; creates and verifies the .aab
+```
+
+`LocalSetup` is the only step that must pause for you to choose and enter a password. Save that
+password and the generated `.p12` file in LastPass as instructed on screen. Neither command
+contacts EAS or consumes hosted-build quota.
+
 Choose the path that matches what you are doing:
 
 - First local run: [Windows setup](./docs/01-windows-setup.md), then
@@ -68,7 +87,8 @@ Choose the path that matches what you are doing:
 
 When you reach either later path, the local starting points are
 `.\spark.cmd release -Help` and `.\spark.cmd deploy -Action Status`. Cloud status is read-only,
-and Spark does not deploy cloud resources merely because you run or release the offline app.
+and the Spark application does not deploy cloud resources merely because you run or release the
+offline app.
 
 The purpose-based map for every document is [docs/README.md](./docs/README.md).
 

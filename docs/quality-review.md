@@ -150,7 +150,7 @@ disabled.
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **258 tests passed**: 191 mobile, 26 domain, 25 API, 16 admin.
+- `npm.cmd run test:ci` — **261 tests passed**: 194 mobile, 26 domain, 25 API, 16 admin.
 - `npm.cmd run test:coverage` — passed the checked-in workspace gates. Measured statement
   coverage: mobile 53.62% across every route/source file, domain 99.58%, API application 88.53%,
   and admin source 73.76%.

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Runs common Spark development, testing, Android, and local-service tasks.
+Runs common Spark application development, testing, Android, and local-service tasks.
 
 .DESCRIPTION
 Use ".\spark.cmd help" for the command catalog. The .cmd launcher allows this
@@ -75,7 +75,7 @@ param(
   [string]$Device,
   [string]$Avd,
   [string]$BuildId,
-  [string]$OutputDirectory = 'artifacts\eas',
+  [string]$OutputDirectory = 'artifacts\release',
   [string]$Message,
   [string]$ProjectId,
   [string]$Region = 'europe-central2',
@@ -173,7 +173,7 @@ start
       @'
 android
   Detects the local Android toolchain, generates/builds the native development
-  client, installs it, and starts Spark.
+  client, installs it, and starts the Spark application.
 
   Parameters:
     -Select                Show Expo's interactive device picker.
@@ -190,7 +190,7 @@ android
     'stop' {
       @'
 stop
-  Stops the Spark-owned local Expo/Metro/Android build process tree recorded by
+  Stops the spark.cmd-owned local Expo/Metro/Android build process tree recorded by
   the most recent start or android command. Run it from a second PowerShell if
   Ctrl+C is unavailable. With -Device, it also force-stops the installed Spark
   app on that Android target without deleting its data.
@@ -356,47 +356,56 @@ seed
     'release' {
       @'
 release
-  Inspects release readiness and wraps EAS Android build/submission utilities.
-  Running without -Action preserves the old fast release check.
+  Prepares and builds the Spark application for Google Play on this Windows PC.
+  The primary path is local and does not contact or consume EAS. EAS means Expo
+  Application Services and remains available only through explicitly named
+  Eas* actions. Running without -Action performs the fast release check.
 
   Actions:
-    Inspect    Fast local identity/version/flag/privacy summary; no network.
-    Check      Required-file, identity, and privacy-placeholder check (default).
-    Verify     Full doctor, types, tests, coverage, builds, and release check.
-    Assets     Regenerate and validate the tracked Google Play graphics locally.
-    Native     Build/install a local release-like APK on a selected Android device.
-    Setup      Sign in to Expo/EAS and create or link the EAS project.
-    Project    Show the current Expo account and linked EAS project.
-    Credentials  Open the interactive Android signing-credentials manager.
-    Build      Validate locally, then start an Android EAS build.
-    List       List recent Android EAS builds.
-    Download   Download one exact EAS build ID into an ignored local folder.
-    Submit     Submit a build after the required first manual Play upload.
+    LocalStatus  Show whether the private upload key and native signing guard exist.
+    LocalSetup   Create the private Google Play upload key on this PC. Run once.
+    LocalBuild   Build and verify a signed Android App Bundle (.aab) on this PC.
+    Native       Build/install an optimized debug-signed APK for phone testing.
+    Inspect      Fast local identity/version/flag/privacy summary; no network.
+    Check        Required-file, identity, and privacy-placeholder check (default).
+    Verify       Full doctor, types, tests, coverage, builds, and release check.
+    Assets       Regenerate and validate the tracked Google Play graphics locally.
+
+  Optional EAS actions (not required by the local process):
+    EasSetup       Sign in and link an Expo Application Services project.
+    EasProject     Show its Expo account and project link.
+    EasCredentials Open its Android signing-credentials manager.
+    EasBuild       Start a hosted Android build; blocked unless its cost flag is enabled.
+    EasList        List hosted Android builds.
+    EasDownload    Download one exact hosted build.
+    EasSubmit      Submit one hosted build; blocked unless its cost flag is enabled.
 
   Parameters:
-    -Profile development|preview|production   Build profile; default: production.
-    -Track internal|alpha|beta|production     Submit profile/Play track; default: internal.
-    -BuildId <id>                             Required exact build for Download/Submit.
-    -Device <model-or-adb-id>                 Native-test target; omit for device picker.
-    -OutputDirectory <path>                   Download folder; default: artifacts\eas.
-    -Message <text>                           Optional EAS build message.
-    -Limit 1..50                              List count; default: 10.
-    -NoWait                                   Queue build/submit without waiting.
-    -ClearCache                               Clear the EAS build cache.
-    -Yes                                      Skip Build/Submit typed confirmation.
+    -OutputDirectory <path>  LocalBuild/EasDownload output; default: artifacts\release.
+    -Device <model-or-id>    Native-test target; omit for the device picker.
+    -Profile <name>          Optional EasBuild/EasList profile; default: production.
+    -Track <name>            Optional EasSubmit Play track; default: internal.
+    -BuildId <id>            Required for EasDownload/EasSubmit.
+    -Message <text>          Optional EasBuild message.
+    -Limit 1..50             EasList count; default: 10.
+    -NoWait                  Queue EasBuild/EasSubmit without waiting.
+    -ClearCache              Clear the hosted EAS build cache.
+    -Yes                     Skip LocalSetup/EasBuild/EasSubmit confirmation.
 
-  Examples:
-    .\spark.cmd release
-    .\spark.cmd release -Action Inspect
+  Recommended local sequence:
+    .\spark.cmd release -Action LocalStatus
+    .\spark.cmd release -Action LocalSetup
+    .\spark.cmd release -Action LocalBuild
+
+  Other examples:
     .\spark.cmd release -Action Verify
     .\spark.cmd release -Action Assets
     .\spark.cmd release -Action Native -Device 25113PN0EG
-    .\spark.cmd release -Action Setup
-    .\spark.cmd release -Action Credentials
-    .\spark.cmd release -Action Build -Profile production -Message "Internal 0.1.0"
-    .\spark.cmd release -Action List
-    .\spark.cmd release -Action Download -BuildId <EAS_BUILD_ID>
-    .\spark.cmd release -Action Submit -Track internal -BuildId <EAS_BUILD_ID>
+    .\spark.cmd release -Action EasBuild -Profile production
+
+  Cost guard for the optional hosted workflow:
+    $env:SPARK_ALLOW_EAS_RELEASES = 'true' # current PowerShell process only
+    # Review signing migration and current Expo pricing before setting it.
 '@ | Write-Host
     }
     'deploy' {
@@ -439,14 +448,14 @@ deploy
     'clean' {
       @'
 clean
-  Removes generated build and coverage directories managed by Spark.
+  Removes generated build and coverage directories managed by this repository.
 
   Example:
     .\spark.cmd clean
 '@ | Write-Host
     }
     default {
-      Write-Heading 'Spark command helper'
+      Write-Heading 'spark.cmd command helper'
       @'
 Usage:
   .\spark.cmd <command> [parameters]
@@ -463,7 +472,7 @@ First-time path:
 Development:
   start          Start Expo for DevClient, Expo Go, or Web
   android        Build/install the native Android development app
-  stop           Stop Spark's recorded local process tree; optionally the app
+  stop           Stop the spark.cmd-owned process tree; optionally the app
   emulator       List or start Android virtual devices
   devices        List Android devices and emulators
   logs           Stream React Native Android logs
@@ -479,7 +488,7 @@ Quality:
   check          Run Quick, Full, or Release validation
   build          Build all or a selected workspace
   e2e            Run the Maestro Android flow
-  release        Inspect, verify, build, download, or submit Android releases
+  release        Build signed Android releases locally; optional EAS actions
   deploy         Inspect or run guarded Firebase/GCP/Terraform deployments
   clean          Remove generated outputs
 
@@ -562,7 +571,7 @@ function Write-MobileProcessRecord {
 
 function Stop-RecordedMobileProcess {
   if (-not (Test-Path -LiteralPath $script:MobileProcessFile)) {
-    Write-Host 'No recorded Spark Expo/Android process is running.'
+    Write-Host 'No spark.cmd-recorded Expo/Android process is running.'
     return
   }
 
@@ -583,15 +592,15 @@ function Stop-RecordedMobileProcess {
     }
   } catch {
     Remove-MobileProcessRecord
-    Write-Warning 'The saved Spark process was stale, so no process was terminated.'
+    Write-Warning 'The process recorded by spark.cmd was stale, so no process was terminated.'
     return
   }
 
   $record | Add-Member -NotePropertyName 'stopRequested' -NotePropertyValue $true -Force
   $record | ConvertTo-Json | Set-Content -LiteralPath $script:MobileProcessFile -Encoding UTF8
-  Write-Host "Stopping Spark development process tree (PID $recordedId)..." -ForegroundColor Yellow
+  Write-Host "Stopping the spark.cmd development process tree (PID $recordedId)..." -ForegroundColor Yellow
   Stop-ExternalProcessTree -ProcessId $recordedId
-  Write-Host 'Stopped the local Spark development process tree.' -ForegroundColor Green
+  Write-Host 'Stopped the local spark.cmd development process tree.' -ForegroundColor Green
 }
 
 function ConvertTo-NativeArgument {
@@ -1058,7 +1067,7 @@ try {
           'force-stop',
           $script:PackageName
         )
-        Write-Host "Stopped Spark on Android device '$adbDevice' without clearing its data." -ForegroundColor Green
+        Write-Host "Stopped the Spark application on Android device '$adbDevice' without clearing its data." -ForegroundColor Green
       }
     }
     'emulator' {
@@ -1201,7 +1210,7 @@ try {
   }
 } catch {
   Write-Host ""
-  Write-Host "Spark command failed: $($_.Exception.Message)" -ForegroundColor Red
+  Write-Host "spark.cmd failed: $($_.Exception.Message)" -ForegroundColor Red
   Write-Host "Run '.\spark.cmd $Command -Help' for this command's usage." -ForegroundColor Yellow
   exit 1
 }

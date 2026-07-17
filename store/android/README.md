@@ -6,11 +6,17 @@ files from the rest of the repository.
 
 ## Five-minute upload map
 
-1. Run `.\spark.cmd release -Action Assets` from `D:\AI\Spark`.
-2. In Play Console, open **Grow users → Store presence → Main store listing**.
-3. Copy the English fields from [listing/en-US.md](./listing/en-US.md).
-4. Upload the files shown in [asset-manifest.md](./asset-manifest.md).
-5. Open **Policy and programs → App content** and follow [declarations.md](./declarations.md).
+1. Build the signed bundle locally with `.\spark.cmd release -Action LocalBuild` from
+   `D:\AI\Spark`; the verified `.aab` appears in `artifacts/release`.
+2. Run `.\spark.cmd release -Action Assets` from `D:\AI\Spark`.
+3. In Play Console, open **Grow users → Store presence → Main store listing**.
+4. Copy the English fields from [listing/en-US.md](./listing/en-US.md).
+5. Upload the files shown in [asset-manifest.md](./asset-manifest.md).
+6. Open **Policy and programs → App content** and follow [declarations.md](./declarations.md).
+
+The local bundle command does not contact EAS (Expo Application Services), Firebase, or Google
+Cloud and does not use a hosted-build quota. First-time upload-key creation is explained in the
+[release checklist](../../docs/release-checklist.md).
 
 The publisher's confirmed identity, audience, price, hosting, and feature-boundary choices are in
 [release-decisions.md](./release-decisions.md).

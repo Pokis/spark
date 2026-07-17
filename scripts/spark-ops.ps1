@@ -50,7 +50,7 @@ function Confirm-SparkExternalChange {
 
   $answer = Read-Host "Type '$Expected' to continue"
   if ($answer -cne $Expected) {
-    Write-Host 'Operation canceled; no external change was requested.' -ForegroundColor Yellow
+    Write-Host 'Operation canceled; no change was made.' -ForegroundColor Yellow
     return $false
   }
   return $true
@@ -141,9 +141,9 @@ function Show-SparkReleaseInspection {
   Write-SparkStatus 'Android package ID' $packageName $(if ($packageName -eq $script:PackageName) { 'Good' } else { 'Bad' })
   Write-SparkStatus 'Public app version' $appVersion 'Good'
   Write-SparkStatus 'Mobile package version' ([string]$mobilePackage.version) $(if ($appVersion -eq [string]$mobilePackage.version) { 'Good' } else { 'Bad' })
-  Write-SparkStatus 'EAS production output' ([string]$eas.build.production.android.buildType) 'Good'
-  Write-SparkStatus 'EAS version source' ([string]$eas.cli.appVersionSource) 'Good'
-  Write-SparkStatus 'Default submit profile' ([string]$eas.submit.internal.android.track) 'Good'
+  Write-SparkStatus 'Local Play output' 'signed Android App Bundle (.aab)' 'Good'
+  Write-SparkStatus 'Optional EAS output' ([string]$eas.build.production.android.buildType) 'Normal'
+  Write-SparkStatus 'Optional EAS submit track' ([string]$eas.submit.internal.android.track) 'Normal'
 
   $gradle = Join-Path $script:Root 'apps\mobile\android\app\build.gradle'
   if (Test-Path -LiteralPath $gradle) {
@@ -153,7 +153,7 @@ function Show-SparkReleaseInspection {
     Write-SparkStatus 'Generated native ID' $nativeId $(if ($nativeId -eq $packageName) { 'Good' } else { 'Bad' })
     Write-SparkStatus 'Generated native version' "$nativeVersion ($nativeCode)" $(if ($nativeVersion -eq $appVersion) { 'Good' } else { 'Warn' })
   } else {
-    Write-SparkStatus 'Generated native project' 'not present; EAS will prebuild from app.config.ts' 'Normal'
+    Write-SparkStatus 'Generated native project' 'not present; LocalBuild will generate it from app.config.ts' 'Normal'
   }
 
   $privacyFiles = @(
@@ -174,11 +174,13 @@ function Show-SparkReleaseInspection {
   $apiUrl = Get-SparkEnvValue -Values $envValues -Name 'EXPO_PUBLIC_SPARK_API_URL'
   $remoteConfig = Get-SparkEnvValue -Values $envValues -Name 'EXPO_PUBLIC_SPARK_REMOTE_CONFIG_ENABLED'
   $tipLink = Get-SparkEnvValue -Values $envValues -Name 'EXPO_PUBLIC_SPARK_CREATOR_TIP_LINK_ENABLED'
-  Write-SparkStatus 'Local EAS project ID' $(if ($easProjectId) { 'configured (value hidden)' } else { 'not configured locally' }) $(if ($easProjectId) { 'Good' } else { 'Warn' })
+  Write-SparkStatus 'Optional EAS project ID' $(if ($easProjectId) { 'configured (value hidden)' } else { 'not configured locally' }) 'Normal'
   Write-SparkStatus 'Local API URL' $(if ($apiUrl) { 'configured (value hidden)' } else { 'blank / offline' }) $(if ($apiUrl) { 'Warn' } else { 'Good' })
   Write-SparkStatus 'Local remote config' $(if ($remoteConfig -eq 'true') { 'enabled' } else { 'disabled' }) $(if ($remoteConfig -eq 'true') { 'Warn' } else { 'Good' })
   Write-SparkStatus 'Local creator tip' $(if ($tipLink -eq 'true') { 'enabled' } else { 'disabled' }) $(if ($tipLink -eq 'true') { 'Warn' } else { 'Good' })
-  Write-Host 'Local .env values are ignored by Git; verify the separate EAS build environment before building.' -ForegroundColor DarkGray
+  $easBuildsAllowed = [Environment]::GetEnvironmentVariable('SPARK_ALLOW_EAS_RELEASES', 'Process') -eq 'true'
+  Write-SparkStatus 'Optional EAS releases' $(if ($easBuildsAllowed) { 'enabled for this PowerShell process' } else { 'blocked by default' }) $(if ($easBuildsAllowed) { 'Warn' } else { 'Good' })
+  Write-Host 'Local .env values are ignored by Git. LocalBuild uses these local values; optional hosted EAS builds use a separate environment.' -ForegroundColor DarkGray
 
   $branch = [string](& git branch --show-current 2>$null)
   $dirty = @(& git status --porcelain 2>$null)
@@ -265,6 +267,251 @@ function Show-SparkDeploymentStatus {
   Write-Host 'Review docs/08-cost-controls.md before enabling any flag shown above.' -ForegroundColor DarkGray
 }
 
+function Get-SparkLocalSigningInfo {
+  $mobileRoot = Join-Path $script:Root 'apps\mobile'
+  [pscustomobject]@{
+    Alias = 'spark-upload'
+    Keystore = Join-Path $mobileRoot 'credentials\spark-upload.p12'
+    CredentialsDirectory = Join-Path $mobileRoot 'credentials'
+    NativeGradle = Join-Path $mobileRoot 'android\app\build.gradle'
+    GeneratedBundle = Join-Path $mobileRoot 'android\app\build\outputs\bundle\release\app-release.aab'
+    BundleMetadata = Join-Path $mobileRoot 'android\app\build\intermediates\bundle_ide_model\release\produceReleaseBundleIdeListingFile\output-metadata.json'
+    ManifestMetadata = Join-Path $mobileRoot 'android\app\build\intermediates\packaged_manifests\release\processReleaseManifestForPackage\output-metadata.json'
+  }
+}
+
+function Show-SparkLocalSigningStatus {
+  $signing = Get-SparkLocalSigningInfo
+  Write-Heading 'Local Google Play signing status'
+  $hasKeystore = Test-Path -LiteralPath $signing.Keystore
+  Write-SparkStatus 'Private upload keystore' $(if ($hasKeystore) { $signing.Keystore } else { 'not created' }) $(if ($hasKeystore) { 'Good' } else { 'Warn' })
+  Write-SparkStatus 'Upload-key alias' $signing.Alias 'Good'
+  Write-SparkStatus 'Password storage' 'never written by the build; requested with a hidden prompt' 'Good'
+  if ($hasKeystore) {
+    $hash = (Get-FileHash -LiteralPath $signing.Keystore -Algorithm SHA256).Hash
+    Write-SparkStatus 'Keystore SHA-256' $hash 'Good'
+  }
+  $nativeReady = (Test-Path -LiteralPath $signing.NativeGradle) -and
+    (Get-Content -LiteralPath $signing.NativeGradle -Raw).Contains('// Spark application local production signing')
+  Write-SparkStatus 'Generated signing guard' $(if ($nativeReady) { 'present' } else { 'not generated yet; LocalBuild runs Expo prebuild' }) $(if ($nativeReady) { 'Good' } else { 'Normal' })
+  Write-SparkStatus 'EAS hosted build required' 'no' 'Good'
+  Write-Host 'The Spark application is the mobile product. spark.cmd is only this repository''s PowerShell launcher.' -ForegroundColor DarkGray
+}
+
+function Read-SparkSigningPassword {
+  $secure = Read-Host 'Enter the Spark application upload-key password (hidden)' -AsSecureString
+  try {
+    if ($secure.Length -lt 20) {
+      throw 'The upload-key password must contain at least 20 characters.'
+    }
+    $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try {
+      return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
+    } finally {
+      [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
+    }
+  } finally {
+    $secure.Dispose()
+  }
+}
+
+function Test-SparkUploadKeystore {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Password
+  )
+
+  try {
+    $flags = [Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
+    $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
+      $Path,
+      $Password,
+      $flags
+    )
+    try {
+      if (-not $certificate.HasPrivateKey) {
+        throw 'The selected PKCS#12 file does not contain a private upload key.'
+      }
+      if ($certificate.Subject -notmatch 'CN=Domantas Judeikis') {
+        throw "Unexpected upload certificate owner: $($certificate.Subject)"
+      }
+      return $certificate.Subject
+    } finally {
+      $certificate.Dispose()
+    }
+  } catch {
+    throw "Could not unlock the local upload keystore. Check the LastPass password and file backup. $($_.Exception.Message)"
+  }
+}
+
+function Initialize-SparkLocalSigning {
+  param([switch]$SkipConfirmation)
+
+  $environment = Initialize-AndroidEnvironment
+  if (-not $environment.JavaHome) {
+    throw 'Java is unavailable. Run ".\spark.cmd setup-android -Persist" first.'
+  }
+  $keytool = Join-Path $environment.JavaHome 'bin\keytool.exe'
+  if (-not (Test-Path -LiteralPath $keytool)) {
+    throw "keytool.exe was not found under $($environment.JavaHome)."
+  }
+
+  $signing = Get-SparkLocalSigningInfo
+  if (Test-Path -LiteralPath $signing.Keystore) {
+    Show-SparkLocalSigningStatus
+    Write-Host 'The private upload key already exists. It was not changed or replaced.' -ForegroundColor Green
+    return
+  }
+
+  Write-Host 'Before continuing, create a LastPass item with a unique 20+ character password.' -ForegroundColor Cyan
+  Write-Host 'keytool will request that password twice without displaying it. Use the same password for both prompts.' -ForegroundColor Cyan
+  Write-Warning 'This upload key becomes part of the Spark application release identity. Back up both the .p12 file and password before the first Play upload.'
+  if (-not (Confirm-SparkExternalChange `
+      -Description 'This creates one private upload key locally. It does not contact EAS, Google Play, Firebase, or Google Cloud.' `
+      -Expected 'CREATE LOCAL UPLOAD KEY' `
+      -SkipConfirmation:$SkipConfirmation)) { return }
+
+  [void][IO.Directory]::CreateDirectory($signing.CredentialsDirectory)
+  Invoke-External -Executable $keytool -Arguments @(
+    '-genkeypair', '-v',
+    '-keystore', $signing.Keystore,
+    '-storetype', 'PKCS12',
+    '-alias', $signing.Alias,
+    '-keyalg', 'RSA',
+    '-keysize', '4096',
+    '-sigalg', 'SHA256withRSA',
+    '-validity', '10000',
+    '-dname', 'CN=Domantas Judeikis, OU=djpokis team, O=Domantas Judeikis, L=Vilnius, C=LT'
+  )
+
+  if (-not (Test-Path -LiteralPath $signing.Keystore)) {
+    throw 'keytool completed without creating the expected upload keystore.'
+  }
+  $hash = (Get-FileHash -LiteralPath $signing.Keystore -Algorithm SHA256).Hash
+  Write-Host ''
+  Write-Host 'Local upload key created. Save these items in LastPass before building:' -ForegroundColor Green
+  Write-Host "  File:   $($signing.Keystore)"
+  Write-Host "  Alias:  $($signing.Alias)"
+  Write-Host "  SHA256: $hash"
+  Write-Host '  Password: the value you just entered; spark.cmd did not save it.'
+}
+
+function Invoke-SparkLocalReleaseBuild {
+  param([Parameter(Mandatory = $true)][string]$OutputDirectory)
+
+  $environment = Initialize-AndroidEnvironment
+  if (-not $environment.JavaHome -or -not $environment.AndroidHome) {
+    throw 'Android Java/SDK tooling is incomplete. Run ".\spark.cmd setup-android -Persist" first.'
+  }
+  $signing = Get-SparkLocalSigningInfo
+  if (-not (Test-Path -LiteralPath $signing.Keystore)) {
+    throw 'The local upload key does not exist. Run ".\spark.cmd release -Action LocalSetup" first.'
+  }
+
+  Write-Heading 'Local signed Google Play bundle'
+  Write-Host 'This builds the Spark application entirely on this PC. It does not contact or consume EAS.' -ForegroundColor Cyan
+  Push-Location (Join-Path $script:Root 'apps\mobile')
+  try {
+    Invoke-External -Executable 'npx.cmd' -Arguments @(
+      'expo', 'prebuild', '--platform', 'android', '--no-install'
+    )
+  } finally {
+    Pop-Location
+  }
+  Invoke-Npm @('run', 'release:check')
+
+  $password = Read-SparkSigningPassword
+  $oldStoreFile = $env:SPARK_UPLOAD_STORE_FILE
+  $oldPassword = $env:SPARK_UPLOAD_PASSWORD
+  $oldAlias = $env:SPARK_UPLOAD_ALIAS
+  $oldNodeEnv = $env:NODE_ENV
+  try {
+    $subject = Test-SparkUploadKeystore -Path $signing.Keystore -Password $password
+    Write-Host "Upload certificate unlocked: $subject" -ForegroundColor Green
+    $env:SPARK_UPLOAD_STORE_FILE = $signing.Keystore
+    $env:SPARK_UPLOAD_PASSWORD = $password
+    $env:SPARK_UPLOAD_ALIAS = $signing.Alias
+    $env:NODE_ENV = 'production'
+    Push-Location (Join-Path $script:Root 'apps\mobile\android')
+    try {
+      Invoke-External -Executable '.\gradlew.bat' -Arguments @(
+        '--no-daemon', ':app:bundleRelease'
+      )
+    } finally {
+      Pop-Location
+    }
+  } finally {
+    $env:SPARK_UPLOAD_STORE_FILE = $oldStoreFile
+    $env:SPARK_UPLOAD_PASSWORD = $oldPassword
+    $env:SPARK_UPLOAD_ALIAS = $oldAlias
+    $env:NODE_ENV = $oldNodeEnv
+    $password = $null
+  }
+
+  if (-not (Test-Path -LiteralPath $signing.GeneratedBundle)) {
+    throw "Gradle succeeded but the expected AAB was not found: $($signing.GeneratedBundle)"
+  }
+  $destinationDirectory = if ([IO.Path]::IsPathRooted($OutputDirectory)) {
+    [IO.Path]::GetFullPath($OutputDirectory)
+  } else {
+    [IO.Path]::GetFullPath((Join-Path $script:Root $OutputDirectory))
+  }
+  [void][IO.Directory]::CreateDirectory($destinationDirectory)
+  $appConfigPath = Join-Path $script:Root 'apps\mobile\app.config.ts'
+  $version = Get-SparkRegexValue -Path $appConfigPath -Pattern '(?m)^\s*version:\s*[''"]([^''"]+)[''"]'
+  $versionCode = Get-SparkRegexValue -Path $signing.NativeGradle -Pattern 'versionCode\s+(\d+)'
+  $destination = Join-Path $destinationDirectory "spark-application-android-$version-$versionCode.aab"
+
+  $jarsigner = Join-Path $environment.JavaHome 'bin\jarsigner.exe'
+  & $jarsigner '-verify' '-verbose' '-certs' $signing.GeneratedBundle *> $null
+  if ($LASTEXITCODE -ne 0) {
+    throw "jarsigner could not verify the produced AAB (exit code $LASTEXITCODE)."
+  }
+  $keytool = Join-Path $environment.JavaHome 'bin\keytool.exe'
+  $certificateText = (& $keytool '-printcert' '-jarfile' $signing.GeneratedBundle 2>&1 | Out-String)
+  if ($LASTEXITCODE -ne 0 -or $certificateText -match 'Android Debug') {
+    throw 'The produced AAB is missing the expected production signature or is debug-signed.'
+  }
+
+  if (-not (Test-Path -LiteralPath $signing.BundleMetadata) -or -not (Test-Path -LiteralPath $signing.ManifestMetadata)) {
+    throw 'Gradle did not produce the bundle/manifest identity metadata required for verification.'
+  }
+  $bundleMetadata = Get-Content -LiteralPath $signing.BundleMetadata -Raw | ConvertFrom-Json
+  $manifestMetadata = Get-Content -LiteralPath $signing.ManifestMetadata -Raw | ConvertFrom-Json
+  $bundleElement = @($bundleMetadata.elements) | Select-Object -First 1
+  $manifestElement = @($manifestMetadata.elements) | Select-Object -First 1
+  $applicationId = [string]$bundleMetadata.applicationId
+  $builtVersion = [string]$manifestElement.versionName
+  $builtCode = [string]$manifestElement.versionCode
+  $bundleOutputName = [IO.Path]::GetFileName([string]$bundleElement.outputFile)
+  if (
+    [string]$bundleMetadata.artifactType.type -ne 'BUNDLE' -or
+    [string]$bundleMetadata.variantName -ne 'release' -or
+    $bundleOutputName -ne [IO.Path]::GetFileName($signing.GeneratedBundle) -or
+    [string]$manifestMetadata.applicationId -ne $applicationId -or
+    $applicationId -ne $script:PackageName -or
+    $builtVersion -ne $version -or
+    $builtCode -ne $versionCode
+  ) {
+    throw "AAB identity mismatch: package '$applicationId', version '$builtVersion', code '$builtCode'."
+  }
+
+  Copy-Item -LiteralPath $signing.GeneratedBundle -Destination $destination -Force
+  $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+  [IO.File]::WriteAllText(
+    "$destination.sha256",
+    "$hash  $([IO.Path]::GetFileName($destination))`r`n",
+    [Text.UTF8Encoding]::new($false)
+  )
+  Write-Host ''
+  Write-Host 'Play-ready local Android App Bundle created and verified:' -ForegroundColor Green
+  Write-Host "  AAB:     $destination"
+  Write-Host "  Package: $applicationId"
+  Write-Host "  Version: $builtVersion ($builtCode)"
+  Write-Host "  SHA256:  $hash"
+  Write-Host 'No EAS hosted build was requested or consumed.' -ForegroundColor Green
+}
+
 function Invoke-SparkRelease {
   param(
     [string]$RequestedAction,
@@ -281,7 +528,10 @@ function Invoke-SparkRelease {
   )
 
   $action = Resolve-SparkAction -Requested $RequestedAction -Default 'Check' -Allowed @(
-    'Inspect', 'Check', 'Verify', 'Assets', 'Native', 'Setup', 'Project', 'Credentials', 'Build', 'List', 'Download', 'Submit'
+    'Inspect', 'Check', 'Verify', 'Assets', 'Native',
+    'LocalStatus', 'LocalSetup', 'LocalBuild',
+    'EasSetup', 'EasProject', 'EasCredentials', 'EasBuild', 'EasList', 'EasDownload', 'EasSubmit',
+    'Setup', 'Project', 'Credentials', 'Build', 'List', 'Download', 'Submit'
   )
 
   switch ($action) {
@@ -309,30 +559,36 @@ function Invoke-SparkRelease {
       if (-not $environment.JavaHome -or -not $environment.AndroidHome) {
         throw 'Android Java/SDK is incomplete. Run ".\spark.cmd setup-android -Persist".'
       }
-      $arguments = @('--variant', 'release')
+      $arguments = @('--variant', 'debugOptimized')
       if ($TargetDevice) {
         $arguments += @('--device', (Resolve-ExpoDeviceName $TargetDevice))
       } else {
         Write-Host 'Choose the phone or emulator for the release-like install.' -ForegroundColor Cyan
         $arguments += '--device'
       }
-      Write-Warning 'This installs a local release-like APK for device testing. It is not the signed AAB uploaded to Google Play.'
+      Write-Warning 'This installs a locally optimized, debug-signed APK for device testing. It is not the signed AAB uploaded to Google Play.'
       Invoke-MobileCommand -Mode 'android' -Arguments $arguments
     }
-    'Setup' {
+    'LocalStatus' { Show-SparkLocalSigningStatus }
+    'LocalSetup' { Initialize-SparkLocalSigning -SkipConfirmation:$SkipConfirmation }
+    'LocalBuild' { Invoke-SparkLocalReleaseBuild -OutputDirectory $DownloadDirectory }
+    'EasSetup' {
       Invoke-Eas @('login')
       Invoke-Eas @('init')
       Invoke-Eas @('project:info')
     }
-    'Project' {
+    'EasProject' {
       Invoke-Eas @('whoami')
       Invoke-Eas @('project:info')
     }
-    'Credentials' {
+    'EasCredentials' {
       Write-Warning 'EAS will open its interactive Android credentials manager. Review every prompt carefully; do not place downloaded keystores or passwords in this repository.'
       Invoke-Eas @('credentials', '--platform', 'android')
     }
-    'Build' {
+    'EasBuild' {
+      if ([Environment]::GetEnvironmentVariable('SPARK_ALLOW_EAS_RELEASES', 'Process') -ne 'true') {
+        throw 'EAS hosted builds are blocked by default and are not needed for local releases. Only after reviewing cost and signing migration, set SPARK_ALLOW_EAS_RELEASES=true in this PowerShell process and retry EasBuild.'
+      }
       Show-SparkReleaseInspection
       if ($BuildProfile -eq 'production') {
         Invoke-Npm @('run', 'release:check')
@@ -350,15 +606,15 @@ function Invoke-SparkRelease {
       if ($ResetBuildCache) { $arguments += '--clear-cache' }
       Invoke-Eas $arguments
     }
-    'List' {
+    'EasList' {
       Invoke-Eas @(
         'build:list', '--platform', 'android', '--build-profile', $BuildProfile,
         '--limit', [string]$ListLimit
       )
     }
-    'Download' {
+    'EasDownload' {
       if (-not $ExactBuildId) {
-        throw "Download requires -BuildId. Run '.\spark.cmd release -Action List' first."
+        throw "EasDownload requires -BuildId. Run '.\spark.cmd release -Action EasList' first."
       }
       Assert-SparkToken -Value $ExactBuildId -Name 'EAS build ID' -Pattern '^[A-Za-z0-9-]+$'
       $destination = if ([IO.Path]::IsPathRooted($DownloadDirectory)) {
@@ -377,9 +633,12 @@ function Invoke-SparkRelease {
         Pop-Location
       }
     }
-    'Submit' {
+    'EasSubmit' {
+      if ([Environment]::GetEnvironmentVariable('SPARK_ALLOW_EAS_RELEASES', 'Process') -ne 'true') {
+        throw 'EAS submission is blocked by default. Set SPARK_ALLOW_EAS_RELEASES=true in this PowerShell process only after deliberately choosing the optional EAS workflow.'
+      }
       if (-not $ExactBuildId) {
-        throw "Submit requires an exact -BuildId. Run '.\spark.cmd release -Action List' first."
+        throw "EasSubmit requires an exact -BuildId. Run '.\spark.cmd release -Action EasList' first."
       }
       Assert-SparkToken -Value $ExactBuildId -Name 'EAS build ID' -Pattern '^[A-Za-z0-9-]+$'
       Invoke-Npm @('run', 'release:check')
@@ -397,6 +656,9 @@ function Invoke-SparkRelease {
       )
       if ($QueueOnly) { $arguments += '--no-wait' }
       Invoke-Eas $arguments
+    }
+    { $_ -in @('Setup', 'Project', 'Credentials', 'Build', 'List', 'Download', 'Submit') } {
+      throw "Release action '$action' was renamed to make local versus EAS behavior explicit. Use LocalSetup/LocalBuild or prefix the old name with Eas (for example EasBuild)."
     }
   }
 }

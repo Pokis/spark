@@ -27,6 +27,9 @@ const required = [
   'apps/mobile/app.config.ts',
   'apps/mobile/eas.json',
   'apps/mobile/assets/spark-icon-v2.png',
+  'apps/mobile/plugins/withSparkReleaseSigning.js',
+  'apps/mobile/plugins/withSparkReleaseSigning.test.js',
+  'apps/mobile/credentials/README.md',
   'apps/mobile/e2e/maestro/full-offline-flow.yaml',
   'spark.ps1',
   'scripts/spark-ops.ps1',
@@ -190,7 +193,7 @@ if (!mobilePackage.dependencies?.['expo-system-ui']) {
 }
 
 if (easConfig.build?.production?.android?.buildType !== 'app-bundle') {
-  console.error('✗ EAS production must create an Android app-bundle.');
+  console.error('✗ The optional EAS production fallback must create an Android app-bundle.');
   failed = true;
 }
 for (const track of ['internal', 'alpha', 'beta', 'production']) {
@@ -213,6 +216,40 @@ for (const path of privacyFiles) {
 }
 
 const appConfig = readFileSync(join(root, 'apps/mobile/app.config.ts'), 'utf8');
+if (!appConfig.includes("'./plugins/withSparkReleaseSigning'")) {
+  console.error('✗ Expo config must include the local production-signing plugin.');
+  failed = true;
+}
+const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
+if (
+  !gitignore.includes('apps/mobile/credentials/*') ||
+  !gitignore.includes('!apps/mobile/credentials/README.md')
+) {
+  console.error('✗ Git must ignore private mobile credentials while retaining their README.');
+  failed = true;
+} else {
+  console.log('✓ Private local Android signing files are excluded from Git.');
+}
+const signingPlugin = readFileSync(
+  join(root, 'apps/mobile/plugins/withSparkReleaseSigning.js'),
+  'utf8',
+);
+const powershellReleaseHelper = readFileSync(
+  join(root, 'scripts/spark-ops.ps1'),
+  'utf8',
+);
+if (
+  !signingPlugin.includes("System.getenv('SPARK_UPLOAD_PASSWORD')") ||
+  !signingPlugin.includes('signingConfig signingConfigs.release') ||
+  !powershellReleaseHelper.includes("Read-Host 'Enter the Spark application upload-key password (hidden)' -AsSecureString") ||
+  !powershellReleaseHelper.includes("'--no-daemon', ':app:bundleRelease'") ||
+  !powershellReleaseHelper.includes("GetEnvironmentVariable('SPARK_ALLOW_EAS_RELEASES', 'Process')")
+) {
+  console.error('✗ Android release safeguards must use the hidden prompt, environment-only secret, production config, non-daemon build, and disabled-by-default EAS cost flag.');
+  failed = true;
+} else {
+  console.log('✓ Local Android signing keeps its password out of tracked files and persistent Gradle state.');
+}
 const packageMatch = appConfig.match(/const\s+packageName\s*=\s*['"]([^'"]+)['"]/);
 const packageName = packageMatch?.[1];
 if (!packageName) {
@@ -251,6 +288,25 @@ if (!packageName) {
       failed = true;
     } else {
       console.log(`✓ ${label} matches ${packageName}.`);
+    }
+  }
+
+  if (existsSync(join(root, generatedGradle))) {
+    const nativeGradle = readFileSync(join(root, generatedGradle), 'utf8');
+    if (!nativeGradle.includes('// Spark application local production signing')) {
+      console.error(
+        '✗ generated Android is missing the local production-signing guard; run Expo prebuild.',
+      );
+      failed = true;
+    } else if (!nativeGradle.includes('signingConfig signingConfigs.release')) {
+      console.error(
+        '✗ generated Android release output is not assigned to the production signing config.',
+      );
+      failed = true;
+    } else {
+      console.log(
+        '✓ generated Android release output requires the local production signing path.',
+      );
     }
   }
 }
