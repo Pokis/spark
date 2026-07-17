@@ -46,6 +46,16 @@ development build, first install Android Studio by following
 .\spark.cmd release -Action Inspect # Shows release identity/readiness without network access
 ```
 
+When you are ready for Google Play, the upload-ready icon, feature graphic, six phone
+screenshots, English/Lithuanian listing copy, and declaration worksheet are grouped in
+[`store/android/README.md`](./store/android/README.md). Regenerate and validate the images with:
+
+```powershell
+.\spark.cmd release -Action Assets
+```
+
+This command is local-only and does not deploy or create a cloud bill.
+
 Choose the path that matches what you are doing:
 
 - First local run: [Windows setup](./docs/01-windows-setup.md), then

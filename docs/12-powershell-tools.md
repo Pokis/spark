@@ -105,22 +105,29 @@ The normal first-release sequence is:
 # 2. Full local validation. This can take several minutes.
 .\spark.cmd release -Action Verify
 
-# 3. One-time Expo/EAS login and project link.
+# 3. Regenerate and validate the upload-ready Play graphics. Local-only and free.
+.\spark.cmd release -Action Assets
+
+# 4. One-time Expo/EAS login and project link.
 .\spark.cmd release -Action Setup
 
-# 4. Queue a signed production AAB build after a typed confirmation.
+# 5. Queue a signed production AAB build after a typed confirmation.
 .\spark.cmd release -Action Build -Profile production -Message "First internal test"
 
-# 5. Review recent builds and copy the exact successful build ID.
+# 6. Review recent builds and copy the exact successful build ID.
 .\spark.cmd release -Action List -Profile production
 
-# 6. Download that exact AAB to the ignored artifacts\eas folder.
+# 7. Download that exact AAB to the ignored artifacts\eas folder.
 .\spark.cmd release -Action Download -BuildId YOUR_EAS_BUILD_ID
 ```
 
 `Inspect` does not contact Expo or Google. It reports values without printing API URLs, Firebase
 configuration, or other environment values. Local `.env` status is shown separately because
 those ignored files are not proof of the environment configured in EAS.
+
+`Assets` locally regenerates and validates the tracked 512×512 icon, 1024×500 feature graphic,
+and six 1080×1920 screenshots. It does not sign in, upload, deploy, or create a bill. The upload
+map, listing copy, and declaration worksheet are in `store/android/README.md`.
 
 `Build -Profile production` first runs the fast release check, then requires typing
 `BUILD production`. Development/preview builds run the mobile type check instead, so unfinished

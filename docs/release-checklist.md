@@ -8,6 +8,9 @@ The beginner, field-by-field instructions and examples are in the
 [Android and Google Play release guide](./03-android-release.md). If a term or checkbox below is
 unclear, follow its corresponding numbered section there.
 
+The upload-ready graphics, listing text, screenshot descriptions, and recommended form answers
+are grouped in the [Google Play submission pack](../store/android/README.md).
+
 ## Gate 1 — before the first Internal testing upload
 
 These are the only immediate steps for getting a Play-delivered build onto your own/tester
@@ -42,8 +45,11 @@ distribution.
 ## Gate 2 — before Closed testing
 
 - [ ] Publish `apps/admin/public/privacy.html` at a public HTTPS URL and verify it while logged out.
+- [ ] Run `.\spark.cmd release -Action Assets` and review every item in
+      `store/android/asset-manifest.md` against the final AAB.
 - [ ] Complete the main store listing: accurate descriptions, 512×512 icon, 1024×500 feature
-      graphic, current screenshots, support email, and website/privacy URL.
+      graphic, current screenshots, support email, and website/privacy URL. Upload the prepared
+      files from `store/android` rather than recreating them.
 - [ ] Complete Data safety from the exact distributed binary and its enabled flags/SDK behavior.
 - [ ] Complete the Health apps declaration after reviewing Spark's ADHD wording; do not guess that
       it has no health-related scope.

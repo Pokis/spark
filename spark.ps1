@@ -363,6 +363,8 @@ release
     Inspect    Fast local identity/version/flag/privacy summary; no network.
     Check      Required-file, identity, and privacy-placeholder check (default).
     Verify     Full doctor, types, tests, coverage, builds, and release check.
+    Assets     Regenerate and validate the tracked Google Play graphics locally.
+    Native     Build/install a local release-like APK on a selected Android device.
     Setup      Sign in to Expo/EAS and create or link the EAS project.
     Project    Show the current Expo account and linked EAS project.
     Credentials  Open the interactive Android signing-credentials manager.
@@ -375,6 +377,7 @@ release
     -Profile development|preview|production   Build profile; default: production.
     -Track internal|alpha|beta|production     Submit profile/Play track; default: internal.
     -BuildId <id>                             Required exact build for Download/Submit.
+    -Device <model-or-adb-id>                 Native-test target; omit for device picker.
     -OutputDirectory <path>                   Download folder; default: artifacts\eas.
     -Message <text>                           Optional EAS build message.
     -Limit 1..50                              List count; default: 10.
@@ -386,6 +389,8 @@ release
     .\spark.cmd release
     .\spark.cmd release -Action Inspect
     .\spark.cmd release -Action Verify
+    .\spark.cmd release -Action Assets
+    .\spark.cmd release -Action Native -Device 25113PN0EG
     .\spark.cmd release -Action Setup
     .\spark.cmd release -Action Credentials
     .\spark.cmd release -Action Build -Profile production -Message "Internal 0.1.0"
@@ -1174,6 +1179,7 @@ try {
         -DownloadDirectory $OutputDirectory `
         -BuildMessage $Message `
         -ListLimit $Limit `
+        -TargetDevice $Device `
         -QueueOnly:$NoWait `
         -ResetBuildCache:$ClearCache `
         -SkipConfirmation:$Yes

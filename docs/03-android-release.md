@@ -8,11 +8,67 @@ Policy and console details were reviewed on **July 17, 2026**. Google changes Pl
 its policies, so use the linked official pages to confirm any screen that no longer matches this
 guide.
 
+## Short version: get the first Internal test into Google Play
+
+**TL;DR:** follow the table from top to bottom. Your immediate tasks are confirming the package
+ID and supplying the privacy details; Codex has already completed the safe local verification.
+
+Start here. All PowerShell commands below are run in **PowerShell at `D:\AI\Spark`** unless a row
+says otherwise. Do not start Google Cloud, Firebase, Premium, or the admin dashboard for this
+first release.
+
+| Step | Who/where | Exact action | Done when |
+| --- | --- | --- | --- |
+| 1. Confirm the permanent ID | **You**, in this document | Decide whether `com.sparkhabits.app` is permanent. If yes, edit nothing. If no, tell Codex the final ID before any Play upload. | You are willing to keep this ID for the lifetime of the Play app. |
+| 2. Provide the publisher details | **You**, edit `docs/privacy-policy.md` and `apps/admin/public/privacy.html` | Replace every `REPLACE_ME` with your real publisher name, address, country, monitored email, and approved retention text. | `rg -n "REPLACE_ME" docs/privacy-policy.md apps/admin/public/privacy.html` prints nothing. |
+| 3. Publish the privacy page | **You**, your existing website or Firebase Hosting | Put the completed `privacy.html` at a stable public HTTPS URL. For Firebase, run `.\spark.cmd deploy -Action Login -Provider Firebase`, then `.\spark.cmd deploy -Action Hosting -ProjectId YOUR_REAL_PROJECT_ID`. | The URL opens without login in a phone browser and an incognito window. |
+| 4. Run the release gate | **Codex or you**, PowerShell at `D:\AI\Spark` | Run `.\spark.cmd release -Action Verify`. | The command exits successfully. Decision reminders may remain; red failures may not. |
+| 5. Test native Android | **You**, connected phone plus PowerShell | Run `.\spark.cmd devices`, copy the printed model/ID, then run `.\spark.cmd release -Action Native -Device "THE_PRINTED_VALUE"` and complete the physical-device checklist. | Onboarding, widgets, reminders, backup, app lock, calendar handoff, and airplane mode pass. |
+| 6. Build the Play bundle | **You**, Expo/EAS from PowerShell | Run `.\spark.cmd release -Action Setup` once, then `.\spark.cmd release -Action Build -Profile production -Message "First internal test"`. | EAS reports a successful Android `.aab` build. |
+| 7. Download one exact bundle | **You**, PowerShell | Run `.\spark.cmd release -Action List -Profile production`, copy its build ID, then run `.\spark.cmd release -Action Download -BuildId THE_ID`. | One `.aab` exists under `artifacts\eas`. |
+| 8. Create the Play app | **You**, [Play Console](https://play.google.com/console/) | **Home → Create app**; use name `Spark`, type `App`, price `Free`, your default listing language, and a monitored support email. | Spark's Play Console dashboard opens. |
+| 9. Upload to Internal | **You**, Play Console | Open **Test and release → Internal testing** (or search the left menu for **Internal testing**), add your tester account, create a release, and upload the exact `.aab`. | Play gives you an Internal-test opt-in link. |
+| 10. Install from Play | **You**, Android phone | Open the opt-in link with the tester Google account and install Spark from Google Play. | The Play-installed build passes section 11. |
+| 11. Prepare wider release | **You**, PowerShell then Play Console | Run `.\spark.cmd release -Action Assets`, open `store/android/README.md`, upload the named files, paste the listing, and follow its declaration worksheet. Then run the required Closed test if your dashboard asks for it. | The local asset check passes, Play shows no blocking setup tasks, and the console allows a production-access/release action. |
+
+### Current local status—already checked by Codex
+
+**TL;DR:** code, tests, Android tooling, versioning, and AAB configuration are ready. The release
+gate is waiting only for your package-ID confirmation and real privacy-policy values.
+
+The commands `.\spark.cmd release -Action Inspect`, `.\spark.cmd release`, and the complete
+`.\spark.cmd release -Action Verify` were run on **July 17, 2026**. Re-run `Inspect` whenever you
+want a fresh status. Verify currently exits with code 1 only at its final privacy-placeholder
+gate; its doctor, TypeScript, 258 tests, coverage runs, and all production builds pass first.
+
+| Item | Current result |
+| --- | --- |
+| Package ID consistency | Ready: Expo, PowerShell helpers, Maestro, and generated Android all use `com.sparkhabits.app`. **You still must confirm it is permanent.** |
+| Version | Ready: public/mobile/native version `0.1.0`; native version code `1`. |
+| Bundle configuration | Ready: EAS production output is an Android App Bundle and the default submit track is Internal. |
+| Automated verification | Ready except policy identity: doctor, all workspace types, 258 tests, coverage, and all builds pass. The final release check stops on the two privacy files below. |
+| First-build cloud boundary | Ready locally: API blank, remote config off, creator-tip link off. Re-check the separate EAS environment before building. |
+| Privacy policy | **Blocked on your information:** both policy files still contain `REPLACE_ME`. Codex cannot invent your legal identity, address, contact mailbox, or retention decision. |
+| EAS link | **Not configured locally:** run the Setup action only when you are ready to sign in and create/link the Expo project. |
+| Store assets | **Ready:** six real-app screenshots, icon, feature graphic, English/Lithuanian copy, alt text, and an upload manifest are in `store/android`. |
+| Play forms/testing | **Prepared but manual:** recommended answers are in `store/android/declarations.md`; your account, legal attestations, final policy URL, and tester actions cannot be automated. |
+
+If you only want the next action, fix the two privacy files and confirm the package ID. Then run
+`.\spark.cmd release -Action Verify`. Everything after that requires your Expo or Play account.
+
 ## The recommended first release
+
+> **TL;DR — decision:** release a free, offline `.aab` to **Internal testing** first. **Where:**
+> repository configuration plus Play Console. **Do now:** keep every cloud/purchase flag off.
+> **Done when:** the Play-installed Internal build works without an account or network.
 
 Start with a **free, offline build on the Internal testing track**.
 
 ### Cost of this release path
+
+**TL;DR:** Spark cloud runtime is `$0` while the documented flags are off. Before starting an EAS
+build or Firebase Hosting deploy, read the price/quota screen; those services can charge based on
+build or hosting usage, not Spark user count.
 
 | Item | Initial recommendation | Cost behavior |
 | --- | --- | --- |
@@ -45,7 +101,7 @@ You need **before the first Internal artifact upload**:
 You need **before Closed/Open/Production distribution**:
 
 - a real operator/contact identity and public privacy policy;
-- an app name, descriptions, icon, feature graphic, and screenshots;
+- the prepared app name, descriptions, icon, feature graphic, and screenshots from `store/android`;
 - honest Play Console declarations; and
 - actual testing through Google Play before public production.
 
@@ -56,10 +112,15 @@ The shortest order is:
 3. Run Spark's release checks and native-device tests.
 4. Use EAS Build to create a signed `.aab`.
 5. Create the Play Console app and upload the `.aab` to **Internal testing**.
-6. Complete the store listing and the policy forms shown in your Play Console.
+6. Run `.\spark.cmd release -Action Assets`, then use the exact upload map and policy worksheet in
+   `store/android/README.md` to complete the listing and forms shown in Play Console.
 7. Test the Play-installed build, then prepare a Closed test before production.
 
 ## Important terms that look similar
+
+> **TL;DR — read once:** the only permanent identifier is the Android package ID. **Where to
+> verify it:** run `.\spark.cmd release -Action Inspect`. The store name and version can change;
+> `com.sparkhabits.app` must not change after the first Play artifact upload.
 
 | Term | Spark value/example | What it means | Can it change later? |
 | --- | --- | --- | --- |
@@ -80,6 +141,10 @@ and [Set up a test](https://support.google.com/googleplay/android-developer/answ
 
 ## 1. Decide the permanent package ID
 
+> **TL;DR — manual decision. Where:** `apps/mobile/app.config.ts`, then the files listed below.
+> **Do:** keep `com.sparkhabits.app` unchanged, or give Codex the final replacement before any
+> Play upload. **Verify:** `.\spark.cmd release -Action Inspect` shows the same ID everywhere.
+
 The current ID is:
 
 ```text
@@ -96,11 +161,16 @@ package ID. Use lowercase dot-separated identifier segments.
 
 ### If you keep `com.sparkhabits.app`
 
+**TL;DR:** no file edit is required. Record your decision and continue to section 2.
+
 Do not edit the package-related files. Record that you intentionally accepted it, and continue to
 the privacy-policy section. The release checker warning is a reminder, not evidence that the ID
 is invalid.
 
 ### If you change it
+
+**TL;DR:** stop here and ask Codex to perform the one-time rename. Do not upload any existing
+Spark APK/AAB to Play, and do not hand-edit generated Android package folders.
 
 Do this **before uploading any Spark APK or AAB to any Play track**. A new package ID creates a
 separate Android app, so data from the existing development package will not automatically move
@@ -119,7 +189,13 @@ native changes live in Expo config plugins and will be recreated.
 
 ### What each package-related file is for
 
+**TL;DR:** edit source configuration, regenerate `apps/mobile/android`, then verify. The tables
+below explain why; they are not a list of files you should change manually one by one.
+
 #### Source and tools that must use the final ID
+
+**TL;DR:** only change these source-controlled values if you change the permanent package ID;
+`Inspect` currently confirms that all three already match.
 
 | File | What is inside | Why it must match |
 | --- | --- | --- |
@@ -129,11 +205,17 @@ native changes live in Expo config plugins and will be recreated.
 
 #### Generated local folder—do not edit ID occurrences one by one
 
+**TL;DR:** never rename packages inside this ignored folder by hand. Regenerate it with the exact
+prebuild command in **Safe rename sequence** after changing the source ID.
+
 | Folder | What is inside | What to do after a rename |
 | --- | --- | --- |
 | `apps/mobile/android/` | Local Gradle namespace/application ID, generated Kotlin/Java packages, widget receivers/actions, and native version values. It is ignored by Git. | Regenerate it with Expo so local builds/tests match. EAS does not receive this ignored folder; it generates Android from `app.config.ts` and the configured plugins. |
 
 #### Optional cloud templates or test fixtures that should remain consistent
+
+**TL;DR:** these do not block the offline first release. Update them only during a package rename
+so later Play verification cannot accidentally point at the former ID.
 
 | File | Why it mentions the ID |
 | --- | --- |
@@ -153,6 +235,10 @@ detect an undecided checkout. Do **not** replace that comparison when renaming t
 package edit. `infra/terraform/main.tf` passes a variable and also does not need a literal rename.
 
 ### Safe rename sequence
+
+**TL;DR:** have Codex apply the rename, then from `D:\AI\Spark` run
+`.\spark.cmd check -Level Full` and `.\spark.cmd build -Scope Mobile`. Done means the old ID
+appears only in explanatory documentation/release-warning logic.
 
 From the repository root:
 
@@ -205,6 +291,12 @@ and verify the one-time rename. There is no advantage to doing it manually under
 
 ## 2. Fill the release identity and privacy policy
 
+> **TL;DR — your information is required. Where:** edit `docs/privacy-policy.md` and
+> `apps/admin/public/privacy.html`. **Do:** replace every placeholder with the same real details,
+> then host the HTML. **Verify locally:** `rg -n "REPLACE_ME" docs/privacy-policy.md
+> apps/admin/public/privacy.html` returns no matches. **Verify publicly:** the HTTPS URL opens
+> logged out on a phone.
+
 Two policy files exist because they serve different purposes:
 
 | File | Purpose | Is this the URL submitted to Play? |
@@ -215,6 +307,9 @@ Two policy files exist because they serve different purposes:
 The release checker intentionally fails while either file contains `REPLACE_ME`.
 
 ### What the placeholders mean
+
+**TL;DR:** use your real Play publisher/operator details—not examples. Codex can insert values you
+provide, but it cannot choose or invent legal identity, address, mailbox, or retention periods.
 
 | Placeholder | What to enter | Example format—not a value to copy |
 | --- | --- | --- |
@@ -236,6 +331,11 @@ security, retention/deletion, and a privacy contact. See the
 and [Health content policy](https://support.google.com/googleplay/android-developer/answer/16679511).
 
 ### Hosting the policy with minimal cloud footprint
+
+**TL;DR:** prefer an existing website. Otherwise, from `D:\AI\Spark`, run Firebase Login and then
+the guarded Hosting command shown below with your real project ID. Done means
+`https://PROJECT_ID.web.app/privacy.html` opens without login. Do not deploy Firestore or Cloud
+Run for this page.
 
 If you already have a public website, copy the finished HTML there. Otherwise Spark's existing
 Firebase Hosting configuration can publish it without enabling Cloud Run, Firestore, support, or
@@ -269,6 +369,11 @@ policy.
 
 ## 3. Decide the exact first-build feature boundary
 
+> **TL;DR — free/offline build. Where:** local `apps/mobile/.env.local` if present and the EAS
+> production environment after EAS Setup. **Do:** leave the API/Firebase values blank and both
+> feature switches `false`. **Verify local state:** `.\spark.cmd release -Action Inspect` says
+> API blank/offline, remote config disabled, and creator tip disabled.
+
 For the recommended free/offline test build:
 
 ```text
@@ -292,6 +397,10 @@ same as Spark enabling cloud collection. Your Play declarations must nevertheles
 exact uploaded binary and every active track.
 
 ## 4. Run the automated release checks
+
+> **TL;DR — where:** PowerShell at `D:\AI\Spark`. **Do:** run
+> `.\spark.cmd release -Action Verify`. **Done when:** it exits with code 0. To diagnose quickly,
+> run `.\spark.cmd release -Action Inspect`, then `.\spark.cmd release` for only the fast gate.
 
 Use the guided command from the repository root:
 
@@ -318,6 +427,12 @@ each item.
 
 ## 5. Test a release-like native build
 
+> **TL;DR — where:** a real Android phone plus PowerShell. **Do:** run `.\spark.cmd devices`, copy
+> the printed model/ID, then run `.\spark.cmd release -Action Native -Device
+> "THE_PRINTED_VALUE"` and follow the named release
+> checklist. **Done when:** the physical-device items below pass, including airplane mode and a
+> reboot. This local build is for behavior testing, not Play upload.
+
 Expo Go cannot validate SQLCipher, widgets/shortcuts, app lock, screenshot protection, persistent
 folder access, calendar handoff, or Play Billing.
 
@@ -327,12 +442,17 @@ First run the automated suite:
 .\spark.cmd check -Level Full
 ```
 
-Then install a native release-like build on an emulator or phone:
+Then install a native release-like build on an emulator or phone. Use a model/ID printed by the
+`devices` command, including Wi-Fi debugging phones:
 
 ```powershell
-Set-Location apps/mobile
-npx.cmd expo run:android --variant release
-Set-Location ..\..
+.\spark.cmd release -Action Native -Device "THE_PRINTED_VALUE"
+```
+
+If you omit `-Device`, Spark opens Expo's interactive device picker:
+
+```powershell
+.\spark.cmd release -Action Native
 ```
 
 This is for device behavior testing. It is not the `.aab` you upload to Play and may use local
@@ -348,6 +468,12 @@ development signing. Follow [Testing](./testing.md) and the device sections of t
 - airplane-mode use of all free core features.
 
 ## 6. Create the production Android App Bundle with EAS
+
+> **TL;DR — where:** PowerShell at `D:\AI\Spark`, using your Expo account. **Do once:**
+> `.\spark.cmd release -Action Setup`. **Build:** `.\spark.cmd release -Action Build -Profile
+> production -Message "First internal test"`. **Download:** List, copy the exact build ID, then
+> Download it. **Done when:** `artifacts\eas` contains the successful `.aab`. Hosted quota/cost
+> may apply, so read the confirmation before typing it.
 
 EAS Build is recommended for a beginner because it can create and manage the upload keystore and
 produce the Play-ready bundle. Hosted EAS builds are subject to Expo's current quotas/pricing;
@@ -381,6 +507,9 @@ The existing `production` profile in `apps/mobile/eas.json` explicitly requests 
 auto-increments the Android build number.
 
 ### Last package-ID check before building
+
+**TL;DR:** run `.\spark.cmd release -Action Inspect`. Continue only if Expo and generated native
+Android show the permanent package ID, version `0.1.0`, and production output `app-bundle`.
 
 First inspect Expo's production source value:
 
@@ -453,6 +582,11 @@ Play Internal testing or download Play-generated device APKs from App bundle exp
 
 ## 7. Create the Play Console app
 
+> **TL;DR — where:** [Google Play Console](https://play.google.com/console/), **Home → Create
+> app**. **Enter:** default language you will maintain, `Spark`, `App`, `Free`, and your monitored
+> public support email; accept the shown declarations. **Done when:** Spark's dashboard exists.
+> Do not upload until you have re-confirmed the permanent package ID.
+
 In [Google Play Console](https://play.google.com/console/):
 
 1. Choose **Home → Create app**.
@@ -478,59 +612,34 @@ Google's current setup instructions are in
 
 ## 8. Prepare the store listing
 
+> **TL;DR — where:** Play Console → **Grow users → Store presence → Main store listing** (or use
+> the console search for **Main store listing**). **Do:** run `.\spark.cmd release -Action
+> Assets`, then follow `store/android/README.md`. The complete upload-ready pack already includes
+> the English/Lithuanian copy, icon, feature graphic, six screenshots, upload order, and image
+> descriptions. **Done when:** the local check passes, Play shows no missing listing fields, and
+> every pictured feature exists in the uploaded AAB.
+
 Play Console path: **Grow users → Store presence → Main store listing**.
 
-### Required text
+### Required text — already prepared
+
+**TL;DR:** copy the exact fields from `store/android/listing/en-US.md`. Add
+`store/android/listing/lt-LT.md` as a Lithuanian custom listing when ready. Preview both in Play
+and change a claim only if the uploaded build behaves differently.
 
 Google currently limits the app name to 30 characters, short description to 80, and full
 description to 4,000. Use clear factual language; do not claim “best,” rankings, downloads,
 clinical benefit, or guaranteed ADHD outcomes.
 
-Starter copy to edit and verify:
-
-**App name**
-
-```text
-Spark
-```
-
-**Short description**
-
-```text
-A flexible habit and focus tracker for ADHD-friendly routines
-```
-
-**Full description draft**
-
-```text
-Spark is a flexible habit, routine, and focus tracker designed for days when energy and attention
-change.
-
-Choose tiny, standard, or stretch versions of a habit. Blank days do not erase completed actions,
-and optional streaks keep personal bests and include planned breaks and streak saves.
-
-Use Spark to:
-• see a short list of suggested next actions
-• use a focus timer with a quiet on-screen companion
-• capture distracting thoughts without organizing them immediately
-• follow routines one step at a time
-• schedule private reminders on your device
-• add home-screen widgets for Today, Focus, Capture, routines, and progress
-• export encrypted backups you control
-
-Core habit and focus data stays on your device. Spark has no ads and does not sell habit history.
-Optional sharing happens only after you choose specific completed actions and open the Android
-share sheet.
-
-Spark is an organization and self-management tool. It is not a medical device and does not
-diagnose, treat, cure, or prevent ADHD or any medical condition. Consult a qualified healthcare
-professional for medical advice, diagnosis, or treatment.
-```
-
-The bullet character and formatting should be previewed in Play Console. Adjust the draft if the
-released feature boundary changes.
+The prepared English title is `Spark ADHD Habit Tracker`; the descriptions use factual product
+language, include the non-medical disclaimer, and fit the current character limits. The listing
+file also records the recommended category, price, and fields that require your public support
+address or privacy URL.
 
 ### Recommended category and audience starting point
+
+**TL;DR:** choose **Productivity** and only age groups the product is actually designed for. Do
+not choose child age groups or health tags merely for reach.
 
 - Category: **Productivity** is the most natural starting category for the current product.
 - Target audience: select only the age groups you actually designed for. Spark's current policy
@@ -543,11 +652,15 @@ These are product recommendations, not answers Play has pre-approved.
 
 ### Required graphics
 
+**TL;DR:** run `.\spark.cmd release -Action Assets`, then upload the exact files listed in
+`store/android/asset-manifest.md`. Do not upload the larger launcher source from
+`apps/mobile/assets`.
+
 | Asset | Current Google requirement | Spark-specific guidance |
 | --- | --- | --- |
-| Play Store icon | 512×512, 32-bit PNG with alpha, maximum 1,024 KB | Use a clean high-resolution Spark mark. The existing launcher asset is 1.6 MB and therefore cannot simply be uploaded unchanged if it exceeds the Play limit. Export an optimized store copy. |
-| Feature graphic | 1024×500, JPEG or 24-bit PNG without alpha | Keep important content centered. Show calm Spark color/identity, not tiny UI text or “#1/free/best” claims. |
-| Phone screenshots | At least 2; JPEG or 24-bit PNG without alpha; 320–3840 px with the long side no more than twice the short side | Start with 4–6 current phone screenshots: Today, completing an action, Focus, a routine, Progress, and privacy/settings. Use sample data without real names, notes, notifications, emails, or identifiers. |
+| Play Store icon | 512×512, 32-bit PNG with alpha, maximum 1,024 KB | Ready: `store/android/graphics/app-icon-512.png`. |
+| Feature graphic | 1024×500, JPEG or 24-bit PNG without alpha | Ready: `store/android/graphics/feature-graphic-1024x500.png`. |
+| Phone screenshots | At least 2; JPEG or 24-bit PNG without alpha; 320–3840 px with the long side no more than twice the short side | Ready: six sanitized, real-app 1080×1920 captures under `store/android/graphics/phone`. Upload them in the manifest order. |
 
 Google allows up to eight screenshots per supported device type and recommends alt text. The
 precise current rules and cutoff zones are in
@@ -558,24 +671,43 @@ purchase flow, do not put Premium purchasing in screenshots or feature text.
 
 ### Contact and website
 
+**TL;DR:** enter a monitored public support email and the public privacy/site URL; test both while
+logged out.
+
 A support email is required and appears publicly. A website is strongly recommended. The privacy
 policy URL can be on that site. Test both from a logged-out browser.
 
 ## 9. Complete Play Console App content forms
 
+> **TL;DR — where:** Play Console → **Policy → App content** (or search the console for **App
+> content**). **Do:** complete every card shown for the uploaded AAB; the recommended offline
+> answers are summarized below and written as a form worksheet in
+> `store/android/declarations.md`. **Done when:** no App content task is marked incomplete. You
+> must personally review/attest the live forms; save uncertain health/legal classifications as
+> drafts instead of guessing.
+
 Path: **Policy and programs → App content**. The exact cards shown can vary by account, country,
 SDK, permissions, and uploaded bundle. Save uncertain forms as drafts instead of guessing.
+Use `store/android/declarations.md` as the authoritative current-build answer sheet; the sections
+below explain why the answers were chosen.
 
 ### Privacy policy
+
+**TL;DR:** paste the public HTTPS `privacy.html` URL and click it after saving to verify it opens.
 
 Enter the public `https://.../privacy.html` URL prepared earlier. Open the link from the console
 after saving it.
 
 ### Ads
 
+**TL;DR:** for the documented first build, answer **No**.
+
 Current Spark answer: **No, the app does not contain ads**. A Premium purchase is not an ad.
 
 ### App access
+
+**TL;DR:** select that no special access is required and paste the offline-build explanation
+below. Change this if any reviewer-visible feature later needs login or payment.
 
 For the free/offline build, all core features work without login. Explain that no credentials are
 required. If a later build places any reviewer-relevant feature behind an account, purchase, or
@@ -589,6 +721,10 @@ routine, focus, capture, reminder, widget, and backup screens are available on-d
 ```
 
 ### Data safety
+
+**TL;DR:** for an Internal-only offline build, review the form but keep the future cloud features
+out of scope. Before Closed/Open/Production, submit an accurate form stating that local-only data
+is not transmitted; reassess every SDK and any cloud-enabled artifact.
 
 Complete this from the behavior of the exact active binaries, not from future plans.
 
@@ -612,6 +748,9 @@ Spark-specific [privacy and policy guide](./09-data-privacy-and-play-policy.md).
 
 ### Content rating
 
+**TL;DR:** complete the IARC questionnaire in Play Console using the actual app/free-text content;
+do not copy a desired rating from this guide.
+
 Complete the IARC questionnaire honestly from the content visible in the app, including user-
 generated free text and any web content reachable inside it. Do not select an answer merely to
 obtain a lower rating. Retake it if relevant content changes. See
@@ -619,11 +758,18 @@ obtain a lower rating. Retake it if relevant content changes. See
 
 ### Target audience and children
 
+**TL;DR:** select only intended adult/older-teen groups that match your policy and listing. Do not
+select children unless you deliberately redesign and review Spark for Families requirements.
+
 Choose the age groups Spark is actually intended for. The current product/policy is not directed
 to children. Selecting any child age group may make the Families Policy apply. Ensure the store
 copy, graphics, privacy policy, and actual UX agree with the selected audience.
 
 ### Health apps declaration
+
+**TL;DR:** open **App content → Health apps → Start**, review whether Spark's ADHD/well-being
+positioning fits a listed health feature, and save as draft if uncertain. This is your policy/legal
+classification; keep the non-medical disclaimer regardless.
 
 Every app on Closed, Open, or Production tracks must complete this declaration, even if it claims
 no health features. Spark's ADHD positioning means you should not automatically choose “no health
@@ -648,6 +794,10 @@ and [Health content and services policy](https://support.google.com/googleplay/a
 
 ### Permissions declaration
 
+**TL;DR:** answer only after uploading the AAB. If Play asks for a sensitive-permission
+declaration, inspect the bundle instead of inventing a use case; Spark is designed not to request
+the sensitive permissions listed below.
+
 Play inspects the uploaded AAB. Spark intentionally removes calendar read/write, media library,
 broad storage, overlay, location, contacts, microphone/recording, and accessibility-service
 permissions. It uses the system create-event and folder-picker interfaces instead.
@@ -657,6 +807,9 @@ the App bundle explorer/merged manifest and remove an unintended permission or d
 core use. See [Declare permissions](https://support.google.com/googleplay/android-developer/answer/9214102).
 
 ### Other common declarations
+
+**TL;DR:** use the current offline product facts: no ads, no news, no government affiliation, no
+required account, and no financial-services feature. Answer the exact Play wording shown.
 
 - Financial features: ordinary in-app Premium access is not banking/credit, but answer the exact
   current form.
@@ -670,10 +823,15 @@ core use. See [Declare permissions](https://support.google.com/googleplay/androi
 
 ## 10. Upload the first AAB to Internal testing
 
+> **TL;DR — where:** Play Console → **Test and release → Internal testing**. **Do:** add
+> your tester Google account, create a release, enable Play App Signing, upload the exact
+> downloaded `.aab`, add the release note below, review, and roll out to Internal. **Done when:**
+> the opt-in link installs Spark from Google Play. The first upload is manual.
+
 Manual upload is simplest and does not require a Google Play API service account:
 
 1. Download the `.aab` with `.\spark.cmd release -Action Download -BuildId YOUR_EAS_BUILD_ID`.
-2. In Play Console open **Testing → Internal testing**.
+2. In Play Console open **Test and release → Internal testing** (or use the left-menu search).
 3. Open the **Testers** tab and create an email list or Google Group. Testers need Google accounts.
 4. Open the **Releases** tab and choose **Create new release**.
 5. Accept/configure Play App Signing when prompted.
@@ -711,6 +869,11 @@ lists, declarations, review, and rollout decisions still live in Play Console.
 
 ## 11. Test the Play-installed build
 
+> **TL;DR — where:** a physical Android phone using the Internal-test Google account, plus Play
+> Console's **Pre-launch report** and **Android vitals**. **Do:** install from the Play link and
+> execute every bullet below. **Done when:** no release-blocking crash/ANR/security/accessibility
+> issue remains and an upgrade preserves local data.
+
 Do not only confirm that it opens. Test the actual release behavior:
 
 - uninstall the development build if necessary, then install from the Play link;
@@ -731,6 +894,11 @@ physical-phone pass.
 
 ## 12. Closed testing and production access
 
+> **TL;DR — where:** Play Console → **Test and release → Closed testing** and your app Dashboard. **Do:**
+> follow the tester count/duration Play shows for your account; new personal accounts commonly
+> require 12 continuously opted-in testers for 14 days. **Done when:** Play grants production
+> access and the Closed-test feedback has been reviewed.
+
 After internal testing, move representative testers to a Closed track. Testers may need to opt out
 of Internal before opting into Closed.
 
@@ -750,6 +918,10 @@ Recommended rollout:
    from update rollouts.
 
 ## 13. Add Premium and cloud only after the free build is stable
+
+> **TL;DR — not part of the first release.** Leave cloud, Premium, admin, purchases, RTDN, and the
+> creator-tip flag off. Return to this section only after the offline Internal/Closed build is
+> stable; then follow the linked monetization/cloud guides and update Play disclosures first.
 
 Do not create the product merely to satisfy the first upload. When ready, follow
 [Monetization](./06-monetization.md) and [Google Cloud setup](./04-google-cloud.md).
@@ -777,6 +949,10 @@ Internal upload.
 
 ## 14. Versions for later uploads
 
+> **TL;DR — where:** `apps/mobile/package.json` and `apps/mobile/app.config.ts`. **Do:** set the
+> same meaningful public version in both; EAS production auto-increments `versionCode`. **Verify:**
+> `.\spark.cmd release -Action Inspect` before every build and confirm Play shows a higher code.
+
 Every uploaded update must have a higher Android `versionCode`. Spark's EAS production profile has
 `autoIncrement: true`, but still set a meaningful public version.
 
@@ -791,6 +967,9 @@ Before uploading, inspect the version displayed by EAS and Play Console. Never r
 `versionCode`, even if the older release was only a draft or test.
 
 ## Final pre-upload checkpoint
+
+> **TL;DR:** complete this checklist immediately before uploading the first `.aab`. If any answer
+> is no, stop at that item; do not compensate by uploading directly to Production.
 
 Before the **first Internal AAB upload**, you should be able to answer yes to these:
 
@@ -809,6 +988,9 @@ Before the **first Internal AAB upload**, you should be able to answer yes to th
 After upload, continue with the more detailed [release checklist](./release-checklist.md).
 
 ## Official references
+
+> **TL;DR:** you do not need to read every link. Use the matching official link only when a Play
+> or EAS screen differs from this guide; Google/Expo documentation overrides stale menu labels.
 
 - [Create and set up a Play app](https://support.google.com/googleplay/android-developer/answer/9859152)
 - [Play testing tracks](https://support.google.com/googleplay/android-developer/answer/9845334)

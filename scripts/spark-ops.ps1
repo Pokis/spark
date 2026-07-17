@@ -277,13 +277,14 @@ function Invoke-SparkRelease {
     [string]$DownloadDirectory,
     [string]$BuildMessage,
     [int]$ListLimit,
+    [string]$TargetDevice,
     [switch]$QueueOnly,
     [switch]$ResetBuildCache,
     [switch]$SkipConfirmation
   )
 
   $action = Resolve-SparkAction -Requested $RequestedAction -Default 'Check' -Allowed @(
-    'Inspect', 'Check', 'Verify', 'Setup', 'Project', 'Credentials', 'Build', 'List', 'Download', 'Submit'
+    'Inspect', 'Check', 'Verify', 'Assets', 'Native', 'Setup', 'Project', 'Credentials', 'Build', 'List', 'Download', 'Submit'
   )
 
   switch ($action) {
@@ -297,6 +298,29 @@ function Invoke-SparkRelease {
       Invoke-Npm @('run', 'test:coverage')
       Invoke-Npm @('run', 'build')
       Invoke-Npm @('run', 'release:check')
+    }
+    'Assets' {
+      $assetScript = Join-Path $script:Root 'scripts\prepare-play-store-assets.ps1'
+      Write-Host 'Generating and validating the tracked Google Play graphics. This is local-only and has no service cost.' -ForegroundColor Cyan
+      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $assetScript
+      if ($LASTEXITCODE -ne 0) {
+        throw "Play Store asset preparation failed with exit code $LASTEXITCODE."
+      }
+    }
+    'Native' {
+      $environment = Initialize-AndroidEnvironment
+      if (-not $environment.JavaHome -or -not $environment.AndroidHome) {
+        throw 'Android Java/SDK is incomplete. Run ".\spark.cmd setup-android -Persist".'
+      }
+      $arguments = @('--variant', 'release')
+      if ($TargetDevice) {
+        $arguments += @('--device', (Resolve-ExpoDeviceName $TargetDevice))
+      } else {
+        Write-Host 'Choose the phone or emulator for the release-like install.' -ForegroundColor Cyan
+        $arguments += '--device'
+      }
+      Write-Warning 'This installs a local release-like APK for device testing. It is not the signed AAB uploaded to Google Play.'
+      Invoke-MobileCommand -Mode 'android' -Arguments $arguments
     }
     'Setup' {
       Invoke-Eas @('login')

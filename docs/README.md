@@ -11,6 +11,10 @@ task below; you do not need to read the repository front to back.
 4. [Android release](./03-android-release.md) — beginner, field-by-field build and Play Console walkthrough.
 5. [Release checklist](./release-checklist.md) — staged Internal, Closed, and Production gates.
 
+The ready-to-upload [Google Play submission pack](../store/android/README.md) contains the final
+graphics, English and Lithuanian listing copy, screenshot descriptions, and form-by-form
+declarations in one place.
+
 On Windows, [PowerShell command helper](./12-powershell-tools.md) provides guided commands for
 setup, running, testing, Android utilities, EAS releases, guarded Firebase/Google Cloud deployment,
 and optional local services.
@@ -43,14 +47,18 @@ folder backup permissions, billing, accessibility, SQLCipher, sound, and Android
 
 ### I want to release the free Android app
 
-1. [Android release guide](./03-android-release.md)
-2. [Release checklist](./release-checklist.md)
-3. [Privacy-policy template](./privacy-policy.md) when the guide tells you to fill it
-4. [Privacy and Google Play policy reference](./09-data-privacy-and-play-policy.md) only when
+1. [Android release quick steps](./03-android-release.md#short-version-get-the-first-internal-test-into-google-play)
+2. [Google Play submission pack](../store/android/README.md)
+3. [Release checklist](./release-checklist.md)
+4. [Privacy-policy template](./privacy-policy.md) when the guide tells you to fill it
+5. [Privacy and Google Play policy reference](./09-data-privacy-and-play-policy.md) only when
    completing Play's declarations
 
-Start with the Android guide's **recommended first release** and stop after its Internal-testing
-steps. It explains every identity file, policy placeholder, store field, command, and example.
+Start with the Android guide's **Short version: get the first Internal test into Google Play**.
+Its first table tells you exactly where each action happens, who must do it, the command or click
+path, and what “done” looks like. Each detailed section begins with the same concrete TLDR, so you
+only need the longer explanation when a check fails or a console screen is unfamiliar. Stop after
+the Internal-testing steps for the first release.
 The first free release can remain completely offline and have a $0 cloud runtime.
 
 ### I want support, grants, purchases, or the admin dashboard
@@ -96,6 +104,7 @@ target; iOS-specific StoreKit, widget, native build, and device QA remain future
 | [testing.md](./testing.md) | test commands, device matrix, cloud/purchase QA |
 | [quality-review.md](./quality-review.md) | implemented findings and remaining manual gates |
 | [03-android-release.md](./03-android-release.md) | beginner package-ID, privacy, signing, AAB, Play fields, tracks, and rollout walkthrough |
+| [Google Play submission pack](../store/android/README.md) | upload-ready graphics, listing copy, asset manifest, and declarations |
 | [release-checklist.md](./release-checklist.md) | staged first-upload, Closed-test, and Production gates plus complete evidence list |
 | [09-data-privacy-and-play-policy.md](./09-data-privacy-and-play-policy.md) | Data safety, health, content, and privacy declarations |
 | [privacy-policy.md](./privacy-policy.md) | operator-fillable privacy policy |

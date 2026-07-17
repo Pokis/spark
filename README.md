@@ -748,6 +748,7 @@ owner/project ID and environment values before relying on cloud builds.
 
 ```powershell
 .\spark.cmd release -Action Verify
+.\spark.cmd release -Action Assets
 .\spark.cmd release -Action Build -Profile production -Message "Internal test"
 ```
 
@@ -756,6 +757,11 @@ Use Play App Signing. Keep owner access, recovery codes, signing records, and Ex
 secure operator account. Run `.\spark.cmd release -Help` for build listing, exact-ID download, and
 guarded submission commands. The first Google Play upload must be completed manually in Play
 Console; later builds can use the submission helper.
+
+The generated Play icon, feature graphic, six phone screenshots, English/Lithuanian listing, and
+form-by-form declaration worksheet are grouped in
+[`store/android/README.md`](./store/android/README.md). The Assets action is local-only and has no
+cloud cost.
 
 Official references:
 
