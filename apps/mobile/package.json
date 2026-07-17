@@ -47,7 +47,7 @@
     "react-dom": "^19.2.3",
     "react-native": "0.86.0",
     "react-native-android-widget": "*",
-    "react-native-iap": "^14.7.9",
+    "react-native-iap": "^15.5.2",
     "react-native-nitro-modules": "*",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
