@@ -83,17 +83,18 @@ describe('plain-language information architecture', () => {
       expect(combined).not.toContain(phrase);
     }
 
-    expect(combined).toContain('every completed action builds your progress');
-    expect(combined).toContain('choose your next win');
-    expect(combined).toContain('celebrate completed actions');
+    expect(combined).toContain('a habit list and calendar');
+    expect(combined).toContain('choose how often each should happen');
+    expect(combined).toContain('total completions');
   });
 
-  it('keeps the important Today controls clearly named and reversible', () => {
+  it('keeps the important Today controls direct and puts filters behind an opt-in', () => {
     const todayAndCatalog = `${read('../../app/(tabs)/index.tsx')}\n${read('../i18n/index.ts')}`;
-    expect(todayAndCatalog).toContain('Adjust today’s suggestions');
-    expect(todayAndCatalog).toContain('Done adjusting');
-    expect(todayAndCatalog).toContain('Suggested next actions');
-    expect(todayAndCatalog).toContain('Need fewer choices?');
+    expect(todayAndCatalog).toContain('Up next');
+    expect(todayAndCatalog).toContain('Add habit');
+    expect(todayAndCatalog).toContain('Open habit calendar');
+    expect(todayAndCatalog).toContain('spark.settings.adaptiveSuggestionsEnabled ?');
+    expect(todayAndCatalog).not.toContain('Need fewer choices?');
   });
 
   it('groups learning and settings by the user’s purpose', () => {
@@ -101,8 +102,9 @@ describe('plain-language information architecture', () => {
     const settings = read('../../app/settings.tsx');
     expect(tutorials).toContain("title: 'Start here'");
     expect(tutorials).toContain("title: 'Daily tools'");
-    expect(settings).toContain('Help & learning');
-    expect(settings).toContain('Planning & extra tools');
-    expect(settings).toContain('Privacy & troubleshooting');
+    expect(settings).toContain('Optional features');
+    expect(settings).toContain('Comfort & accessibility');
+    expect(settings).toContain('Data & privacy');
+    expect(settings).toContain('Help & support');
   });
 });

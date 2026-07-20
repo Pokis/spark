@@ -9,7 +9,7 @@ Spark ADHD įpročių sekiklis
 ## Trumpas aprašas
 
 ```text
-Lankstūs įpročiai, maži žingsniai, susikaupimo laikmačiai ir pažanga.
+Paprastas įpročių sekimas su lanksčiais grafikais ir kalendoriumi.
 ```
 
 ## Išsamus aprašas
@@ -17,30 +17,31 @@ Lankstūs įpročiai, maži žingsniai, susikaupimo laikmačiai ir pažanga.
 ```text
 Pamatykite kitą žingsnį.
 
-„Spark“ – lankstus įpročių ir susikaupimo pagalbininkas, sukurtas atsižvelgiant į ADHD ir kintančią energiją. Jis padeda planus paversti mažais veiksmais, svarbius pasirinkimus išlaiko matomus ir skatina pastebėti pažangą, o ne siekti tobulumo.
+„Spark“ – aiškus ir lankstus įpročių sekiklis, sukurtas atsižvelgiant į ADHD. Pradžioje matysite tik savo įpročius ir kalendorių, o kitus įrankius galėsite įjungti tik tada, kai jų prireiks.
 
-PASIRINKITE TINKAMĄ VEIKSMĄ
-• Matykite trumpą šiandien naudingų veiksmų sąrašą.
-• Pasiūlymus filtruokite pagal energiją, turimą laiką ir vietą.
-• Pasirinkite mažą, įprastą arba didesnę įpročio versiją.
-• Paprašykite „Spark“ palikti tik vieną kitą žingsnį.
+SEKITE ĮPROČIUS SAVAIP
+• Palikite vieną paprastą mygtuką „Baigta“ – tai tinka vitaminams ir kitiems aiškiems įpročiams.
+• Pasirinkite kasdienį, konkrečių savaitės dienų, kartų per savaitę, fiksuoto intervalo, laisvą arba nuo faktinio atlikimo pasislenkantį grafiką.
+• Šiandienos ekrane matykite tik tuo metu aktualius įpročius.
+• Peržiūrėkite kiekvieną įprotį savaitės ir mėnesio kalendoriuje.
 
 AUGINKITE MALONŲ NUOSEKLUMĄ
-• Kiekvienam įpročiui pasirinkite kasdienį arba kas antros dienos ritmą.
-• Auginkite teigiamas serijas ir prireikus panaudokite uždirbtą serijos išsaugojimą.
-• Peržiūrėkite kiekvieną atliktą veiksmą ir sužinokite, už ką gavote „Spark“ taškų.
+• Kalendoriuje ir įrašuose peržiūrėkite kiekvieną atliktą veiksmą.
+• Jei norite, įjunkite kasdienes arba kas antros dienos serijas.
+• Jei norite, rodykite aiškius fiksuotus taškus ir lygius.
 • Dalinkitės tik tais laimėjimais, kuriuos sąmoningai pasirinkote.
 
-PRADĖKITE LENGVIAU
+ĮJUNKITE TIK NAUDINGUS ĮRANKIUS
+• Veiksmų dydžiai, energijos / laiko / vietos pasiūlymai, susikaupimas, greitas užrašymas, rutinos, serijos, planavimas, taškai ir įžvalgos pradžioje paslėpti.
+• Kiekvieną funkciją galite įjungti ar išjungti neprarasdami jos duomenų.
+• Kiekviena pasirenkama funkcija turi trumpą pakartojamą vadovą.
 • Įjunkite 2, 5, 10, 25 arba 50 minučių susikaupimo sesiją.
-• Dirbkite kartu su ramiu virtualiu susikaupimo palydovu.
 • Greitai užrašykite mintį ir sutvarkykite ją vėliau.
 • Atlikite rutiną matydami po vieną jos žingsnį.
-• Funkcija „Išeiti laiku“ apskaičiuoja, kada pradėti ruoštis.
 
 PRITAIKYKITE „SPARK“ SAVO DIENAI
 • Nustatykite vietinius priminimus ir pasirinktą susikaupimo laiką įrašykite į kalendorių.
-• Naudokite pradžios ekrano valdiklius šiandienos veiksmams, susikaupimui, greitam užrašymui, pažangai ir rutinoms.
+• Naudokite pradžios ekrano valdiklius šiandienos veiksmams, įpročių kalendoriui, susikaupimui, greitam užrašymui, pažangai ir rutinoms.
 • Vienu veiksmu šiai dienai išjunkite garsą, vibraciją, animaciją ir šventimus.
 • Savaitę išbandykite mažą pakeitimą ir neutraliai palyginkite rezultatą savo įrenginyje.
 • Naudokite lietuvių, anglų ir dar 17 palaikomų kalbų.

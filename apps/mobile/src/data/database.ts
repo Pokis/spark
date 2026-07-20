@@ -32,8 +32,8 @@ import { starterHabits, starterRoutines } from './seed';
 
 const DATABASE_NAME = 'spark.db';
 const DATABASE_KEY_NAME = 'spark.database.key.v1';
-export const CURRENT_DATABASE_SCHEMA_VERSION = 7;
-export const DATABASE_MIGRATION_VERSIONS = [1, 2, 3, 4, 5, 6, 7] as const;
+export const CURRENT_DATABASE_SCHEMA_VERSION = 9;
+export const DATABASE_MIGRATION_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 const MAX_DATABASE_SAFETY_COPIES = 3;
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 let databaseSecurity = {
@@ -427,6 +427,56 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
       );
     }
     version = 7;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
+  if (version < 8) {
+    const minimalExperienceSettings = {
+      progressiveHelpEnabled: false,
+      adaptiveSuggestionsEnabled: false,
+      actionSizesEnabled: false,
+      focusToolEnabled: false,
+      captureToolEnabled: false,
+      routinesEnabled: false,
+      streaksEnabled: false,
+      planningToolsEnabled: false,
+      rememberContextByTime: false,
+      transitionNudgesEnabled: false,
+      showRewards: false,
+      showRhythmPercentages: false,
+      insightsEnabled: false
+    };
+    for (const [keyName, value] of Object.entries(minimalExperienceSettings)) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO settings(key, value_json) VALUES (?, ?)',
+        keyName,
+        JSON.stringify(value)
+      );
+    }
+    version = 8;
+    await db.runAsync(
+      "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
+      String(version)
+    );
+  }
+
+  if (version < 9) {
+    // Earlier releases inserted these examples into every new database. Archive the
+    // known built-in IDs so an upgrade opens on the person's own list, while retaining
+    // any completion history and allowing the records to be reviewed/restored.
+    const archivedAt = new Date().toISOString();
+    await db.runAsync(
+      "UPDATE habits SET archived_at = COALESCE(archived_at, ?) WHERE id IN ('starter_water', 'starter_reset')",
+      archivedAt
+    );
+    await db.runAsync(
+      "UPDATE routines SET archived_at = COALESCE(archived_at, ?) WHERE id = 'starter_leave_home'",
+      archivedAt
+    );
+    version = 9;
     await db.runAsync(
       "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)",
       String(version)

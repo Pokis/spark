@@ -15,9 +15,14 @@ import {
 } from '../widgets/SparkFocusWidget';
 import {
   FOCUS_WIDGET_SNAPSHOT_KEY,
+  CALENDAR_WIDGET_SNAPSHOT_KEY,
   ROUTINE_WIDGET_SNAPSHOT_KEY,
   WIDGET_SNAPSHOT_KEY
 } from '../widgets/widgetTaskHandler';
+import {
+  buildCalendarWidgetSnapshot,
+  SparkCalendarWidget
+} from '../widgets/SparkCalendarWidget';
 import { SparkProgressWidget } from '../widgets/SparkProgressWidget';
 import type { RoutineRunState } from '../data/models';
 import {
@@ -111,6 +116,16 @@ export async function syncTodayWidget(input: {
   await requestNativeWidgetRefresh({
     widgetName: 'SparkProgress',
     renderWidget: () => <SparkProgressWidget snapshot={snapshot} />
+  });
+  const calendarSnapshot = buildCalendarWidgetSnapshot({
+    habits: input.habits,
+    completions: input.completions,
+    today
+  });
+  await AsyncStorage.setItem(CALENDAR_WIDGET_SNAPSHOT_KEY, JSON.stringify(calendarSnapshot));
+  await requestNativeWidgetRefresh({
+    widgetName: 'SparkCalendar',
+    renderWidget: () => <SparkCalendarWidget snapshot={calendarSnapshot} />
   });
 }
 

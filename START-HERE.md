@@ -71,9 +71,24 @@ To build the signed Google Play bundle locally, use:
 .\spark.cmd release -Action LocalBuild # every release; creates and verifies the .aab
 ```
 
-`LocalSetup` is the only step that must pause for you to choose and enter a password. Save that
-password and the generated `.p12` file in LastPass as instructed on screen. Neither command
+`LocalSetup` pauses for you to choose and enter a password. Save that password and the generated
+`.p12` file in LastPass as instructed on screen. Neither local signing command
 contacts EAS or consumes hosted-build quota.
+
+After Google Play has accepted the first manually uploaded bundle, later Internal-test versions
+can be built and published locally with one command. The one-time publisher setup still requires
+you to grant the printed service-account email permission in Play Console:
+
+```powershell
+.\spark.cmd release -Action PlaySetup -ProjectId djpokis-spark-habits
+.\spark.cmd release -Action PlayStatus
+.\spark.cmd release -Action LocalPublish -Track internal
+.\spark.cmd release -Action History
+```
+
+`LocalPublish` does not use EAS. It checks already-used Google version codes, builds/signs/verifies
+on this PC, publishes to the chosen track, and saves all useful metadata and URLs as timestamped
+JSON under `artifacts/release`.
 
 Choose the path that matches what you are doing:
 

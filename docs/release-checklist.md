@@ -113,13 +113,14 @@ listed separately so release evidence can identify exactly which check failed.
 - [ ] Automatic folder backup permission survives restart and retains no more than seven files
 - [ ] Recovery code is copied somewhere private; old-code behavior after rotation is understood
 - [ ] Database encryption checked in a native build
-- [ ] Today, Quick Capture, Focus, Routine, Progress, and Toolkit widgets checked on three launchers
+- [ ] Today, Habit Calendar, Quick Capture, Focus, Routine, Progress, and Toolkit widgets checked on three launchers
 - [ ] Widget tap behavior is explicit and cannot create a surprising completion
 - [ ] Quick Capture widget parks only after explicit submission
 - [ ] Focus widget pause/resume and force-stop recovery use the same persisted timer
 - [ ] Progress widget matches local totals and Toolkit’s four destinations open without writes
+- [ ] Habit Calendar widget fits two six-week habit grids, refreshes local completions, and opens Calendar without writing
 - [ ] Routine widget shows the current persisted step, paused state, empty state, and opens without changing data
-- [ ] Settings/Progress collapsible sections and fixed-width add controls checked at 200% text
+- [ ] Settings/Calendar sections and fixed-width add controls checked at 200% text
 - [ ] All tutorials can be skipped, dismissed, replayed, and restored; first-use prompt dismisses
 - [ ] Back behavior checked from normal navigation, widget launches, and cold deep links
 - [ ] Four launcher shortcuts open the correct narrow routes and expose no user content
@@ -177,6 +178,11 @@ listed separately so release evidence can identify exactly which check failed.
 
 - [x] Package ID final: `com.djpokis.sparkhabits.app`
 - [ ] Play App Signing enabled
+- [ ] First bundle accepted manually before relying on Publishing API automation
+- [ ] If `LocalPublish` is used: `PlayStatus` succeeds with an app-only service account
+- [ ] Publisher key and upload key/password backed up separately in LastPass
+- [ ] Testing publisher has only View app information and Release apps to testing tracks
+- [ ] Latest build/publish JSON reviewed and retained with the release evidence
 - [ ] Store listing and screenshots
 - [ ] feature graphic and icon
 - [ ] contact email and website

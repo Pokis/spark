@@ -37,6 +37,7 @@ export type ScheduleRule =
   | { type: 'weekdays'; days: number[] }
   | { type: 'timesPerWeek'; count: number }
   | { type: 'interval'; everyDays: number; anchorDate: string }
+  | { type: 'afterCompletion'; everyDays: number; anchorDate: string }
   | { type: 'anytime' };
 
 export interface Habit {

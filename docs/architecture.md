@@ -33,7 +33,7 @@ The solid path is the entire free product. The dotted paths are optional.
 
 The mobile database stores:
 
-- habits and three variants
+- habits, each with one standard action or optional small/regular/larger variants
 - completion history
 - focus sessions
 - capture items
@@ -45,6 +45,13 @@ The mobile database stores:
 - one-week changes (internal model name: `PersonalExperiment`)
 - preferences
 - a cached entitlement
+
+Habit schedules are stored as typed JSON. Supported rules are daily, selected weekdays, a number
+of times per week, fixed calendar intervals, completion-shifted intervals, and whenever. The
+completion-shifted rule derives its next due date from the latest actual completion; it does not
+read the user's system calendar. Schema 8 resets the presentation-only feature switches to the
+minimal defaults. Schema 9 archives the three known built-in sample IDs from earlier releases
+while retaining their records/history and every user-created item.
 
 SQLCipher encrypts the database in native development and store builds. Its randomly generated
 key is stored with Expo SecureStore. SQLCipher is not available in Expo Go, so a development

@@ -70,7 +70,7 @@ disabled.
 
 - Reminder times use a native system time picker and strict `00:00`–`23:59` validation.
 - Habit reminders are occurrence-aware one-shot notifications for daily, weekday,
-  times-per-week, interval, and anytime schedules.
+  times-per-week, fixed interval, completion-shifted interval, and anytime schedules.
 - Notifications are recalculated after data, pause, completion, timezone, and configuration
   changes. Optional auto-quieting pauses a repeatedly ignored habit for three days.
 - Capacity is a hard ceiling on recommended effort; available time is a second constraint.
@@ -138,21 +138,22 @@ disabled.
 
 - Domain tests cover energy, recency, pause history, distinct-day comebacks, and daily/two-day
   streak periods, gaps, pauses, milestones, streak-save continuity, and planned breaks.
-- Mobile tests cover notification occurrence planning, malformed/legacy/future backups,
-  accessible settings, and core components.
+- Mobile tests cover notification occurrence planning, shifted recurrence, month/week calendar
+  grids, widgets, malformed/legacy/future backups, accessible settings, and the minimal habit UI.
 - API tests cover feature shutdowns, purchase idempotency/conflicts/transfers, authenticated RTDN,
   event deduplication, revocation, privacy, and missing support records.
-- The single authoritative Maestro flow covers onboarding, habit creation, tiny completion,
-  reward, capture, focus closure, and process-restart persistence.
+- The single authoritative Maestro flow covers minimal onboarding, explicit completion-shifted
+  scheduling, a one-tap completion, Calendar records, and process-restart persistence.
 - Root test scripts rebuild shared runtime packages first, preventing stale generated code from
   producing misleading integration results.
 
 ## Validation completed in this environment
 
 - `npm.cmd run typecheck` — passed for all workspaces.
-- `npm.cmd run test:ci` — **261 tests passed**: 194 mobile, 26 domain, 25 API, 16 admin.
+- `npm.cmd run test:ci` — **280 tests passed**: 204 mobile, 28 domain, 25 API, 16 admin,
+  and 7 release-tool tests.
 - `npm.cmd run test:coverage` — passed the checked-in workspace gates. Measured statement
-  coverage: mobile 53.62% across every route/source file, domain 99.58%, API application 88.53%,
+  coverage: mobile 58.14% across every route/source file, domain 99.63%, API application 88.53%,
   and admin source 73.76%.
 - `npm.cmd run build` — admin production build, Android JavaScript export, shared packages, and API
   build passed.
@@ -167,7 +168,7 @@ disabled.
   applied. No high or critical advisory is present.
 - Native prebuild and Gradle debug assembly passed. The merged release manifest was inspected:
   calendar/media/broad-storage/overlay permissions are absent, cleartext is not enabled,
-  Android Auto Backup is disabled, and all six Spark widget receivers are non-exported.
+  Android Auto Backup is disabled, and all seven Spark widget receivers are non-exported.
 - A focused repository secret-pattern scan returned no matches; dedicated `gitleaks`/`semgrep`
   binaries were not installed in this environment.
 

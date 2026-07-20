@@ -85,36 +85,30 @@ describe('Settings information architecture and optional creator support', () =>
     mockedSpark.mockReturnValue(spark());
   });
 
-  it('starts calm, reveals hidden tools on demand, and routes directly to them', async () => {
+  it('starts with one optional-features entry point and reveals settings on demand', async () => {
     const view = await render(<SettingsScreen />);
     expect(view.queryByPlaceholderText('Optional')).toBeNull();
-    await fireEvent.press(view.getByRole('button', { name: 'Expand Profile' }));
-    expect(view.getByPlaceholderText('Optional').props.value).toBe('Sam');
-    expect(view.queryByText(/Navigation and essential actions/)).toBeNull();
+    expect(view.getByText('None enabled · habit tracking stays simple')).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Choose optional features' }));
+    expect(mockedRouter.push).toHaveBeenCalledWith('/features');
 
-    await fireEvent.press(view.getByRole('button', { name: 'Expand Language' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Expand Name & language' }));
+    expect(view.getByPlaceholderText('Optional').props.value).toBe('Sam');
     expect(view.getByText(/Navigation and essential actions/)).toBeTruthy();
     expect(view.getByRole('button', { name: 'Lietuvių' })).toBeTruthy();
     expect(view.getByRole('button', { name: 'Türkçe' })).toBeTruthy();
     expect(view.getByRole('button', { name: 'Tiếng Việt' })).toBeTruthy();
 
     await fireEvent.press(
-      view.getByRole('button', { name: 'Expand Planning & extra tools' })
+      view.getByRole('button', { name: 'Expand Data & privacy' })
     );
-    await fireEvent.press(view.getByText('Try a change for one week'));
-    expect(mockedRouter.push).toHaveBeenCalledWith('/experiments');
-
-    await fireEvent.press(
-      view.getByRole('button', { name: 'Expand Privacy & troubleshooting' })
-    );
-    await waitFor(() => expect(view.getByText(/local data is encrypted/)).toBeTruthy());
+    await waitFor(() => expect(view.getByText('Encrypted local storage check passed.')).toBeTruthy());
   });
 
   it('keeps the fixed, non-entitlement tip link low on the page and opens it explicitly', async () => {
     const view = await render(<SettingsScreen />);
-    expect(view.getByText(/Tips do not unlock features/)).toBeTruthy();
     await fireEvent.press(
-      view.getByRole('button', { name: 'Buy the creator a coffee ↗' })
+      view.getByRole('button', { name: 'Support the creator with a coffee ↗' })
     );
     await waitFor(() => expect(mockedOpenCreatorTipLink).toHaveBeenCalledTimes(1));
   });
@@ -122,6 +116,6 @@ describe('Settings information architecture and optional creator support', () =>
   it('omits the external tip affordance from release builds when its flag is off', async () => {
     mockedCreatorTipLinkEnabled.mockReturnValue(false);
     const view = await render(<SettingsScreen />);
-    expect(view.queryByText(/Tips do not unlock features/)).toBeNull();
+    expect(view.queryByRole('button', { name: 'Support the creator with a coffee ↗' })).toBeNull();
   });
 });

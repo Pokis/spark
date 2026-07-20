@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "provider": "Google Play",
+  "googleCloudProjectId": "djpokis-spark-habits",
+  "packageName": "com.djpokis.sparkhabits.app",
+  "serviceAccountId": "spark-play-publisher",
+  "defaultTrack": "internal",
+  "privacyPolicyUrl": "https://djpokis-spark-habits.web.app/privacy.html",
+  "console": {
+    "developerId": "",
+    "appId": "",
+    "appDashboardUrl": "",
+    "internalTestingUrl": "",
+    "closedTestingUrl": "",
+    "productionUrl": "",
+    "publishingOverviewUrl": "",
+    "preLaunchReportUrl": "",
+    "androidVitalsUrl": "",
+    "internalTestingOptInUrl": "",
+    "closedTestingOptInUrl": ""
+  }
+}

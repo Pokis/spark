@@ -17,7 +17,7 @@ export function rhythmForHabit(
   const wins = relevant.length;
   const opportunities = Math.max(
     1,
-    countOpportunities(habit, now, timeZone, windowDays),
+    countOpportunities(habit, now, timeZone, windowDays, completions),
   );
 
   const orderedDays = [

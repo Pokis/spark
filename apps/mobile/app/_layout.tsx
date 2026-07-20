@@ -37,6 +37,7 @@ function Navigation() {
         <Stack.Screen name="routine/[id]/edit" options={{ title: t('editRoutine') }} />
         <Stack.Screen name="routine/new" options={{ title: t('newRoutine'), presentation: 'modal' }} />
         <Stack.Screen name="settings" options={{ title: t('settings') }} />
+        <Stack.Screen name="features" options={{ title: 'Optional features' }} />
         <Stack.Screen name="support" options={{ title: 'Private support' }} />
         <Stack.Screen name="support/[id]" options={{ title: 'Conversation' }} />
         <Stack.Screen name="paywall" options={{ title: 'Spark premium', presentation: 'modal' }} />

@@ -1,6 +1,11 @@
 export type TutorialId =
   | 'getting-started'
+  | 'schedules'
   | 'habits-and-sizes'
+  | 'adaptive-suggestions'
+  | 'calendar'
+  | 'rewards'
+  | 'insights'
   | 'momentum'
   | 'focus'
   | 'capture'
@@ -40,28 +45,99 @@ export const tutorialTopics: TutorialTopic[] = [
     id: 'getting-started',
     icon: '✨',
     title: 'Your first five minutes',
-    summary: 'Understand Today, a win, and Spark points.',
+    summary: 'Create a habit, see Today, and record a completion.',
     destination: '/(tabs)',
     actionLabel: 'Open Today',
     category: 'start',
     pages: [
-      { title: 'Choose your next action', body: 'Today matches suggestions to your available energy, time, and place.' },
-      { title: 'Turn actions into wins', body: 'Tap Done after completing an action. The win appears immediately in Progress.' },
-      { title: 'Points show action size', body: 'Tiny earns 1, standard earns 2, and stretch earns 3. These fixed values build your progress total.' }
+      { title: 'Create one habit', body: 'Give it a short name and choose how often it should appear. Those are the only required choices.' },
+      { title: 'See what is ready today', body: 'Today lists habits whose schedule is ready. Optional tools stay hidden until you enable them.' },
+      { title: 'Tap Done after doing it', body: 'The completion appears in the Week, Month, and Record views of the habit calendar.' }
+    ]
+  },
+  {
+    id: 'schedules',
+    icon: '🗓️',
+    title: 'Choose how often',
+    summary: 'Daily, selected days, weekly targets, intervals, or completion-shifted dates.',
+    destination: '/habit/new',
+    actionLabel: 'Create a habit',
+    category: 'start',
+    pages: [
+      { title: 'Frequency is part of every habit', body: 'A new habit is not assumed to be daily. You choose a schedule before saving it.' },
+      { title: 'Fixed or flexible', body: 'Choose exact weekdays, a flexible number of times each week, fixed calendar intervals, or whenever you want.' },
+      { title: 'Shift from completion', body: '“After I complete it” schedules the next date from the day you actually finish. Completing late moves the following date too.' }
     ]
   },
   {
     id: 'habits-and-sizes',
     icon: '🌱',
     title: 'Habits and action sizes',
-    summary: 'Build a habit with tiny, standard, and stretch options.',
+    summary: 'Keep a habit yes-or-no, or add smaller and larger options.',
     destination: '/habit/new',
     actionLabel: 'Create a habit',
     category: 'start',
     pages: [
-      { title: 'One habit, several action sizes', body: 'A habit is something you want to repeat. Tiny, standard, and stretch versions let it fit low-, ordinary-, and high-energy days.' },
+      { title: 'Most habits can stay simple', body: 'A habit can have one Done button. This works well for taking vitamins or any clear yes-or-no action.' },
+      { title: 'Sizes are optional', body: 'Turn on different action sizes only when smaller and larger versions are genuinely useful.' },
       { title: 'Make tiny one clear move', body: 'A tiny version can be one sip, one sentence, or opening the document.' },
-      { title: 'Shape what appears next', body: 'Editing, deferring, or pausing updates future suggestions while completed actions remain in Progress.' }
+      { title: 'Hide the choices globally', body: 'Optional Features can hide size choices on Today without deleting the versions stored with a habit.' }
+    ]
+  },
+  {
+    id: 'adaptive-suggestions',
+    icon: '🎛️',
+    title: 'Adjust suggestions',
+    summary: 'Use energy, time, and place only when those filters are useful.',
+    destination: '/features',
+    actionLabel: 'Manage optional features',
+    category: 'daily',
+    pages: [
+      { title: 'Off by default', body: 'Today normally follows only each habit’s schedule and order.' },
+      { title: 'Add context when useful', body: 'When enabled, you can optionally choose energy, available time, and place to change the order.' },
+      { title: 'The schedule still wins', body: 'Adjusting suggestions never changes how often a habit is scheduled.' }
+    ]
+  },
+  {
+    id: 'calendar',
+    icon: '▦',
+    title: 'Week, Month, and Record',
+    summary: 'Read the habit calendar and open detailed history.',
+    destination: '/(tabs)/journey',
+    actionLabel: 'Open Calendar',
+    category: 'planning',
+    pages: [
+      { title: 'Week keeps the list compact', body: 'Each row is a habit and each colored square is a completion.' },
+      { title: 'Month shows the wider pattern', body: 'Scheduled days use a quiet outline. The calendar does not display a failure score for blank days.' },
+      { title: 'Record manages details', body: 'Review totals, edit a habit, open exact completion history, or add another habit.' }
+    ]
+  },
+  {
+    id: 'rewards',
+    icon: '✦',
+    title: 'Optional points and levels',
+    summary: 'Add a game-like progress total without changing completion history.',
+    destination: '/features',
+    actionLabel: 'Manage optional features',
+    category: 'planning',
+    pages: [
+      { title: 'Completion is the main record', body: 'The calendar and completion count work without points.' },
+      { title: 'Points are an optional layer', body: 'When enabled, regular completion records contribute to a simple local total and level.' },
+      { title: 'Turn them off at any time', body: 'Hiding points does not remove habits or completion history.' }
+    ]
+  },
+  {
+    id: 'insights',
+    icon: '🔎',
+    category: 'planning',
+    title: 'Helpful patterns',
+    summary: 'Optional observations calculated privately on your device.',
+    destination: '/features',
+    actionLabel: 'Manage optional features',
+    pages: [
+      { title: 'Look for useful conditions', body: 'When enabled, Spark compares your own completion and focus history to notice practical patterns such as times or places that worked well.' },
+      { title: 'These are suggestions, not scores', body: 'A pattern is a neutral observation you can use or ignore. It does not change a habit or its schedule.' },
+      { title: 'Your history stays local', body: 'Pattern calculations happen on your phone and do not require an account or online service.' }
     ]
   },
   {
@@ -166,10 +242,10 @@ export const tutorialTopics: TutorialTopic[] = [
     id: 'widgets',
     icon: '▦',
     title: 'Home-screen widgets',
-    summary: 'Keep Today, Capture, Focus, a routine step, progress, and tools visible.',
+    summary: 'Keep Today, the habit calendar, Capture, Focus, routines, and tools visible.',
     category: 'privacy',
     pages: [
-      { title: 'Put it where you already look', body: 'Android widgets can show the next action, timer state, current routine step, progress, capture field, or a small toolkit without opening menus first.' },
+      { title: 'Put it where you already look', body: 'Android widgets can show the next action, a monthly habit calendar, timer state, current routine step, capture, or a small toolkit.' },
       { title: 'Add from your home screen', body: 'Long-press an empty home-screen area, choose Widgets, find Spark, then drag the size you want.' },
       { title: 'Uses data already on your phone', body: 'Widgets update from Spark data on this device. They do not need a Spark account or cloud service.' }
     ]

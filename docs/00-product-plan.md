@@ -13,7 +13,8 @@ or surveillance product.
 The strongest ideas were kept:
 
 - immediate tactile and visual celebration
-- tiny, standard, and stretch versions of every habit
+- a single Done action by default, with optional small, regular, and larger versions when they
+  genuinely help
 - no-reset progress
 - a visible Android home-screen widget
 - focus/body-doubling
@@ -32,16 +33,16 @@ optional cosmetic themes—not casino mechanics.
 - encrypted SQLCipher database with its key in platform secure storage
 - no account or server required
 - pure scheduling/recommendation/reward domain package
-- daily, selected weekdays, times-per-week, interval, and anytime rhythms
+- daily, selected weekdays, times-per-week, fixed interval, completion-shifted interval, and anytime rhythms
 - device-only JSON export and restore
 
 ### Phase 2 — humane habit loop
 
-- capacity check-in: running low, steady, or ready
-- time-available filter
-- decision-reduced Today plan
-- transparent tiny/standard/stretch actions
-- tactile Spark celebration with reduced-motion support
+- an optional capacity check-in: running low, steady, or ready
+- an optional time-available filter
+- a minimal, schedule-first Today list
+- optional small/regular/larger action choices
+- optional tactile Spark celebration with reduced-motion support
 - undo
 - five-second activation prompt
 - pause and archive without deleting history
@@ -131,7 +132,7 @@ reporting, and unfinished-form drafts.
 The subsequent Phase 7 expansion is also complete in code. The remaining work is manual
 validation or deliberately deferred scope:
 
-1. Test all six Android widgets and four shortcuts across Pixel, Samsung, and Xiaomi launchers.
+1. Test all seven Android widgets and four shortcuts across Pixel, Samsung, and Xiaomi launchers.
 2. Test larger fonts, TalkBack, switch access, reduced motion, notification actions, share
    receiving, app lock, preview protection, calendar handoff, folder backup, sound output,
    localization/RTL, and color-blind use on real devices.

@@ -1,5 +1,9 @@
 # Google Play asset manifest
 
+> **Do not upload the current phone PNGs.** Their dimensions are valid, but their visible UI is
+> from before the July 20 minimal-experience overhaul. Replace the six source captures with the
+> current release-candidate screens described below, then run `spark.cmd release -Action Assets`.
+
 Upload these files in this order. All paths are relative to `store/android`.
 
 ## Main store listing graphics
@@ -19,12 +23,12 @@ interface without a device frame or invented feature.
 
 | Order | File | What it proves | Accessible description (under 140 characters) |
 | --- | --- | --- | --- |
-| 1 | `graphics/phone/01-today.png` | Immediate next-action view and visible progress | Spark Today shows three completed actions, four points, and controls for choosing the next action. |
-| 2 | `graphics/phone/02-focus.png` | Focus timer, small target, companion, and explicit calendar export | Focus setup shows a companion, ten-minute timer, task field, duration choices, and calendar export. |
-| 3 | `graphics/phone/03-capture.png` | Low-friction local capture and later organization | Capture saves two thoughts locally with controls to focus, select, or organize them later. |
-| 4 | `graphics/phone/04-progress.png` | Explainable points and positive progress summaries | Progress shows four Spark points, recent activity summaries, and expandable progress sections. |
-| 5 | `graphics/phone/05-leave-on-time.png` | Time planning with departure time and preparation buffer | Leave on time works backward from a departure time and adds a realistic preparation buffer. |
-| 6 | `graphics/phone/06-settings.png` | Clear groups, help, language, sensory controls, and simplicity options | Settings groups help, language, sensory feedback, reminders, privacy, and backup controls. |
+| 1 | `graphics/phone/01-today.png` | Minimal due-habit list and one clear Done action | Spark Today shows a compact list of due habits with frequency labels and one clear Done button. |
+| 2 | `graphics/phone/02-focus.png` | Explicit habit frequency and optional details | Habit setup puts frequency directly after the name and keeps reminders and action sizes optional. |
+| 3 | `graphics/phone/03-capture.png` | Month completion pattern across habits | Spark Calendar shows two compact monthly habit grids with completed and scheduled days. |
+| 4 | `graphics/phone/04-progress.png` | Week/Month/Record navigation and review | Calendar Record shows completion totals, active habits, and direct habit-history access. |
+| 5 | `graphics/phone/05-leave-on-time.png` | User-controlled feature visibility | Optional features lets a user add Focus, Capture, routines, streaks, points, or other tools. |
+| 6 | `graphics/phone/06-settings.png` | Calm collapsed settings and local privacy controls | Settings leads with Optional features and keeps reminders, comfort, language, data, and help collapsed. |
 
 ## Visual review checklist
 
@@ -32,5 +36,5 @@ interface without a device frame or invented feature.
 - The clock and status icons are consistent and do not imply a specific carrier or endorsement.
 - No screenshot claims cloud sync, AI coaching, medical treatment, or a paid feature.
 - Buttons and text are readable at phone-preview size.
-- The screenshot order tells one story: choose → focus → capture → review → plan → personalize.
+- The screenshot order tells one story: act → schedule → see the pattern → review → choose extras → personalize.
 - If the UI changes materially, recapture rather than adding explanatory marketing overlays.

@@ -1,97 +1,78 @@
+import { localDateKey, type Habit, type ScheduleRule } from '@spark/domain';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import type { Habit } from '@spark/domain';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
 import { Chip } from '../src/components/Chip';
 import { FormField } from '../src/components/FormField';
 import { Screen } from '../src/components/Screen';
-import { Body, Eyebrow, H1, Muted } from '../src/components/Typography';
-import { useSpark } from '../src/state/SparkProvider';
-import { palette, useTheme } from '../src/theme';
+import { Body, Eyebrow, H1, Muted, SectionHeading } from '../src/components/Typography';
 import { createId } from '../src/lib/id';
+import { useSpark } from '../src/state/SparkProvider';
+import { habitColors, useTheme } from '../src/theme';
 
-const pages = [
-  {
-    eyebrow: 'Welcome to Spark',
-    title: 'One doable action at a time.',
-    body: 'Spark is a habit and focus tracker that helps you choose a clear next action, record each win, and learn what helps you start.',
-    icon: 'sparkles-outline' as const
-  },
-  {
-    eyebrow: 'Plain language',
-    title: 'A habit is something you want to repeat.',
-    body: 'Each habit has three action sizes: tiny, standard, and stretch. All three count as a win. Spark suggests a size; you choose what actually fits.',
-    icon: 'options-outline' as const
-  },
-  {
-    eyebrow: 'Predictable progress',
-    title: 'A completed action becomes a win.',
-    body: 'A tiny action earns 1 Spark point, standard earns 2, and stretch earns 3. These fixed point values build a clear progress record and can be hidden in Settings.',
-    icon: 'checkmark-circle-outline' as const
-  },
-  {
-    eyebrow: 'Private by default',
-    title: 'Your real life stays on this device.',
-    body: 'Habits, focus sessions, and brain dumps live in encrypted local storage. Cloud support is optional and never receives that data.',
-    icon: 'shield-checkmark-outline' as const
-  },
-  {
-    eyebrow: 'Your first habit',
-    title: 'What would you like to move forward?',
-    body: 'Spark already includes two editable examples: Drink some water and Reset one surface. Add your own habit now, or continue with those examples.',
-    icon: 'create-outline' as const
-  }
+const scheduleChoices: { type: ScheduleRule['type']; label: string }[] = [
+  { type: 'daily', label: 'Every day' },
+  { type: 'weekdays', label: 'Certain days' },
+  { type: 'timesPerWeek', label: 'Times each week' },
+  { type: 'afterCompletion', label: 'After I complete it' },
+  { type: 'anytime', label: 'Whenever' }
 ];
+const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function OnboardingScreen() {
-  const [page, setPage] = useState(0);
-  const [firstHabit, setFirstHabit] = useState('');
   const spark = useSpark();
   const theme = useTheme();
-  const current = pages[page]!;
+  const [page, setPage] = useState(0);
+  const [title, setTitle] = useState('');
+  const [scheduleType, setScheduleType] = useState<ScheduleRule['type'] | null>(null);
+  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [count, setCount] = useState('3');
+  const [intervalDays, setIntervalDays] = useState('2');
 
-  async function finish(createPersonalHabit: boolean) {
-    if (createPersonalHabit && firstHabit.trim()) {
+  function schedule(): ScheduleRule {
+    const today = localDateKey(new Date(), spark.timeZone);
+    if (scheduleType === 'weekdays') return { type: 'weekdays', days };
+    if (scheduleType === 'timesPerWeek') return { type: 'timesPerWeek', count: Math.max(1, Math.min(7, Number(count) || 1)) };
+    if (scheduleType === 'afterCompletion') return { type: 'afterCompletion', everyDays: Math.max(1, Math.min(365, Number(intervalDays) || 1)), anchorDate: today };
+    if (scheduleType === 'anytime') return { type: 'anytime' };
+    return { type: 'daily' };
+  }
+
+  async function finish(withHabit: boolean) {
+    if (withHabit) {
+      if (!title.trim()) {
+        Alert.alert('Name your habit', 'Use a short action such as Take vitamins.');
+        return;
+      }
+      if (!scheduleType) {
+        Alert.alert('Choose how often', 'Select when this habit should appear.');
+        return;
+      }
+      if (scheduleType === 'weekdays' && days.length === 0) {
+        Alert.alert('Choose a day', 'Select at least one day of the week.');
+        return;
+      }
       const habitId = createId('habit');
-      const title = firstHabit.trim();
-      const now = new Date();
       const habit: Habit = {
         id: habitId,
-        title,
-        reason: 'A personal first habit chosen during onboarding.',
-        color: palette.coral,
+        title: title.trim(),
+        color: habitColors[0],
         icon: '✨',
-        variants: [
-          {
-            id: createId('variant'),
-            kind: 'tiny',
-            label: `Touch the first step for ${title}`,
-            targetMinutes: 1,
-            reward: 1
-          },
-          {
-            id: createId('variant'),
-            kind: 'standard',
-            label: title,
-            targetMinutes: 5,
-            reward: 2
-          },
-          {
-            id: createId('variant'),
-            kind: 'stretch',
-            label: `Spend 15 minutes on ${title}`,
-            targetMinutes: 15,
-            reward: 3
-          }
-        ],
-        schedule: { type: 'anytime' },
+        variants: [{
+          id: createId('variant'),
+          kind: 'standard',
+          label: title.trim(),
+          targetMinutes: 1,
+          reward: 1
+        }],
+        schedule: schedule(),
         reminderEnabled: false,
         priority: 2,
         contexts: ['anywhere'],
-        createdAt: now.toISOString(),
+        createdAt: new Date().toISOString(),
         pausedAt: null,
         pausedUntil: null,
         pauseHistory: [],
@@ -99,144 +80,88 @@ export default function OnboardingScreen() {
         sortOrder: spark.habits.length
       };
       await spark.saveHabit(habit);
-      await spark.setCheckIn('steady', null);
     }
     await spark.updateSetting('onboardingComplete', true);
     router.replace('/(tabs)');
   }
 
-  async function continueFlow() {
-    if (page < pages.length - 1) {
-      setPage((value) => value + 1);
-      return;
-    }
-    await finish(Boolean(firstHabit.trim()));
-  }
-
   return (
     <Screen contentStyle={styles.screen} testID="onboarding-screen">
       <View style={styles.top}>
-        <Image
-          source={require('../assets/spark-icon-v2.png')}
-          accessibilityIgnoresInvertColors
-          style={styles.logo}
-        />
+        <Image source={require('../assets/spark-icon-v2.png')} accessibilityIgnoresInvertColors style={styles.logo} />
         <View style={styles.dots}>
-          {pages.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                { backgroundColor: index === page ? theme.primary : theme.border }
-              ]}
-            />
-          ))}
+          {[0, 1].map((index) => <View key={index} style={[styles.dot, { backgroundColor: index === page ? theme.primary : theme.border }]} />)}
         </View>
-        <Muted>Step {page + 1} of {pages.length}</Muted>
       </View>
-      <Card style={styles.hero}>
-        <View style={[styles.icon, { backgroundColor: `${palette.coral}22` }]}>
-          <Ionicons name={current.icon} size={36} color={theme.primary} />
-        </View>
-        <Eyebrow>{current.eyebrow}</Eyebrow>
-        <H1>{current.title}</H1>
-        <Body>{current.body}</Body>
-        {page === 0 ? (
+
+      {page === 0 ? (
+        <Card style={styles.hero}>
+          <View style={[styles.heroIcon, { backgroundColor: `${theme.primary}18` }]}>
+            <Ionicons name="calendar-outline" size={38} color={theme.primary} />
+          </View>
+          <Eyebrow>Welcome to Spark</Eyebrow>
+          <H1>A habit list and calendar.</H1>
+          <Body>Create the habits you care about, choose how often each should happen, and tap Done when you complete one.</Body>
           <View style={[styles.promise, { backgroundColor: theme.surfaceAlt }]}>
-            <Text style={styles.promiseIcon}>✓</Text>
-            <Muted>Every completed action builds your progress. Tiny, standard, and stretch wins all count.</Muted>
+            <Muted>Extra tools such as focus timers, routines, points, and streaks start hidden. Enable only the ones you want.</Muted>
           </View>
-        ) : null}
-        {page === 1 ? (
-          <View style={[styles.definition, { backgroundColor: theme.surfaceAlt }]}>
-            <Muted><Text style={styles.definitionLabel}>Habit</Text> = what you want to repeat</Muted>
-            <Muted><Text style={styles.definitionLabel}>Action</Text> = one size you can do today</Muted>
-            <Muted><Text style={styles.definitionLabel}>Win</Text> = an action you chose to log</Muted>
-          </View>
-        ) : null}
-        {page === 2 ? (
-          <View style={styles.rewardRow}>
-            {['Tiny = 1 point', 'Standard = 2', 'Stretch = 3'].map((label) => (
-              <View
-                key={label}
-                style={[styles.rewardBadge, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}
+        </Card>
+      ) : (
+        <Card style={styles.hero}>
+          <Eyebrow>Your first habit</Eyebrow>
+          <H1>What do you want to track?</H1>
+          <FormField label="Habit name" placeholder="Take vitamins" value={title} onChangeText={setTitle} maxLength={80} autoFocus testID="onboarding-first-habit" />
+          <SectionHeading>How often?</SectionHeading>
+          <View style={styles.scheduleList}>
+            {scheduleChoices.map((choice) => (
+              <Pressable
+                key={choice.type}
+                accessibilityRole="radio"
+                accessibilityLabel={choice.label}
+                accessibilityState={{ checked: scheduleType === choice.type }}
+                onPress={() => setScheduleType(choice.type)}
+                style={[styles.scheduleChoice, { borderColor: scheduleType === choice.type ? theme.primary : theme.border }]}
               >
-                <Text style={[styles.rewardBadgeText, { color: theme.text }]}>{label}</Text>
-              </View>
+                <Text style={[styles.scheduleLabel, { color: theme.text }]}>{choice.label}</Text>
+                <Text style={{ color: scheduleType === choice.type ? theme.primary : theme.textMuted }}>{scheduleType === choice.type ? '●' : '○'}</Text>
+              </Pressable>
             ))}
           </View>
-        ) : null}
-        {page === pages.length - 1 ? (
-          <>
-            <View style={styles.templateRow}>
-              {['Read something', 'Move my body', 'Reset my space'].map((value) => (
-                <Chip
-                  key={value}
-                  label={value}
-                  selected={firstHabit === value}
-                  onPress={() => setFirstHabit(value)}
-                />
-              ))}
-            </View>
-            <FormField
-              label="My first habit"
-              hint="You can edit this habit and its action sizes at any time."
-              placeholder="e.g. Open the document"
-              value={firstHabit}
-              onChangeText={setFirstHabit}
-              maxLength={80}
-              testID="onboarding-first-habit"
-            />
-          </>
-        ) : null}
-      </Card>
+          {scheduleType === 'weekdays' ? (
+            <View style={styles.chips}>{weekdays.map((label, index) => <Chip key={label} label={label} selected={days.includes(index)} onPress={() => setDays((current) => current.includes(index) ? current.filter((day) => day !== index) : [...current, index])} />)}</View>
+          ) : null}
+          {scheduleType === 'timesPerWeek' ? <FormField label="Times per week" value={count} onChangeText={setCount} keyboardType="number-pad" maxLength={1} /> : null}
+          {scheduleType === 'afterCompletion' ? <FormField label="Days after completion" hint="The next date moves when you finish early or late." value={intervalDays} onChangeText={setIntervalDays} keyboardType="number-pad" maxLength={3} /> : null}
+        </Card>
+      )}
+
       <View style={styles.actions}>
-        <Button
-          label={
-            page === pages.length - 1 && firstHabit.trim()
-              ? 'Create my first habit'
-              : page === pages.length - 1
-                ? 'Continue with 2 examples'
-                : 'Continue'
-          }
-          onPress={() => void continueFlow()}
-          testID="onboarding-continue"
-        />
-        {page > 0 ? (
-          <Button label="Back" variant="ghost" onPress={() => setPage((value) => value - 1)} />
-        ) : null}
+        {page === 0 ? (
+          <Button label="Continue" onPress={() => setPage(1)} testID="onboarding-continue" />
+        ) : (
+          <>
+            <Button label="Create habit" onPress={() => void finish(true)} testID="onboarding-continue" />
+            <Button label="Set up later" variant="ghost" onPress={() => void finish(false)} />
+            <Button label="Back" variant="ghost" onPress={() => setPage(0)} />
+          </>
+        )}
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { justifyContent: 'space-between', paddingBottom: 26, minHeight: '100%' },
-  top: { alignItems: 'center', gap: 18 },
-  logo: { width: 72, height: 72, borderRadius: 22 },
+  screen: { justifyContent: 'space-between', minHeight: '100%', paddingBottom: 28 },
+  top: { alignItems: 'center', gap: 16 },
+  logo: { width: 70, height: 70, borderRadius: 22 },
   dots: { flexDirection: 'row', gap: 7 },
-  dot: { height: 7, width: 24, borderRadius: 99 },
-  hero: { padding: 22, gap: 14 },
-  icon: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  promise: {
-    borderRadius: 14,
-    padding: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10
-  },
-  promiseIcon: { color: palette.coral, fontSize: 24, fontWeight: '800' },
-  definition: { borderRadius: 14, padding: 13, gap: 7 },
-  definitionLabel: { fontWeight: '800' },
-  rewardRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  rewardBadge: { minHeight: 40, borderWidth: 1, borderRadius: 99, paddingHorizontal: 12, justifyContent: 'center' },
-  rewardBadgeText: { fontSize: 13, fontWeight: '700' },
-  actions: { gap: 10 },
-  templateRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
+  dot: { width: 34, height: 7, borderRadius: 99 },
+  hero: { padding: 20, gap: 14 },
+  heroIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  promise: { borderRadius: 14, padding: 13 },
+  scheduleList: { gap: 7 },
+  scheduleChoice: { minHeight: 48, borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  scheduleLabel: { flex: 1, fontSize: 15, fontWeight: '700' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  actions: { gap: 8 }
 });

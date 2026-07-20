@@ -85,7 +85,7 @@ describe('native database migration and safety boundary', () => {
     const schemaVersions = mockDb.runAsync.mock.calls
       .filter(([sql]) => String(sql).includes('schema_version'))
       .map((call) => call[1]);
-    expect(schemaVersions).toEqual(['1', '2', '3', '4', '5', '6', '7']);
+    expect(schemaVersions).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
     const executed = mockDb.execAsync.mock.calls
       .map(([sql]) => String(sql))
       .join('\n');
@@ -97,6 +97,19 @@ describe('native database migration and safety boundary', () => {
     expect(executed).toContain('departure_plans');
     expect(executed).toContain('personal_experiments');
     expect(executed).toContain('momentum_json');
+    expect(
+      mockDb.runAsync.mock.calls.some(
+        ([sql, key, value]) =>
+          String(sql).includes('INSERT OR REPLACE INTO settings') &&
+          key === 'actionSizesEnabled' &&
+          value === 'false'
+      )
+    ).toBe(true);
+    expect(
+      mockDb.runAsync.mock.calls.some(([sql]) =>
+        String(sql).includes("id IN ('starter_water', 'starter_reset')")
+      )
+    ).toBe(true);
     await expect(database.getDatabaseSecurityStatus()).resolves.toMatchObject({
       encrypted: true,
       cipherVersion: '4.6.1',

@@ -38,12 +38,13 @@ first release.
 ### Current local status—already checked by Codex
 
 **TL;DR:** code, tests, Android tooling, identity, privacy text, graphics, and AAB configuration
-are ready locally. Firebase Hosting is complete. The local signing/build automation is ready;
-private upload-key creation, physical-device sign-off, Play upload, and console attestations remain.
+are ready locally. Firebase Hosting is complete. Local signing/build automation and the optional
+direct Google Play publishing workflow are ready. Physical-device sign-off, one-time publisher
+permission, and console attestations remain human-controlled.
 
 The commands `.\spark.cmd release -Action Inspect`, `.\spark.cmd release`, and the complete
 `.\spark.cmd release -Action Verify` were run on **July 17, 2026**. Re-run `Inspect` whenever you
-want a fresh status. Doctor, TypeScript, 261 tests, coverage, production builds, identity,
+want a fresh status. Doctor, TypeScript, the current 280-test suite, coverage, production builds, identity,
 privacy, listing, and graphics checks form the local release gate.
 
 | Item | Current result |
@@ -51,12 +52,12 @@ privacy, listing, and graphics checks form the local release gate.
 | Package ID consistency | Confirmed: Expo, PowerShell helpers, Maestro, cloud templates, tests, and regenerated Android use `com.djpokis.sparkhabits.app`. |
 | Version | Ready: public/mobile/native version `0.1.0`; source is prepared with native version code `2` for the next newly uploaded bundle. Google Play permanently reserved code `1` when it accepted the first bundle; that existing bundle may still be attached to a release with **Add from library**. |
 | Bundle configuration | Ready: local Gradle production output is a signed Android App Bundle. A generated guard rejects release output without the private upload key/password. |
-| Automated verification | Doctor, all workspace types, 261 tests, coverage, builds, identity, listing limits, and graphics checks are automated. |
+| Automated verification | Doctor, all workspace types, the current 280-test suite, coverage, builds, identity, listing limits, and graphics checks are automated. |
 | Local Android release build | The complete production AAB path passed July 17, 2026: production signature, package `com.djpokis.sparkhabits.app`, version `0.1.0`, and Gradle bundle metadata were verified. Google Play accepted and reserved the original code `1`; select it with **Add from library** if available. If a new upload is required, rebuild with current code `2`. |
 | First-build cloud boundary | Ready locally: API blank, remote config off, creator-tip link off. `LocalBuild` uses this local configuration. |
 | Privacy policy | Filled consistently and live at `https://djpokis-spark-habits.web.app/privacy.html`; HTTP 200 and approved operator details verified July 17, 2026. |
 | Optional EAS link | Existing but unused by the local path: `@djpokis-team/spark-adhd-habits`; no hosted build is required. |
-| Store assets | **Ready:** six real-app screenshots, icon, feature graphic, listings for all 19 bundled languages, alt text, and an upload manifest are in `store/android`. |
+| Store assets | **Mostly ready:** icon, feature graphic, listings for all 19 bundled languages, alt text, and generation pipeline are ready. The six phone screenshots require real-app recapture after the July 20 minimal-interface overhaul. |
 | Play forms/testing | **Prepared but manual:** recommended answers are in `store/android/declarations.md`; your account, legal attestations, final policy URL, and tester actions cannot be automated. |
 
 If you only want the next action, run `.\spark.cmd release -Action Verify`, then complete the
@@ -142,7 +143,7 @@ The shortest order is:
 | EAS project ID | Existing optional hosted-service identifier | Connects this folder to optional EAS history. | Irrelevant to local Android builds. |
 | Google Cloud project ID | Example: `spark-production-123` | Optional cloud infrastructure identifier. It is not the Play package ID. | The chosen project remains separate from the app identity. |
 | Version name | `0.1.0` | Public version shown to people and support staff. | Yes; change intentionally for releases. |
-| Version code | `1` | Android's always-increasing internal release number. | Must increase for every new Play upload. |
+| Version code | read it with `Inspect` (currently prepared above code `1`) | Android's always-increasing internal release number. | Must increase for every new Play upload; `LocalPublish` checks Play and advances it when necessary. |
 | APK | `app-release.apk` | Installable file useful for direct device testing. | Not the normal new-app Play upload. |
 | AAB | `app-release.aab` | Bundle uploaded to Google Play; Play generates optimized APKs from it. | Build a new one for each release. |
 
@@ -458,7 +459,7 @@ development signing. Follow [Testing](./testing.md) and the device sections of t
 
 - fresh install and onboarding;
 - large text, TalkBack, navigation bar, and keyboard behavior;
-- all six widgets and launcher shortcuts;
+- all seven widgets and launcher shortcuts, including the 4×4 Habit Calendar widget;
 - reminders, Quiet now, app lock, screenshot protection, and restart recovery;
 - backup/export/restore and selected-folder access;
 - calendar create-event screens without calendar read permission; and
@@ -514,7 +515,8 @@ The command:
 2. checks package identity, policies, assets, and the production-signing guard;
 3. asks for the LastPass password through a hidden PowerShell prompt;
 4. unlocks the key in memory and passes it only to one non-daemon Gradle process;
-5. builds `:app:bundleRelease` locally;
+5. builds `:app:bundleRelease` locally for paired 32-bit/64-bit ARM phone and tablet targets,
+   with native compilation limited to two concurrent workers for Windows reliability;
 6. verifies the AAB signature is not the Android debug certificate;
 7. verifies the bundle/manifest metadata emitted by that Gradle build contains the intended
    package ID, version name, and version code; and
@@ -533,6 +535,12 @@ properties file, source file, command history, or build artifact.
 The generated Gradle configuration deliberately refuses `bundleRelease` and `assembleRelease`
 when the real key/password are unavailable. This prevents an accidentally debug-signed file from
 being mistaken for the production bundle.
+
+The release command deliberately omits x86/x86_64 from the Play bundle. Those architectures are
+used primarily by emulators and some ChromeOS devices; local debug builds keep them. The shipped
+ARM pair covers Android phones/tablets and satisfies Google's rule that a supported 32-bit native
+ABI must have its matching 64-bit ABI. Add x86 release support only with separate ChromeOS/device
+testing, because it materially increases native build memory and time.
 
 ### Last package-ID check before building
 
@@ -862,17 +870,33 @@ complete. The first test link can take time to appear. Details are in
 [Set up an internal test](https://support.google.com/googleplay/android-developer/answer/9845334)
 and [Prepare a release](https://support.google.com/googleplay/android-developer/answer/9859348/prepare-and-roll-out-a-release).
 
-The first upload is manual. For later updates, manual upload remains the simplest and avoids a
-service-account credential. If you deliberately opt into EAS Submit after configuring a
-least-privilege Google service account, its explicit optional command is:
+The first upload is manual because the Play Developer API cannot create the Play Console
+application/package enrollment for you. Once Play has accepted that first bundle, the recommended
+later-update path is local and EAS-independent:
 
 ```powershell
-.\spark.cmd release -Action EasSubmit -Track internal -BuildId YOUR_EAS_BUILD_ID
+.\spark.cmd release -Action PlaySetup -ProjectId djpokis-spark-habits # once
+# Back up the generated JSON key in LastPass, then grant its printed email app-only
+# "View app information" and "Release apps to testing tracks" permissions in Play Console.
+.\spark.cmd release -Action PlayStatus
+.\spark.cmd release -Action LocalPublish -Track internal
 ```
 
-Submission defaults to Internal, never Production, and requires a confirmation containing both
-the track and build ID. EAS Submit uploads the binary only; store metadata, screenshots, tester
-lists, declarations, review, and rollout decisions still live in Play Console.
+`PlaySetup` enables the Android Publisher API in the existing no-billing Google Cloud project,
+creates a narrowly named service account and one ignored local key, and writes a secret-config
+shell. It cannot grant itself Play permission; that single invitation remains manual. `PlayStatus`
+verifies the permission without uploading. `LocalPublish` checks Google's already-used version
+codes, builds/signs/verifies locally, uploads, updates the track, validates/commits the edit, and
+writes timestamped JSON history. It consumes no EAS build or submission quota and has no expected
+per-release API charge.
+
+Internal testing is the default. Production defaults to a draft and always requires typed
+confirmation, even with `-Yes`. Google review, policy declarations, required Closed testing,
+agreements, and production access remain Play-controlled. Full parameters, secret-file choices,
+JSON history fields, and failure recovery are in [PowerShell tools](./12-powershell-tools.md#one-command-local-google-play-publishing).
+
+Manual upload remains supported. The optional EAS submission fallback also remains available under
+the explicitly named `EasSubmit` action, but it is not needed by `LocalPublish`.
 
 ## 11. Test the Play-installed build
 
@@ -956,13 +980,15 @@ for the initial manual Internal upload.
 
 ## 14. Versions for later uploads
 
-> **TL;DR — where:** `apps/mobile/package.json` and `apps/mobile/app.config.ts`. **Do:** set the
-> same meaningful public version in both and increase `android.versionCode` in `app.config.ts`.
-> **Verify:** `.\spark.cmd release -Action Inspect` before every build and confirm Play shows a
-> higher code.
+> **TL;DR — where:** `apps/mobile/package.json` and `apps/mobile/app.config.ts`. **Do:** choose the
+> meaningful public version deliberately. For manual uploads, increase `android.versionCode`.
+> For direct publishing, `LocalPublish` queries Play and advances an already-used code. **Verify:**
+> inspect the JSON result and Play Console after every publish.
 
-Every uploaded update must have a higher Android `versionCode`. The local build intentionally does
-not alter source files or choose a version for you.
+Every uploaded update must have a higher Android `versionCode`. `LocalBuild` intentionally does not
+alter it. `LocalPublish` checks all bundle codes returned by Play before building; if the source
+code was already used, it writes `max + 1` into `apps/mobile/app.config.ts`. Supply
+`-NoAutoVersionCode` when you want the command to stop instead of changing the source.
 
 Update and keep consistent:
 
@@ -972,8 +998,10 @@ Update and keep consistent:
 - the local native Android `versionName` by regenerating `apps/mobile/android` before local
   release-like tests, if that ignored folder already exists.
 
-Before uploading, inspect the version printed by `LocalBuild` and displayed by Play Console. Never reuse a
-`versionCode`, even if the older release was only a draft or test.
+Before uploading manually, inspect the version printed by `LocalBuild` and displayed by Play
+Console. Never reuse a `versionCode`, even if the older release was only a draft or test. For
+`LocalPublish`, retain the source change and the JSON history record so the next clone/PC starts
+from the correct code.
 
 ## Final pre-upload checkpoint
 
@@ -1013,6 +1041,9 @@ After upload, continue with the more detailed [release checklist](./release-chec
 - [Health apps declaration](https://support.google.com/googleplay/android-developer/answer/14738291)
 - [Health content and services](https://support.google.com/googleplay/android-developer/answer/16679511)
 - [Target API requirement](https://developer.android.com/google/play/requirements/target-sdk)
+- [Google Play Developer API setup](https://developers.google.com/android-publisher/getting_started)
+- [Publishing API bundle upload](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.bundles/upload)
+- [Publishing API quotas](https://developers.google.com/android-publisher/quotas)
 - [EAS Build](https://docs.expo.dev/build/)
 - [EAS Submit for Android](https://docs.expo.dev/submit/android/)
 - [Android AAB versus APK with EAS](https://docs.expo.dev/build-reference/apk/)

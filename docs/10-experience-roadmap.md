@@ -1,6 +1,6 @@
 # Spark experience roadmap
 
-Reviewed: **2026-07-16**
+Reviewed: **2026-07-20**
 
 Implementation status: **completed in the 2026-07-16 experience pass**, including the Helpful
 next layer, sensory/reliability polish, and ethical supporter additions. The items under
@@ -23,6 +23,31 @@ Completion summary:
   launcher shortcuts, privacy-safe diagnostics, popular-language support including Lithuanian,
   deliberate progress cards, explicit calendar export, local one-week changes, and an
   Android focus widget.
+- Stakeholder minimal-experience overhaul: **implemented**—empty first install, explicit
+  frequency, optional action sizes, completion-shifted recurrence, Today/Calendar core
+  navigation, per-feature switches/tutorials, and a monthly Android Calendar widget.
+
+## Stakeholder minimal-experience overhaul
+
+The July 20 pass changes what appears by default while retaining the earlier tools behind explicit
+choices. It supersedes any roadmap wording that describes energy check-ins, points, sizes, Focus,
+Capture, routines, planning, or streaks as default Today content.
+
+| Feedback | Implemented response |
+| --- | --- |
+| “Nothing is set up, yet it feels cluttered.” | New databases contain no samples. Fresh navigation is Today + Calendar, and empty Today has one setup card. |
+| “It is overwhelming.” | Today begins with compact due-habit rows. Settings has one Optional features entry and collapsed purpose-based sections. |
+| “Some habits do not have sizes.” | New habits have one Done action; small/regular/larger versions are optional per habit and globally hideable. |
+| “Choosing how often is the most important step.” | Frequency is directly below the name, has no default selection, and is required before save. |
+| “I need non-daily habits.” | Certain weekdays, times per week, fixed intervals, completion-shifted intervals, and whenever are supported alongside daily. |
+| “Shift the schedule based on completion.” | **After I complete it** derives the next date and local reminder from the latest real completion. |
+| “Make the meaningful information easy to find.” | Calendar provides Week, Month, and Record; points/streaks appear only when enabled. |
+| “I want this calendar view.” | The app has per-habit month grids and Android has a two-habit 4×4 monthly Calendar widget. |
+| “Explain optional features.” | Nine feature switches each link to a dedicated guide; guides remain closable, dismissible, and replayable. |
+
+All changes are local-only and add $0 cloud runtime at every user count. Schema 8 moves
+presentation settings to the minimal defaults; schema 9 archives old built-in samples without
+deleting their history or touching user-created records.
 
 ## Subsequent assistive expansion
 

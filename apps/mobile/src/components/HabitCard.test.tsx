@@ -34,19 +34,19 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Mark Drink water done: One sip, 1 minute, earns 1 Spark point'
+        name: 'Mark Drink water done'
       })
     );
     expect(onComplete).toHaveBeenCalledWith(suggestion.variant);
   });
 
-  it('reveals all transparent effort and reward options', async () => {
+  it('reveals action sizes only when that optional feature is enabled', async () => {
     const view = await render(
-      <HabitCard suggestion={suggestion} onComplete={jest.fn()} onEdit={jest.fn()} />
+      <HabitCard suggestion={suggestion} onComplete={jest.fn()} onEdit={jest.fn()} showSizes showRewards />
     );
-    await fireEvent.press(view.getByRole('button', { name: 'Show all action sizes' }));
+    await fireEvent.press(view.getByRole('button', { name: 'More options for Drink water' }));
     expect(view.getByText('One glass')).toBeTruthy();
-    expect(view.getByText('Stretch action · 5 min · earns 3 Spark points')).toBeTruthy();
+    expect(view.getByText('5 min · 3 points')).toBeTruthy();
   });
 
   it('blocks completion controls while a completion is saving', async () => {
@@ -61,7 +61,7 @@ describe('HabitCard', () => {
     );
     await fireEvent.press(
       view.getByRole('button', {
-        name: 'Mark Drink water done: One sip, 1 minute, earns 1 Spark point'
+        name: 'Mark Drink water done'
       })
     );
     expect(onComplete).not.toHaveBeenCalled();
@@ -79,26 +79,23 @@ describe('HabitCard', () => {
         onTiny={onTiny}
         onFocus={onFocus}
         onDefer={onDefer}
+        showExtraActions
       />
     );
-    await fireEvent.press(view.getByRole('button', { name: 'Mark the tiny version of Drink water done' }));
+    await fireEvent.press(view.getByRole('button', { name: 'More options for Drink water' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Mark the smallest version of Drink water done' }));
     await fireEvent.press(
-      view.getByRole('button', { name: 'Start a two minute focus session for Drink water' })
+      view.getByRole('button', { name: 'Focus on Drink water for 2 minutes' })
     );
     await fireEvent.press(
-      view.getByRole('button', { name: 'Show later choices for Drink water' })
-    );
-    await fireEvent.press(
-      view.getByRole('button', {
-        name: 'Tomorrow for Drink water; reschedule this suggestion'
-      })
+      view.getByRole('button', { name: 'Move Drink water to tomorrow' })
     );
     expect(onTiny).toHaveBeenCalledTimes(1);
     expect(onFocus).toHaveBeenCalledWith(2);
     expect(onDefer).toHaveBeenCalledWith('tomorrow');
   });
 
-  it('makes an enabled optional streak discoverable from Today', async () => {
+  it('shows the schedule without adding streak or point clutter', async () => {
     const view = await render(
       <HabitCard
         suggestion={{
@@ -117,6 +114,8 @@ describe('HabitCard', () => {
         onEdit={jest.fn()}
       />
     );
-    expect(view.getByText('✦ Optional streak on · view in Progress')).toBeTruthy();
+    expect(view.getByText('Every day')).toBeTruthy();
+    expect(view.queryByText(/streak/i)).toBeNull();
+    expect(view.queryByText(/point/i)).toBeNull();
   });
 });

@@ -12,6 +12,11 @@ import {
   type SparkFocusSnapshot
 } from './SparkFocusWidget';
 import { SparkProgressWidget } from './SparkProgressWidget';
+import {
+  emptyCalendarSnapshot,
+  SparkCalendarWidget,
+  type SparkCalendarSnapshot
+} from './SparkCalendarWidget';
 import { SparkToolkitWidget } from './SparkToolkitWidget';
 import {
   emptyRoutineSnapshot,
@@ -22,6 +27,7 @@ import {
 export const WIDGET_SNAPSHOT_KEY = 'spark.widget.snapshot.v1';
 export const FOCUS_WIDGET_SNAPSHOT_KEY = 'spark.focus-widget.snapshot.v1';
 export const ROUTINE_WIDGET_SNAPSHOT_KEY = 'spark.routine-widget.snapshot.v1';
+export const CALENDAR_WIDGET_SNAPSHOT_KEY = 'spark.calendar-widget.snapshot.v1';
 
 async function snapshot(): Promise<SparkWidgetSnapshot> {
   try {
@@ -50,7 +56,26 @@ async function routineSnapshot(): Promise<SparkRoutineSnapshot> {
   }
 }
 
+async function calendarSnapshot(): Promise<SparkCalendarSnapshot> {
+  try {
+    const raw = await AsyncStorage.getItem(CALENDAR_WIDGET_SNAPSHOT_KEY);
+    return raw ? (JSON.parse(raw) as SparkCalendarSnapshot) : emptyCalendarSnapshot;
+  } catch {
+    return emptyCalendarSnapshot;
+  }
+}
+
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
+  if (props.widgetInfo.widgetName === 'SparkCalendar') {
+    if (
+      props.widgetAction === 'WIDGET_ADDED' ||
+      props.widgetAction === 'WIDGET_UPDATE' ||
+      props.widgetAction === 'WIDGET_RESIZED'
+    ) {
+      props.renderWidget(<SparkCalendarWidget snapshot={await calendarSnapshot()} />);
+    }
+    return;
+  }
   if (props.widgetInfo.widgetName === 'SparkRoutine') {
     if (
       props.widgetAction === 'WIDGET_ADDED' ||

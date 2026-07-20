@@ -47,6 +47,11 @@ const scheduleSchema = z.discriminatedUnion('type', [
     everyDays: z.number().int().min(1).max(365),
     anchorDate: dateKeySchema
   }),
+  z.object({
+    type: z.literal('afterCompletion'),
+    everyDays: z.number().int().min(1).max(365),
+    anchorDate: dateKeySchema
+  }),
   z.object({ type: z.literal('anytime') })
 ]);
 
@@ -209,6 +214,13 @@ const currentSettingsSchema = z.object({
     .default(defaultSettings.language),
   simpleMode: z.boolean().default(defaultSettings.simpleMode),
   progressiveHelpEnabled: z.boolean().default(defaultSettings.progressiveHelpEnabled),
+  adaptiveSuggestionsEnabled: z.boolean().default(defaultSettings.adaptiveSuggestionsEnabled),
+  actionSizesEnabled: z.boolean().default(defaultSettings.actionSizesEnabled),
+  focusToolEnabled: z.boolean().default(defaultSettings.focusToolEnabled),
+  captureToolEnabled: z.boolean().default(defaultSettings.captureToolEnabled),
+  routinesEnabled: z.boolean().default(defaultSettings.routinesEnabled),
+  streaksEnabled: z.boolean().default(defaultSettings.streaksEnabled),
+  planningToolsEnabled: z.boolean().default(defaultSettings.planningToolsEnabled),
   reducedMotion: z.boolean(),
   hapticsEnabled: z.boolean(),
   sensoryProfile: z.enum(['calm', 'balanced', 'celebratory']),

@@ -56,6 +56,17 @@ const widgetConfig: WithAndroidWidgetsParams = {
       updatePeriodMillis: 1_800_000
     },
     {
+      name: 'SparkCalendar',
+      label: 'Spark Habit Calendar',
+      description: 'See this month’s habit completions at a glance.',
+      minWidth: '250dp',
+      minHeight: '250dp',
+      targetCellWidth: 4,
+      targetCellHeight: 4,
+      previewImage: './assets/spark-icon-v2.png',
+      updatePeriodMillis: 1_800_000
+    },
+    {
       name: 'SparkToolkit',
       label: 'Spark Toolkit',
       description: 'Open capture, focus, departure, or immediate help in one tap.',

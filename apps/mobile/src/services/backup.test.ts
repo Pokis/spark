@@ -23,6 +23,37 @@ describe('backup validation', () => {
     expect(parseBackupText(JSON.stringify(base)).schemaVersion).toBe(4);
   });
 
+  it('preserves completion-shifted schedules in portable backups', () => {
+    const parsed = parseBackupText(JSON.stringify({
+      ...base,
+      settings: {
+        ...defaultSettings,
+        actionSizesEnabled: true,
+        focusToolEnabled: true
+      },
+      habits: [{
+        id: 'vitamins',
+        title: 'Take vitamins',
+        color: '#20B8B2',
+        icon: '💊',
+        variants: [{ id: 'done', kind: 'standard', label: 'Take vitamins', targetMinutes: 1, reward: 1 }],
+        schedule: { type: 'afterCompletion', everyDays: 3, anchorDate: '2026-07-20' },
+        reminderEnabled: false,
+        priority: 2,
+        contexts: ['anywhere'],
+        createdAt: '2026-07-20T09:00:00.000Z',
+        sortOrder: 0
+      }]
+    }));
+    expect(parsed.habits[0]?.schedule).toEqual({
+      type: 'afterCompletion',
+      everyDays: 3,
+      anchorDate: '2026-07-20'
+    });
+    expect(parsed.settings.actionSizesEnabled).toBe(true);
+    expect(parsed.settings.focusToolEnabled).toBe(true);
+  });
+
   it('opens and migrates every released backup schema', () => {
     const versionTwo = {
       ...base,

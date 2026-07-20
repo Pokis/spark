@@ -6,10 +6,10 @@
 Spark ADHD Habit Tracker
 ```
 
-## Short description — 75/80 characters
+## Short description
 
 ```text
-Flexible habits, tiny steps, focus timers, routines and rewarding progress.
+Simple habit tracking with flexible schedules, calendars, and optional tools.
 ```
 
 ## Full description
@@ -17,30 +17,31 @@ Flexible habits, tiny steps, focus timers, routines and rewarding progress.
 ```text
 Make the next step visible.
 
-Spark is a flexible habit and focus companion designed for ADHD brains and fluctuating energy. It turns plans into small actions, keeps useful choices visible, and celebrates progress without making perfection the goal.
+Spark is a clear, flexible habit tracker designed for ADHD brains. Start with only your habits and calendar, then add other tools only when they are useful to you.
 
-CHOOSE AN ACTION THAT FITS
-• See a short list of useful actions for today.
-• Filter suggestions by energy, available time, and place.
-• Use a tiny, standard, or stretch version of a habit.
-• Ask Spark to reduce the choice to one next step.
+TRACK HABITS YOUR WAY
+• Keep a habit as one simple Done action—ideal for vitamins and other yes-or-no habits.
+• Choose every day, selected weekdays, times per week, fixed intervals, whenever, or a schedule that shifts from when you actually complete it.
+• See only due habits on Today.
+• Review each habit in compact Week and Month calendars.
 
 BUILD REWARDING CONSISTENCY
-• Choose a daily or every-other-day rhythm for each habit.
-• Grow positive streaks and use earned streak saves when life interrupts.
-• Review every completed action and understand every Spark point.
+• Review every completed action in Calendar and Record.
+• Optionally enable daily or every-other-day reward streaks.
+• Optionally show fixed, explainable points and levels.
 • Share only the wins you deliberately select.
 
-START WITH LESS FRICTION
+ADD TOOLS ONLY WHEN THEY HELP
+• Action sizes, energy/time/place suggestions, Focus, Capture, routines, streaks, planning, points, and patterns all start hidden.
+• Turn each feature on or off without deleting its saved data.
+• Open a short replayable guide for every optional feature.
 • Run a 2, 5, 10, 25, or 50 minute focus session.
-• Work beside a calm virtual focus companion.
 • Capture a thought immediately and organize it later.
 • Follow routines one visible step at a time.
-• Work backward from departure time with Leave on time.
 
 ADAPT SPARK TO YOUR DAY
 • Schedule local reminders and add a chosen focus block to your calendar.
-• Use home-screen widgets for Today, Focus, Capture, Progress, routines, and quick tools.
+• Use home-screen widgets for Today, Habit Calendar, Focus, Capture, progress, routines, and quick tools.
 • Turn off sound, haptics, motion, and celebrations for today with Quiet now.
 • Try a small one-week change and compare the result neutrally on your device.
 • Use the interface in English, Lithuanian, and 17 other supported languages.

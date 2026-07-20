@@ -1,6 +1,7 @@
 import {
   addCalendarDays,
   isDatePaused,
+  nextHabitDueDate,
   isHabitScheduledOn,
   localDateKey,
   recentDateKeys,
@@ -214,10 +215,19 @@ export function nextReminderDates(
     return spreadDates(available, remaining);
   }
 
+  if (habit.schedule.type === 'afterCompletion') {
+    const nextDue = nextHabitDueDate(habit, completions, today);
+    if (!nextDue) return [];
+    const reminderDate = nextDue < today ? today : nextDue;
+    return isDatePaused(habit, reminderDate) || completedOn(habit, completions, reminderDate)
+      ? []
+      : [reminderDate];
+  }
+
   return candidateDates.filter((dateKey) => {
     if (completedOn(habit, completions, dateKey)) return false;
     const weekday = new Date(`${dateKey}T12:00:00`).getDay();
-    return isHabitScheduledOn(habit, dateKey, weekday);
+    return isHabitScheduledOn(habit, dateKey, weekday, completions);
   });
 }
 

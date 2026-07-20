@@ -6,8 +6,10 @@
 npm.cmd run test:ci
 ```
 
-This runs **261 automated tests**: 194 mobile, 26 domain, 25 control-plane API, and 16 admin
-dashboard tests.
+This runs every script, mobile, domain, control-plane, and admin-dashboard test. Use the totals
+printed by the command as the current count; the suite grows with the product and the documentation
+does not pin a repository-wide number. As of this review, the mobile workspace contains **204
+tests in 51 suites**.
 
 The suites cover:
 
@@ -29,19 +31,19 @@ It rebuilds shared packages first, executes every workspace coverage suite, prin
 reports, and fails if any workspace falls below its checked-in threshold. Generated reports are
 written under ignored `coverage/` folders.
 
-Measured on **2026-07-17**:
+Measured on **2026-07-20**:
 
 | Scope | Statements | Branches | Functions | Lines | Enforced minimum |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Mobile: every `app/` and `src/` TypeScript/TSX file | 53.62% | 44.60% | 45.33% | 54.90% | 44 / 33 / 35 / 45 |
-| Shared domain package | 99.58% | 94.08% | 100% | 99.58% | 98 / 90 / 100 / 98 |
+| Mobile: every `app/` and `src/` TypeScript/TSX file | 58.14% | 50.36% | 49.11% | 60.34% | 44 / 33 / 35 / 45 |
+| Shared domain package | 99.63% | 95.09% | 100% | 99.63% | 98 / 90 / 100 / 98 |
 | Control-plane HTTP application (`src/app.ts`) | 88.53% | 78.52% | 97.91% | 88.66% | 85 / 75 / 95 / 85 |
 | Admin source, excluding test/bootstrap files | 73.76% | 49.35% | 67.18% | 75.32% | 70 / 45 / 60 / 70 |
 
 The mobile scope deliberately includes every route and large editor, including files that unit
 tests do not import. That makes the remaining screen-level gap visible. Core mobile services are
-materially higher: local helpers are fully statement-covered, services are 89.10%, backup is
-86.98%, notifications are 93.02%, diagnostics are 94.73%, widgets are 92.64%, and
+materially higher: local helpers are 99.03% statement-covered, services are 88.97%, backup is
+86.98%, notifications are 92.59%, diagnostics are 94.73%, widgets are 86.95%, and
 `SparkProvider` is 73.11%.
 
 Coverage is evidence, not a release substitute. Firebase browser sign-in, Android/iOS system
@@ -51,8 +53,8 @@ manual/device matrices below.
 
 ## Device-level end-to-end test
 
-The Maestro flow covers onboarding, habit creation, a tiny completion and reward, brain-dump
-capture, a focus session, and persistence after the app process restarts:
+The Maestro flow covers the new two-page onboarding, explicit completion-shifted frequency,
+one-action habit completion, Week/Month/Record Calendar, and persistence after process restart:
 
 ```powershell
 npm.cmd run e2e:android
@@ -89,13 +91,13 @@ Build shared packages, API, dashboard, and the Android JavaScript bundle:
 npm.cmd run build
 ```
 
-Validate that native generation includes the shortcuts, six widgets, blocked calendar
+Validate that native generation includes the shortcuts, seven widgets, blocked calendar
 permissions, and Baseline Profile:
 
 ```powershell
 Set-Location apps/mobile
 npx.cmd expo prebuild --platform android --no-install
-Select-String -Path android/app/src/main/AndroidManifest.xml -Pattern "SparkFocus|SparkRoutine|SparkProgress|SparkToolkit|android.app.shortcuts|READ_CALENDAR|WRITE_CALENDAR|READ_MEDIA_IMAGES|allowBackup"
+Select-String -Path android/app/src/main/AndroidManifest.xml -Pattern "SparkCalendar|SparkFocus|SparkRoutine|SparkProgress|SparkToolkit|android.app.shortcuts|READ_CALENDAR|WRITE_CALENDAR|READ_MEDIA_IMAGES|allowBackup"
 Test-Path android/app/src/main/baseline-prof.txt
 Set-Location ../..
 ```
@@ -126,78 +128,60 @@ timing vary.
 
 ## Manual ADHD-focused scenarios
 
-1. Select Running low and verify only genuinely tiny starts are emphasized.
-2. Leave multiple blank days and verify no red failure state or reset appears.
-3. Pause a habit and verify existing rhythm remains.
-4. Lock the phone during focus, wait, and return; the timestamp should remain correct.
-5. Save interruptions during focus and verify they appear in Capture.
-6. Increase system font size and enable TalkBack.
-7. Enable reduced motion and verify celebration and body double stop pulsing.
-8. Deny notifications and verify the app remains useful and does not reprompt aggressively.
-9. Export, clear app storage, restore, and compare data.
-10. Put the Today widget on the home screen, tap Log tiny, verify nothing is written before the
-    confirmation, then confirm and verify exactly one completion.
-11. Rapidly tap a completion and verify only one entry exists and Undo remains accessible.
-12. Defer actions with Not now, Later today, Tomorrow, and Quiet today; verify no completion or
-    failure state is created.
-13. Start Focus from a habit, routine step, and Capture item and verify title/duration prefilling.
-14. Pause a routine, force-stop Spark, reopen it, and verify the exact step/tiny/skipped state.
-15. Share text from a browser into Spark and verify it appears only in local Capture.
-16. Add the Quick Capture widget and verify unfinished text survives background/process loss.
-17. Test exact/morning/afternoon/evening reminders, configurable snooze, Log tiny, and Quiet today.
-18. Enable each local soundscape, change volume, lock/unlock, and confirm Spark never requests the
-    microphone and does not keep background playback alive.
-19. Turn on Simple mode and verify Today shows one action plus Quick Capture, Focus, Help, and only
-    the currently running routine; turn it off and verify Journey returns without data loss.
-20. Use Help me now for all six barriers and verify every action is local, reversible, and
-    pressure-free.
-21. Complete Weekly reset, advance the device date, and verify the chosen context/tiny action is
-    presented first without marking other habits missed.
-22. Add every friction-toolkit field, restart Spark, and verify the expanded Today card shows only
-    the useful first/setup/fallback note.
-23. Create a Departure plan, add a buffer/routine, and confirm the calculated runway. Export it to
-    the calendar and verify Spark never requests calendar permission or lists existing events.
-24. Export an idle Focus block to the calendar and verify the system create-event screen is the
-    only calendar interaction.
-25. Turn on Quiet now while Focus sound is playing. Verify sound, haptics, companion/navigation
-    motion, celebrations, reward overlay, and reminder vibration stop until tomorrow.
-26. Test notification visibility in all three modes with the phone locked.
-27. Turn on app lock, background past each timeout, and test fingerprint/face and device
-    credential fallback. Remove enrolled authentication and verify Spark cannot trap the user.
-28. Enable sensitive-preview protection. Verify Android recent-app preview and screenshots are
-    protected; verify iOS app-switcher protection separately before an iPhone release.
-29. Create a password-encrypted backup, alter one byte, and verify restore fails. Restore the
-    original with the correct password and verify wrong passwords never replace data.
-30. Configure automatic folder backup, verify a daily encrypted file appears, run Back up now,
-    and verify only the seven newest Spark automatic files are retained.
-31. Select a few completed actions and share PNG/text. Verify unselected actions never appear and no recipient or
-    account is remembered.
-32. Run each personal experiment, verify the tiny/reminder behavior is applied only during its
-    date window, and check that the comparison language stays neutral.
-33. Add the Focus widget, start/pause/resume/finish a session from app and widget, force-stop the
-    process, and verify timestamp-derived state remains correct. Test the four launcher shortcuts.
-34. Add the Progress widget and confirm lifetime wins, fixed points, and today’s count update after
-    logging; tapping it must open Progress without writing data.
-35. Add the Toolkit widget and verify Capture, two-minute Focus, Departure, and Help each open the
-    labeled destination. Test narrow/wide resizing and 200% font/display scaling.
-36. Add the Routine widget. Verify its current step and paused state survive restart, its empty
-    state opens routine creation, and tapping it never advances or completes a step.
-37. In Settings and Progress, collapse and expand every group. Confirm summaries stay meaningful,
-    controls keep their values, and larger text never clips add-habit/add-routine buttons.
-38. Open every feature tutorial. Verify Close returns without dismissal while preserving the
-    tutorial catalog's expanded groups and scroll position. Verify Dismiss hides its
-    contextual prompt, Replay remains available, Restore all tips makes prompts eligible again,
-    and the first-use prompt can disappear immediately. Complete the Home-screen widgets guide
-    and confirm its last page shows Done rather than another Next button.
-39. Open nested screens from Today, Progress, Settings, a widget, and a cold deep link. Back must
-    return to the actual prior screen when one exists and to the documented fallback otherwise.
-40. Switch through all 19 bundled languages, including Lithuanian, Dutch, Turkish, Indonesian,
-    Vietnamese, and an RTL Arabic device. Verify navigation and essential Today/Focus/Capture/
-    Progress actions change language, dates and times use the locale, no label becomes blank, and
-    advanced copy falls back to English. In a fresh native build on Android 13+, also confirm the
-    same locale list appears under **App info → Language**.
-41. Export diagnostics and inspect the JSON: no habit, focus, routine, Capture, weekly-reflection,
-    departure, experiment-note, display-name, file-path, or content-URI text should appear.
+Run the core scenarios first. These are release blockers for the stakeholder-requested experience:
+
+1. Clear app data. Confirm onboarding has two pages, no sample habits, no point/size lesson, and an
+   explicit **Set up later** choice.
+2. Enter only a habit name and tap Create. Confirm Spark asks for frequency instead of assuming
+   daily.
+3. Create one habit for each recurrence: daily, selected weekdays, times per week, fixed interval,
+   after completion, and whenever. Confirm only due habits appear on Today.
+4. For **After I complete it**, use a three-day interval, complete late, and verify the following
+   due date moves three days from the actual completion. Check the reminder moves with it.
+5. Create **Take vitamins** with action sizes off. Confirm Today shows one Done button and no size,
+   minute, or point copy. Undo it and complete it again.
+6. Confirm Today begins with **Up next**, the habit rows, and Calendar access. No energy prompt,
+   tutorial card, points card, Focus, Capture, routine, streak, or planning panel should appear.
+7. Open Calendar. Check Week, Month, and Record, previous/next periods, scheduled/completed cell
+   contrast, per-habit navigation, recent completion history, and an empty state with zero habits.
+8. Increase font/display size to 200% and enable TalkBack. Add controls, Done, recurrence radios,
+   tabs, month navigation, and each calendar cell must remain reachable and named.
+9. Open Settings → Optional features. Enable and disable every switch. Each corresponding surface
+   must appear/disappear without deleting stored habits, variants, sessions, routines, or history.
+10. Open every **How this works** link. Close, complete, dismiss, and replay guides; the tutorial
+    catalog must keep its expanded state and scroll position.
+11. Add the 4×4 Habit Calendar widget. Verify two habits fit without clipping on Pixel and Samsung
+    launchers, its current-month completions refresh, and tapping opens Calendar without writing.
+12. Upgrade an installation containing existing habits. Confirm the schema 8 migration switches
+    optional features off, schema 9 archives only the known built-in sample IDs, all user-created
+    habits/history remain, and a pre-migration safety copy exists.
+
+Then run the optional-feature and platform scenarios:
+
+13. Enable different action sizes, create all three sizes, and verify size selection; disable the
+    feature and confirm the variants remain stored but Today returns to one action.
+14. Enable suggestion adjustment and verify energy/time/place changes ordering without changing
+    recurrence. Disable it and confirm the panel disappears.
+15. Enable streaks; test daily/every-other-day chains, saves, planned breaks, and duplicate wins.
+    Disable it and confirm Calendar remains available.
+16. Enable Focus and Capture. Test timer restart/pause/resume, interruption capture, share target,
+    local draft recovery, soundscapes, and the Focus/Capture widgets.
+17. Enable routines and planning. Test routine resume, weekly planning, departure calendar export,
+    one-week changes, and deliberate image/text sharing.
+18. Add Today, Calendar, Capture, Focus, Routine, Progress, and Toolkit widgets. Test add, resize,
+    restart, empty state, deep-link destination, and that taps do not silently create data.
+19. Test exact/morning/afternoon/evening reminders, cap, privacy levels, snooze, completion action,
+    automatic quieting, and the completion-shifted reminder calculation.
+20. Turn on Quiet for today while Focus audio is playing. Verify sound, haptics, motion,
+    celebrations, reward overlays, and reminder vibration stop until tomorrow.
+21. Export/restore encrypted and CSV backups, tamper with a file, test wrong passwords, and verify
+    automatic-folder retention keeps only the seven newest files.
+22. Test app lock and sensitive-preview protection with enrolled and removed device credentials.
+23. Switch through all 19 bundled languages, including Lithuanian and RTL Arabic. Verify the
+    Today/Calendar navigation labels, core actions, dates, and times; advanced untranslated copy
+    may fall back to English but may never be blank.
+24. Export diagnostics and inspect the JSON: no habit, Focus, routine, Capture, weekly-reflection,
+    departure, experiment-note, display-name, file-path, or content-URI text may appear.
 
 ## Cloud security scenarios
 

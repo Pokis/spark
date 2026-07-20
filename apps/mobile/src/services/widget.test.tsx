@@ -8,6 +8,7 @@ import {
   syncTodayWidget
 } from './widget';
 import {
+  CALENDAR_WIDGET_SNAPSHOT_KEY,
   FOCUS_WIDGET_SNAPSHOT_KEY,
   ROUTINE_WIDGET_SNAPSHOT_KEY,
   WIDGET_SNAPSHOT_KEY
@@ -99,6 +100,12 @@ describe('Android widget synchronization', () => {
     });
     expect(stored).toMatchObject({ totalWins: 0, totalSparks: 0, activeHabits: 1 });
     expect(stored.tinyLabel).toContain('One line');
+    expect(
+      JSON.parse((await AsyncStorage.getItem(CALENDAR_WIDGET_SNAPSHOT_KEY))!)
+    ).toMatchObject({
+      month: '2026-07',
+      habits: [expect.objectContaining({ id: 'habit', title: 'Read' })]
+    });
   });
 
   it('persists a progress-focused state when no habit is due', async () => {
@@ -196,6 +203,7 @@ describe('Android widget synchronization', () => {
     expect(await AsyncStorage.getItem(WIDGET_SNAPSHOT_KEY)).toBeNull();
     expect(await AsyncStorage.getItem(FOCUS_WIDGET_SNAPSHOT_KEY)).toBeNull();
     expect(await AsyncStorage.getItem(ROUTINE_WIDGET_SNAPSHOT_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(CALENDAR_WIDGET_SNAPSHOT_KEY)).toBeNull();
   });
 
   it('calls the native widget module when present and fails softly in Expo Go', async () => {

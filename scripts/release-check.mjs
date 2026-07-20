@@ -30,9 +30,12 @@ const required = [
   'apps/mobile/plugins/withSparkReleaseSigning.js',
   'apps/mobile/plugins/withSparkReleaseSigning.test.js',
   'apps/mobile/credentials/README.md',
+  'apps/mobile/credentials/local-release.secrets.example.json',
   'apps/mobile/e2e/maestro/full-offline-flow.yaml',
   'spark.ps1',
   'scripts/spark-ops.ps1',
+  'scripts/google-play-publisher.mjs',
+  'scripts/google-play-publisher.test.mjs',
   'scripts/prepare-play-store-assets.ps1',
   'docs/privacy-policy.md',
   'docs/security.md',
@@ -40,6 +43,8 @@ const required = [
   'store/android/asset-manifest.md',
   'store/android/declarations.md',
   'store/android/release-decisions.md',
+  'store/android/publisher-config.json',
+  'store/android/release-notes/current.json',
   'store/android/listing/README.md',
   ...storeListingFiles,
   'store/android/source/feature-graphic-background.png',
@@ -223,9 +228,10 @@ if (!appConfig.includes("'./plugins/withSparkReleaseSigning'")) {
 const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
 if (
   !gitignore.includes('apps/mobile/credentials/*') ||
-  !gitignore.includes('!apps/mobile/credentials/README.md')
+  !gitignore.includes('!apps/mobile/credentials/README.md') ||
+  !gitignore.includes('!apps/mobile/credentials/local-release.secrets.example.json')
 ) {
-  console.error('✗ Git must ignore private mobile credentials while retaining their README.');
+  console.error('✗ Git must ignore private mobile credentials while retaining only safe documentation/examples.');
   failed = true;
 } else {
   console.log('✓ Private local Android signing files are excluded from Git.');
@@ -238,20 +244,68 @@ const powershellReleaseHelper = readFileSync(
   join(root, 'scripts/spark-ops.ps1'),
   'utf8',
 );
+const playPublisherHelper = readFileSync(
+  join(root, 'scripts/google-play-publisher.mjs'),
+  'utf8',
+);
 if (
   !signingPlugin.includes("System.getenv('SPARK_UPLOAD_PASSWORD')") ||
   !signingPlugin.includes('signingConfig signingConfigs.release') ||
   !powershellReleaseHelper.includes("Read-Host 'Enter the Spark application upload-key password (hidden)' -AsSecureString") ||
-  !powershellReleaseHelper.includes("'--no-daemon', ':app:bundleRelease'") ||
+  !powershellReleaseHelper.includes("'--no-daemon',") ||
+  !powershellReleaseHelper.includes('"--max-workers=$releaseBuildWorkers"') ||
+  !powershellReleaseHelper.includes('"-PreactNativeArchitectures=$releaseArchitectures"') ||
+  !powershellReleaseHelper.includes("$releaseArchitectures = 'armeabi-v7a,arm64-v8a'") ||
   !powershellReleaseHelper.includes("GetEnvironmentVariable('SPARK_ALLOW_EAS_RELEASES', 'Process')")
 ) {
-  console.error('✗ Android release safeguards must use the hidden prompt, environment-only secret, production config, non-daemon build, and disabled-by-default EAS cost flag.');
+  console.error('✗ Android release safeguards must use the hidden prompt, environment-only secret, production config, bounded ARM native build, non-daemon Gradle, and disabled-by-default EAS cost flag.');
   failed = true;
 } else {
-  console.log('✓ Local Android signing keeps its password out of tracked files and persistent Gradle state.');
+  console.log('✓ Local Android signing is secret-safe and its ARM native build has bounded Windows concurrency.');
 }
+if (
+  !powershellReleaseHelper.includes("'LocalPublish'") ||
+  !powershellReleaseHelper.includes('Get-SparkReleaseSecrets') ||
+  !powershellReleaseHelper.includes('Write-SparkOperationRecord') ||
+  !powershellReleaseHelper.includes("$Track -ne 'production'") ||
+  !playPublisherHelper.includes('https://www.googleapis.com/auth/androidpublisher') ||
+  !playPublisherHelper.includes("stage: 'validate-edit'") ||
+  !playPublisherHelper.includes("stage: 'commit-edit'") ||
+  !playPublisherHelper.includes("duplex: 'half'")
+) {
+  console.error('✗ Local Play publishing must use ignored/prompted secrets, JSON history, production confirmation, official scope, streamed upload, validation, and commit.');
+  failed = true;
+} else {
+  console.log('✓ Local Play publishing is EAS-independent, recorded, transactionally validated, and production-guarded.');
+}
+
 const packageMatch = appConfig.match(/const\s+packageName\s*=\s*['"]([^'"]+)['"]/);
 const packageName = packageMatch?.[1];
+const publisherConfig = JSON.parse(
+  readFileSync(join(root, 'store/android/publisher-config.json'), 'utf8'),
+);
+if (
+  publisherConfig.packageName !== packageName ||
+  publisherConfig.googleCloudProjectId !== 'djpokis-spark-habits' ||
+  publisherConfig.defaultTrack !== 'internal'
+) {
+  console.error('✗ Google Play publisher config must use the permanent package, dedicated project, and Internal default.');
+  failed = true;
+} else {
+  console.log('✓ Google Play publisher config uses the permanent package and safe Internal default.');
+}
+const releaseNotes = JSON.parse(
+  readFileSync(join(root, 'store/android/release-notes/current.json'), 'utf8'),
+);
+let releaseNotesValid = true;
+for (const [language, text] of Object.entries(releaseNotes)) {
+  if (!/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(language) || !text || [...text].length > 500) {
+    console.error(`✗ Release notes for ${language} must use a language tag and contain 1–500 characters.`);
+    failed = true;
+    releaseNotesValid = false;
+  }
+}
+if (releaseNotesValid) console.log('✓ Google Play release notes fit API language/length constraints.');
 if (!packageName) {
   console.error('✗ Could not read the Android package ID from apps/mobile/app.config.ts.');
   failed = true;
@@ -315,9 +369,22 @@ const maestroDirectory = join(root, 'apps', 'mobile', 'e2e', 'maestro');
 const maestroFlows = existsSync(maestroDirectory)
   ? readFileSync(join(maestroDirectory, 'full-offline-flow.yaml'), 'utf8')
   : '';
-if (!maestroFlows.includes('That was a real focus block')) {
-  console.error('✗ The release Maestro flow does not assert the focus closure state.');
+const requiredMaestroAssertions = [
+  'A habit list and calendar.',
+  'After I complete it',
+  'Total completions',
+  'stopApp',
+];
+if (requiredMaestroAssertions.some((value) => !maestroFlows.includes(value))) {
+  console.error('✗ The release Maestro flow does not cover the minimal onboarding, shifted schedule, Calendar record, and restart path.');
   failed = true;
+} else {
+  console.log('✓ Maestro covers the minimal onboarding, shifted schedule, Calendar record, and restart path.');
+}
+
+const storeReadme = readFileSync(join(root, 'store/android/README.md'), 'utf8');
+if (storeReadme.includes('Screenshot recapture required')) {
+  console.warn('! Phone screenshot dimensions are valid, but the store pack documents a required real-app recapture for the new minimal UI.');
 }
 
 console.log(

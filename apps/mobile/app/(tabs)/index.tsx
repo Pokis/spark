@@ -1,11 +1,8 @@
 import {
-  addCalendarDays,
   buildTodayPlan,
   localDateKey,
-  rewardSummaryFromTotal,
   type Capacity,
   type Completion,
-  type CompletionTag,
   type HabitContext,
   type HabitVariant
 } from '@spark/domain';
@@ -21,18 +18,12 @@ import { CollapsibleSection } from '../../src/components/CollapsibleSection';
 import { HabitCard } from '../../src/components/HabitCard';
 import { Screen } from '../../src/components/Screen';
 import { SparkBurst } from '../../src/components/SparkBurst';
-import { TutorialPrompt } from '../../src/components/TutorialPrompt';
 import { Body, Eyebrow, H1, Muted, SectionHeading } from '../../src/components/Typography';
 import { friendlyDate } from '../../src/lib/date';
-import { useSpark } from '../../src/state/SparkProvider';
 import { isQuietNow } from '../../src/lib/sensory';
-import { useI18n } from '../../src/i18n';
-import { activeExperimentForHabit } from '../../src/lib/experiments';
-import {
-  currentWeeklyPlan,
-  weeklyPlanAppliesTomorrow
-} from '../../src/lib/weeklyPlanning';
+import { useSpark } from '../../src/state/SparkProvider';
 import { useTheme } from '../../src/theme';
+import { useI18n } from '../../src/i18n';
 
 const timeOptions = [2, 5, 10, 20];
 const contextOptions = [
@@ -41,246 +32,78 @@ const contextOptions = [
   ['outside', 'Outside'],
   ['phone', 'Phone']
 ] as const;
-const capacityFeedback: Record<Capacity, string> = {
-  empty: 'Low energy selected. Tiny actions are prioritized.',
-  steady: 'Steady energy selected. Standard actions are prioritized.',
-  ready: 'Ready energy selected. Stretch actions can be included.'
-};
-
-function currentPeriod(): 'morning' | 'afternoon' | 'evening' {
-  const hour = new Date().getHours();
-  return hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-}
 
 export default function TodayScreen() {
   const spark = useSpark();
   const theme = useTheme();
   const { locale, t } = useI18n();
   const today = localDateKey(new Date(), spark.timeZone);
-  const yesterday = addCalendarDays(today, -1);
   const checkIn = spark.dailyCheckIns.find((item) => item.localDate === today);
-  const yesterdayCheckIn = spark.dailyCheckIns.find((item) => item.localDate === yesterday);
-  const weeklyPlan = currentWeeklyPlan(spark.weeklyPlans, today);
-  const weeklyPlanIsForToday = weeklyPlanAppliesTomorrow(
-    weeklyPlan,
-    today,
-    spark.timeZone
-  );
-  const rememberedContext = spark.settings.rememberContextByTime
-    ? (weeklyPlanIsForToday ? weeklyPlan?.tomorrowContext : null) ??
-      spark.settings.contextByPeriod[currentPeriod()]
-    : null;
-  const [capacity, setCapacity] = useState<Capacity | null>(checkIn?.capacity ?? null);
-  const [minutes, setMinutes] = useState<number | undefined>(
-    checkIn?.availableMinutes ?? undefined
-  );
-  const [timeChosen, setTimeChosen] = useState(Boolean(checkIn));
-  const [context, setContext] = useState<HabitContext | undefined>(
-    checkIn?.context ?? rememberedContext ?? undefined
-  );
-  const [checkInExpanded, setCheckInExpanded] = useState(false);
-  const [pickedHabitId, setPickedHabitId] = useState<string | null>(null);
+  const [capacity, setCapacity] = useState<Capacity>(checkIn?.capacity ?? 'steady');
+  const [minutes, setMinutes] = useState<number | undefined>(checkIn?.availableMinutes ?? undefined);
+  const [context, setContext] = useState<HabitContext | undefined>(checkIn?.context ?? undefined);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [savingHabitId, setSavingHabitId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{
-    title: string;
-    reward: number;
-    completion: Completion;
-  } | null>(null);
-  const [undoEntry, setUndoEntry] = useState<{
-    title: string;
-    reward: number;
-    completion: Completion;
-  } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const rewards = rewardSummaryFromTotal(spark.completionTotals.totalSparks);
+  const [lastCompletion, setLastCompletion] = useState<{ completion: Completion; title: string } | null>(null);
+  const [celebration, setCelebration] = useState<{ title: string; reward: number } | null>(null);
 
-  const eligiblePlan = useMemo(() => {
-    const deferred = new Set(
-      spark.habitDeferrals
-        .filter((item) => Date.parse(item.until) > Date.now())
-        .map((item) => item.habitId)
-    );
-    const weeklyHabitIds = new Set(weeklyPlan?.selectedHabitIds ?? []);
-    const tomorrowTinyHabitId = weeklyPlanIsForToday
-      ? weeklyPlan?.tomorrowTinyHabitId
-      : null;
-    return buildTodayPlan({
-      habits: spark.habits,
+  const activeHabits = useMemo(
+    () => spark.habits.filter((habit) => !habit.archivedAt),
+    [spark.habits]
+  );
+  const completedToday = useMemo(
+    () => spark.completions.filter((completion) => completion.localDate === today),
+    [spark.completions, today]
+  );
+  const completedHabitIds = useMemo(
+    () => new Set(completedToday.map((completion) => completion.habitId)),
+    [completedToday]
+  );
+  const suggestions = useMemo(() => {
+    const plan = buildTodayPlan({
+      habits: activeHabits,
       completions: spark.completions,
       now: new Date(),
       timeZone: spark.timeZone,
-      capacity:
-        spark.settings.minimumViableDay || spark.settings.simpleMode
-          ? 'empty'
-          : capacity ?? 'steady',
-      availableMinutes: timeChosen ? minutes : undefined,
-      context,
-      limit: spark.settings.minimumViableDay || spark.settings.simpleMode ? 1 : 6
-    })
-      .filter((suggestion) => !deferred.has(suggestion.habit.id))
-      .map((suggestion) => {
-        const experiment = activeExperimentForHabit(
-          spark.personalExperiments,
-          suggestion.habit.id,
-          'tiny_week'
-        );
-        const tiny = suggestion.habit.variants.find((variant) => variant.kind === 'tiny');
-        return (experiment || suggestion.habit.id === tomorrowTinyHabitId) && tiny
-          ? { ...suggestion, variant: tiny }
-          : suggestion;
-      })
-      .sort((a, b) => {
-        if (a.habit.id === tomorrowTinyHabitId) return -1;
-        if (b.habit.id === tomorrowTinyHabitId) return 1;
-        return Number(weeklyHabitIds.has(b.habit.id)) - Number(weeklyHabitIds.has(a.habit.id));
-      });
-  }, [
-    capacity,
-    context,
-    minutes,
-    spark.completions,
-    spark.habitDeferrals,
-    spark.habits,
-    spark.settings.minimumViableDay,
-    spark.settings.simpleMode,
-    spark.personalExperiments,
-    weeklyPlan,
-    weeklyPlanIsForToday,
-    spark.timeZone,
-    timeChosen
-  ]);
+      capacity: spark.settings.adaptiveSuggestionsEnabled ? capacity : 'steady',
+      availableMinutes: spark.settings.adaptiveSuggestionsEnabled ? minutes : undefined,
+      context: spark.settings.adaptiveSuggestionsEnabled ? context : undefined,
+      limit: Math.max(1, activeHabits.length)
+    });
+    return spark.settings.adaptiveSuggestionsEnabled
+      ? plan
+      : [...plan].sort((a, b) => a.habit.sortOrder - b.habit.sortOrder);
+  }, [activeHabits, capacity, context, minutes, spark.completions, spark.settings.adaptiveSuggestionsEnabled, spark.timeZone]);
 
-  const plan = pickedHabitId
-    ? eligiblePlan.filter((suggestion) => suggestion.habit.id === pickedHabitId)
-    : eligiblePlan.slice(
-        0,
-        spark.settings.minimumViableDay || spark.settings.simpleMode ? 1 : 3
-      );
-  const winsToday = spark.completions.filter((item) => item.localDate === today);
-  const blankReturnWindow = [1, 2, 3].every((daysAgo) => {
-    const date = addCalendarDays(today, -daysAgo);
-    return !spark.completions.some((completion) => completion.localDate === date);
-  });
-  const returnSuggestion = blankReturnWindow
-    ? eligiblePlan.find((suggestion) =>
-        spark.completions.some(
-          (completion) =>
-            completion.habitId === suggestion.habit.id &&
-            completion.variantKind === 'tiny'
-        )
-      )
-    : undefined;
-  const visiblePlan =
-    returnSuggestion && !pickedHabitId
-      ? plan.filter((suggestion) => suggestion.habit.id !== returnSuggestion.habit.id)
-      : plan;
-
-  async function chooseCapacity(value: Capacity) {
-    setCapacity(value);
-    setNotice(capacityFeedback[value]);
-    await spark.setCheckIn(value, timeChosen ? minutes ?? null : null, context ?? null);
+  async function saveCheckIn(nextCapacity = capacity, nextMinutes = minutes, nextContext = context) {
+    setCapacity(nextCapacity);
+    setMinutes(nextMinutes);
+    setContext(nextContext);
+    await spark.setCheckIn(nextCapacity, nextMinutes ?? null, nextContext ?? null);
   }
 
-  async function chooseMinutes(value: number | undefined) {
-    setMinutes(value);
-    setTimeChosen(true);
-    setNotice(
-      value == null
-        ? 'Any amount of time selected. Suggestions will not be filtered by time.'
-        : `${value} minutes selected. Today’s suggestions were updated.`
-    );
-    await spark.setCheckIn(capacity ?? 'steady', value ?? null, context ?? null);
-  }
-
-  async function chooseContext(value: HabitContext | undefined) {
-    setContext(value);
-    setNotice(
-      value ? `${value[0]!.toUpperCase()}${value.slice(1)} context selected.` : 'Context filter cleared.'
-    );
-    await spark.setCheckIn(capacity ?? 'steady', timeChosen ? minutes ?? null : null, value ?? null);
-  }
-
-  async function useYesterday() {
-    if (!yesterdayCheckIn) return;
-    setCapacity(yesterdayCheckIn.capacity);
-    setMinutes(yesterdayCheckIn.availableMinutes ?? undefined);
-    setTimeChosen(true);
-    setContext(yesterdayCheckIn.context ?? undefined);
-    await spark.setCheckIn(
-      yesterdayCheckIn.capacity,
-      yesterdayCheckIn.availableMinutes,
-      yesterdayCheckIn.context ?? null
-    );
-    setCheckInExpanded(false);
-    setNotice('Yesterday’s energy, time, and context were copied. Today’s suggestions changed.');
-  }
-
-  async function toggleOneThingDay() {
-    const enabled = !spark.settings.minimumViableDay;
-    setNotice(
-      enabled
-        ? 'One-action view is on. Today now shows only one tiny action.'
-        : 'One-action view is off. All suggestions are visible again.'
-    );
-    await spark.updateSetting('minimumViableDay', enabled);
-  }
-
-  async function complete(
-    title: string,
-    variant: HabitVariant,
-    habitId: string
-  ): Promise<void> {
+  async function complete(habitId: string, variant: HabitVariant) {
     if (savingHabitId) return;
     const habit = spark.habits.find((candidate) => candidate.id === habitId);
     if (!habit) return;
     setSavingHabitId(habitId);
-    setNotice(null);
     try {
       const completion = await spark.completeHabit(habit, variant, 'today', { context });
-      const entry = { title, reward: completion.reward, completion };
-      if (!isQuietNow(spark.settings)) setCelebration(entry);
-      setUndoEntry(entry);
-    } catch (reason) {
-      if (!(reason instanceof Error) || !reason.message.includes('already being saved')) {
-        setNotice('Spark could not save that win yet. Your button is ready to try again.');
+      setLastCompletion({ completion, title: habit.title });
+      if (!isQuietNow(spark.settings) && spark.settings.sensoryProfile === 'celebratory') {
+        setCelebration({ title: habit.title, reward: completion.reward });
       }
     } finally {
       setSavingHabitId(null);
     }
   }
 
-  function startFocus(title: string, minutes: number, habitId: string) {
-    router.push({
-      pathname: '/(tabs)/focus',
-      params: { title, minutes: String(minutes), habitId }
-    });
+  async function undoLast() {
+    if (!lastCompletion) return;
+    await spark.undoCompletion(lastCompletion.completion.id);
+    setLastCompletion(null);
   }
-
-  async function toggleTag(tag: CompletionTag) {
-    if (!celebration) return;
-    const tags = celebration.completion.tags ?? [];
-    const next = tags.includes(tag) ? tags.filter((item) => item !== tag) : [...tags, tag];
-    await spark.setCompletionTags(celebration.completion.id, next);
-    setCelebration((current) =>
-      current ? { ...current, completion: { ...current.completion, tags: next } } : null
-    );
-    setUndoEntry((current) =>
-      current?.completion.id === celebration.completion.id
-        ? { ...current, completion: { ...current.completion, tags: next } }
-        : current
-    );
-  }
-
-  const announcement = spark.remoteConfig.defaults.announcementsEnabled
-    ? spark.remoteConfig.announcements.find((item) => item.enabled)
-    : undefined;
-  const capacityLabel =
-    capacity === 'empty' ? 'Low' : capacity === 'ready' ? 'Ready' : 'Okay';
-  const timeLabel = timeChosen ? (minutes ? `${minutes} min` : 'Any amount') : 'Any amount';
-  const contextLabel = context
-    ? contextOptions.find(([value]) => value === context)?.[1] ?? context
-    : 'Anywhere';
 
   return (
     <>
@@ -300,17 +123,7 @@ export default function TodayScreen() {
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Eyebrow>{friendlyDate(new Date(), locale)}</Eyebrow>
-            <H1>
-              {spark.entitlement.premium
-                ? `${spark.settings.appIconStyle === 'calm' ? '◌' : spark.settings.appIconStyle === 'midnight' ? '✧' : '✦'} `
-                : ''}
-              {spark.settings.displayName
-                ? `Hi ${spark.settings.displayName}`
-                : t('chooseNextWin')}
-            </H1>
-            {spark.entitlement.premium && spark.settings.supporterBadgeVisible ? (
-              <Eyebrow>✦ Spark supporter</Eyebrow>
-            ) : null}
+            <H1>{t('today')}</H1>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -322,405 +135,150 @@ export default function TodayScreen() {
           </Pressable>
         </View>
 
-        {spark.settings.simpleMode ? (
-          <Card style={{ borderColor: theme.purple }}>
-            <Eyebrow>Simple mode</Eyebrow>
-            <SectionHeading>A shorter Today screen</SectionHeading>
-            <Muted>Only one suggested action and a few quick tools are shown.</Muted>
-            <View style={styles.quickActions}>
-              <Button
-                label={t('quickCapture')}
-                variant="secondary"
-                onPress={() => router.push('/quick-capture')}
-              />
-              <Button
-                label={`${t('startFocus')} · 2 min`}
-                variant="secondary"
-                onPress={() =>
-                  router.push({ pathname: '/(tabs)/focus', params: { minutes: '2' } })
-                }
-              />
+        {activeHabits.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}18` }]}>
+              <Ionicons name="checkmark-circle-outline" size={38} color={theme.primary} />
             </View>
-            {spark.routineRuns[0] ? (
-              <Button
-                label={t('runningRoutine')}
-                variant="secondary"
-                onPress={() => router.push(`/routine/${spark.routineRuns[0]!.routineId}`)}
-              />
+            <SectionHeading>Start with one habit</SectionHeading>
+            <Body>Name it, choose how often it should happen, and you’re ready.</Body>
+            <Button label="Create my first habit" onPress={() => router.push('/habit/new')} />
+            <Button label="How habit tracking works" variant="ghost" onPress={() => router.push('/tutorials?topic=schedules')} />
+          </Card>
+        ) : (
+          <>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitle}>
+                <SectionHeading>Up next</SectionHeading>
+                <Muted>
+                  {suggestions.length
+                    ? `${suggestions.length} ${suggestions.length === 1 ? 'habit' : 'habits'} ready today`
+                    : completedToday.length
+                      ? 'Everything scheduled for today is complete.'
+                      : 'Nothing is scheduled for today.'}
+                </Muted>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add a habit"
+                onPress={() => router.push('/habit/new')}
+                style={[styles.addButton, { backgroundColor: theme.surfaceAlt }]}
+              >
+                <Ionicons name="add" size={20} color={theme.primary} />
+                <Text style={[styles.addText, { color: theme.primary }]}>Add habit</Text>
+              </Pressable>
+            </View>
+
+            {spark.settings.adaptiveSuggestionsEnabled ? (
+              <CollapsibleSection
+                title="Adjust suggestions"
+                summary={`Energy, time, and place${filtersOpen ? '' : ' · optional'}`}
+                expanded={filtersOpen}
+                onExpandedChange={setFiltersOpen}
+              >
+                <CapacityPicker value={capacity} onChange={(value) => void saveCheckIn(value, minutes, context)} />
+                <Muted>Available time</Muted>
+                <View style={styles.chips}>
+                  {timeOptions.map((value) => <Chip key={value} label={`${value} min`} selected={minutes === value} onPress={() => void saveCheckIn(capacity, value, context)} />)}
+                  <Chip label="Any" selected={minutes == null} onPress={() => void saveCheckIn(capacity, undefined, context)} />
+                </View>
+                <Muted>Place</Muted>
+                <View style={styles.chips}>
+                  {contextOptions.map(([value, label]) => <Chip key={value} label={label} selected={context === value} onPress={() => void saveCheckIn(capacity, minutes, context === value ? undefined : value)} />)}
+                  <Chip label="Anywhere" selected={!context} onPress={() => void saveCheckIn(capacity, minutes, undefined)} />
+                </View>
+              </CollapsibleSection>
             ) : null}
-            <Button label={t('helpNow')} variant="ghost" onPress={() => router.push('/help')} />
-          </Card>
-        ) : null}
 
-        {spark.settings.progressiveHelpEnabled &&
-        !spark.settings.simpleMode &&
-        spark.completionTotals.totalWins < 3 ? (
-          <TutorialPrompt
-            id="getting-started"
-            eyebrow="New here? Start with this"
-            title="Choose one action you already did—or want to do now."
-            body="See how Today, action sizes, wins, and points work in a three-step tour. You can dismiss it now and replay it later from Settings."
-          />
-        ) : null}
-
-        {spark.settings.showRewards && !spark.settings.simpleMode ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Open Progress. ${rewards.totalSparks} Spark points and ${winsToday.length} wins today.`}
-            onPress={() => router.push('/(tabs)/journey')}
-          >
-            <Card style={[styles.scoreCard, { backgroundColor: theme.surfaceAlt }]}>
-              <View style={styles.scoreDetails}>
-                <Eyebrow>{t('todaySoFar')}</Eyebrow>
-                <Text style={[styles.score, { color: theme.text }]}>
-                  {winsToday.length}{' '}
-                  {winsToday.length === 1 ? t('completedAction') : t('completedActions')}
-                </Text>
-                <Muted>{rewards.totalSparks} {t('totalSparkPoints')}</Muted>
-              </View>
-              <View style={styles.todayScore}>
-                <Text style={[styles.textAction, { color: theme.primary }]}>{t('viewProgress')} →</Text>
-              </View>
-            </Card>
-          </Pressable>
-        ) : winsToday.length ? (
-          <Muted>{winsToday.length} {winsToday.length === 1 ? 'win' : 'wins'} today</Muted>
-        ) : null}
-
-        {announcement ? (
-          <Card style={{ borderColor: theme.purple }}>
-            <Eyebrow>From Spark</Eyebrow>
-            <SectionHeading>{announcement.title}</SectionHeading>
-            <Body>{announcement.body}</Body>
-          </Card>
-        ) : null}
-
-        <CollapsibleSection
-          title={t('adjustSuggestions')}
-          summary={`Energy: ${capacityLabel} · Time: ${timeLabel} · Place: ${contextLabel}`}
-          expanded={checkInExpanded}
-          onExpandedChange={setCheckInExpanded}
-        >
-            <View style={styles.summaryHeading}>
-              <Muted>Use energy, time, and place to tune the suggestions below.</Muted>
-              {yesterdayCheckIn ? (
-                <Pressable accessibilityRole="button" onPress={() => void useYesterday()}>
-                  <Text style={[styles.textAction, { color: theme.primary }]}>Same as yesterday</Text>
-                </Pressable>
-              ) : null}
-            </View>
-            <CapacityPicker value={capacity} onChange={(value) => void chooseCapacity(value)} />
-            <View style={styles.timeArea}>
-              <SectionHeading>How much time do you have?</SectionHeading>
-              <View style={styles.chips}>
-                {timeOptions.map((value) => (
-                  <Chip
-                    key={value}
-                    label={`${value} min`}
-                    selected={timeChosen && minutes === value}
-                    onPress={() => void chooseMinutes(value)}
-                  />
-                ))}
-                <Chip
-                  label="Any amount"
-                  selected={timeChosen && minutes == null}
-                  onPress={() => void chooseMinutes(undefined)}
-                />
-              </View>
-            </View>
-            <View style={styles.timeArea}>
-              <SectionHeading>Where are you?</SectionHeading>
-              <View style={styles.chips}>
-                {contextOptions.map(([value, label]) => (
-                  <Chip
-                    key={value}
-                    label={label}
-                    selected={context === value}
-                    onPress={() =>
-                      void chooseContext(context === value ? undefined : value)
-                    }
-                  />
-                ))}
-                <Chip
-                  label="Anywhere"
-                  selected={!context}
-                  onPress={() => void chooseContext(undefined)}
-                />
-              </View>
-            </View>
-          <Button
-            label="Done adjusting"
-            variant="secondary"
-            onPress={() => setCheckInExpanded(false)}
-          />
-        </CollapsibleSection>
-
-        {!spark.settings.simpleMode ? (
-          <CollapsibleSection
-            title={spark.settings.minimumViableDay ? 'One-action view is on' : 'Need fewer choices?'}
-            summary={
-              spark.settings.minimumViableDay
-                ? 'Only one tiny action is shown. Tap Show to change this.'
-                : 'Show one tiny action or get help choosing.'
-            }
-          >
-            <Muted>
-              One-action view highlights one tiny suggestion until you turn it off.
-            </Muted>
-            <Button
-              label={
-                spark.settings.minimumViableDay
-                  ? 'Show all suggestions'
-                  : 'Show only one tiny action'
-              }
-              variant="secondary"
-              onPress={() => void toggleOneThingDay()}
-            />
-            {spark.settings.progressiveHelpEnabled ? (
-              <Button
-                label="Help me choose what to do"
-                variant="ghost"
-                onPress={() => router.push('/help')}
-              />
-            ) : null}
-          </CollapsibleSection>
-        ) : null}
-
-        <View style={styles.sectionTitle}>
-          <View style={styles.sectionTitleText}>
-            <SectionHeading>{t('suggestedNextActions')}</SectionHeading>
-            <Muted>Choose one that fits. Tap Done only after you do it.</Muted>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add a habit"
-            hitSlop={10}
-            onPress={() => router.push('/habit/new')}
-            style={[styles.addHabit, { backgroundColor: theme.surfaceAlt }]}
-          >
-            <Ionicons name="add" size={20} color={theme.primary} />
-            <Text style={[styles.addHabitText, { color: theme.primary }]}>{t('add')}</Text>
-          </Pressable>
-        </View>
-
-        {eligiblePlan.length > 1 ? (
-          <Button
-            label={pickedHabitId ? 'Show my menu' : 'Pick one for me'}
-            variant="secondary"
-            onPress={() => {
-              if (pickedHabitId) {
-                setPickedHabitId(null);
-                return;
-              }
-              const index = Math.abs([...today].reduce((sum, char) => sum + char.charCodeAt(0), 0)) %
-                eligiblePlan.length;
-              const picked = eligiblePlan[index]!;
-              setPickedHabitId(picked.habit.id);
-              setNotice(`Picked because it fits today: ${picked.explanation}`);
-            }}
-          />
-        ) : null}
-
-        {notice ? (
-          <Text accessibilityLiveRegion="polite" style={[styles.notice, { color: theme.textMuted }]}>
-            {notice}
-          </Text>
-        ) : null}
-
-        {returnSuggestion ? (
-          <Card style={{ borderColor: theme.success }}>
-            <Eyebrow>A win worth repeating</Eyebrow>
-            <SectionHeading>Start {returnSuggestion.habit.title} with a proven tiny action.</SectionHeading>
-            <Muted>
-              You completed this tiny version before. The same starting point is ready now.
-            </Muted>
-            <Button
-              label={`Mark tiny step done: ${
-                returnSuggestion.habit.variants.find((variant) => variant.kind === 'tiny')
-                  ?.label ?? returnSuggestion.variant.label
-              }`}
-              variant="secondary"
-              onPress={() => {
-                const tiny =
-                  returnSuggestion.habit.variants.find((variant) => variant.kind === 'tiny') ??
-                  returnSuggestion.variant;
-                void complete(returnSuggestion.habit.title, tiny, returnSuggestion.habit.id);
-              }}
-            />
-          </Card>
-        ) : null}
-
-        {visiblePlan.length ? (
-          visiblePlan.map((suggestion) => {
-            const tiny =
-              suggestion.habit.variants.find((variant) => variant.kind === 'tiny') ??
-              suggestion.variant;
-            return (
+            {suggestions.map((suggestion) => (
               <HabitCard
                 key={suggestion.habit.id}
                 suggestion={suggestion}
                 saving={savingHabitId === suggestion.habit.id}
+                showSizes={spark.settings.actionSizesEnabled}
                 showRewards={spark.settings.showRewards}
+                doneLabel={t('done')}
+                showExplanation={spark.settings.adaptiveSuggestionsEnabled}
+                showExtraActions={spark.settings.adaptiveSuggestionsEnabled}
+                onComplete={(variant) => void complete(suggestion.habit.id, variant)}
+                onTiny={spark.settings.actionSizesEnabled
+                  ? () => {
+                      const tiny = suggestion.habit.variants.find((variant) => variant.kind === 'tiny');
+                      if (tiny) void complete(suggestion.habit.id, tiny);
+                    }
+                  : undefined}
+                onFocus={spark.settings.focusToolEnabled
+                  ? (focusMinutes) => router.push({ pathname: '/(tabs)/focus', params: { title: suggestion.habit.title, minutes: String(focusMinutes), habitId: suggestion.habit.id } })
+                  : undefined}
                 onEdit={() => router.push(`/habit/${suggestion.habit.id}`)}
-                onComplete={(variant) =>
-                  void complete(suggestion.habit.title, variant, suggestion.habit.id)
-                }
-                onTiny={() =>
-                  void complete(suggestion.habit.title, tiny, suggestion.habit.id)
-                }
-                onFocus={(focusMinutes) =>
-                  startFocus(
-                    suggestion.variant.label,
-                    focusMinutes || suggestion.variant.targetMinutes,
-                    suggestion.habit.id
-                  )
-                }
-                onDefer={(kind) => {
-                  void spark.deferHabit(suggestion.habit.id, kind);
-                  setNotice(
-                    kind === 'tomorrow'
-                      ? 'Scheduled for tomorrow.'
-                      : kind === 'quiet_today'
-                        ? 'Hidden for today.'
-                        : kind === 'later_today'
-                          ? 'Scheduled for later today.'
-                          : 'Moved out of today’s suggestions.'
-                  );
-                }}
               />
-            );
-          })
-        ) : returnSuggestion ? null : (
-          <Card style={styles.enough}>
-            <Text style={styles.enoughEmoji}>✓</Text>
-            <SectionHeading>Your action list is clear.</SectionHeading>
-            <Muted>
-              Review today’s wins, repeat an action that worked, or add another habit.
-            </Muted>
-          </Card>
+            ))}
+
+            {lastCompletion ? (
+              <View style={[styles.undoBar, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
+                <Text style={[styles.undoText, { color: theme.text }]}>✓ {lastCompletion.title} completed</Text>
+                <Pressable accessibilityRole="button" onPress={() => void undoLast()}>
+                  <Text style={[styles.undoAction, { color: theme.primary }]}>Undo</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {completedToday.length ? (
+              <CollapsibleSection
+                title="Completed today"
+                summary={`${new Set(completedToday.map((completion) => completion.habitId)).size} ${completedHabitIds.size === 1 ? 'habit' : 'habits'}`}
+              >
+                {activeHabits
+                  .filter((habit) => completedHabitIds.has(habit.id))
+                  .map((habit) => (
+                    <Pressable key={habit.id} accessibilityRole="button" accessibilityLabel={`Open history for ${habit.title}`} onPress={() => router.push(`/habit/${habit.id}/history`)} style={styles.completedRow}>
+                      <Text style={styles.completedIcon}>✓</Text>
+                      <Text style={[styles.completedTitle, { color: theme.text }]}>{habit.icon} {habit.title}</Text>
+                      <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+                    </Pressable>
+                  ))}
+              </CollapsibleSection>
+            ) : null}
+
+            <View style={styles.footerActions}>
+              <Button label="Open habit calendar" variant="secondary" onPress={() => router.push('/(tabs)/journey')} />
+              {spark.settings.captureToolEnabled ? <Button label="Quick capture" variant="ghost" onPress={() => router.push('/quick-capture')} /> : null}
+              {spark.settings.routinesEnabled && spark.routineRuns[0] ? <Button label="Resume routine" variant="ghost" onPress={() => router.push(`/routine/${spark.routineRuns[0]!.routineId}`)} /> : null}
+            </View>
+          </>
         )}
-
-        {capacity === 'empty' && (visiblePlan[0] ?? returnSuggestion) ? (
-          <Card>
-            <Eyebrow>Build momentum</Eyebrow>
-            <SectionHeading>Create a five-second first win.</SectionHeading>
-            <Muted>
-              Open the file, touch the shoes, or put the cup by the sink. Complete that first
-              contact, then mark the tiny action Done.
-            </Muted>
-            {(() => {
-              const suggestion = visiblePlan[0] ?? returnSuggestion!;
-              const tiny =
-                suggestion.habit.variants.find((variant) => variant.kind === 'tiny') ??
-                suggestion.variant;
-              return (
-                <Button
-                  label={`Mark tiny step done: ${tiny.label}`}
-                  variant="secondary"
-                  onPress={() =>
-                    void complete(suggestion.habit.title, tiny, suggestion.habit.id)
-                  }
-                />
-              );
-            })()}
-          </Card>
-        ) : null}
-
-        <Button
-          label={spark.routines.length ? 'View my routines' : 'Create a routine'}
-          variant="ghost"
-          onPress={() =>
-            spark.routines.length ? router.push('/(tabs)/journey') : router.push('/routine/new')
-          }
-          icon={<Ionicons name="list-outline" size={20} color={theme.text} />}
-        />
       </Screen>
+
       <SparkBurst
-        visible={Boolean(celebration) && !isQuietNow(spark.settings)}
+        visible={Boolean(celebration)}
         title={celebration?.title ?? ''}
-        reward={celebration?.reward ?? 0}
-        reducedMotion={spark.settings.reducedMotion || isQuietNow(spark.settings)}
-        sensoryProfile={isQuietNow(spark.settings) ? 'calm' : spark.settings.sensoryProfile}
-        celebrationStyle={spark.entitlement.premium ? spark.settings.celebrationStyle : 'burst'}
-        showReward={spark.settings.showRewards && !isQuietNow(spark.settings)}
-        tags={celebration?.completion.tags ?? []}
-        onToggleTag={(tag) => void toggleTag(tag)}
+        reward={celebration?.reward ?? 1}
+        reducedMotion={spark.settings.reducedMotion}
+        sensoryProfile={spark.settings.sensoryProfile}
+        celebrationStyle={spark.settings.celebrationStyle}
+        showReward={spark.settings.showRewards}
         onDismiss={() => setCelebration(null)}
       />
-      {undoEntry ? (
-        <View
-          accessibilityLiveRegion="polite"
-          accessibilityLabel="Win logged. Undo is available."
-          style={[styles.undo, { backgroundColor: '#0B1020' }]}
-        >
-          <Text style={styles.undoText}>Win logged.</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Undo the most recent completion"
-            hitSlop={12}
-            onPress={() => {
-              void spark.undoCompletion(undoEntry.completion.id);
-              if (celebration?.completion.id === undoEntry.completion.id) {
-                setCelebration(null);
-              }
-              setUndoEntry(null);
-            }}
-          >
-            <Text style={styles.undoAction}>Undo</Text>
-          </Pressable>
-        </View>
-      ) : null}
     </>
   );
 }
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerText: { flex: 1, gap: 3 },
-  settings: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  scoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  scoreDetails: { flex: 1, gap: 1 },
-  score: { fontSize: 20, lineHeight: 26, fontWeight: '800' },
-  todayScore: { alignItems: 'flex-end' },
-  todayWins: { fontSize: 24, fontWeight: '800' },
-  timeArea: { gap: 9 },
+  headerText: { flex: 1 },
+  settings: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  emptyCard: { alignItems: 'stretch', padding: 20, gap: 12 },
+  emptyIcon: { width: 62, height: 62, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sectionTitle: { flex: 1, minWidth: 0 },
+  addButton: { minHeight: 44, borderRadius: 14, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0 },
+  addText: { fontSize: 13, fontWeight: '800' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  summaryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  textAction: { fontSize: 13, fontWeight: '800' },
-  sectionTitle: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  sectionTitleText: { flex: 1, minWidth: 0, gap: 2 },
-  addHabit: {
-    minWidth: 68,
-    height: 48,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    flexDirection: 'row',
-    gap: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0
-  },
-  addHabitText: { fontSize: 13, fontWeight: '800' },
-  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  notice: { fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
-  enough: { alignItems: 'center', paddingVertical: 26 },
-  enoughEmoji: { fontSize: 40 },
-  undo: {
-    position: 'absolute',
-    bottom: 84,
-    left: 18,
-    right: 18,
-    borderRadius: 15,
-    padding: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  undoText: { color: '#FFFFFF', fontSize: 14 },
-  undoAction: { color: '#FFC857', fontSize: 14, fontWeight: '800' }
+  undoBar: { borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  undoText: { flex: 1, fontSize: 14, fontWeight: '700' },
+  undoAction: { fontSize: 14, fontWeight: '800' },
+  completedRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  completedIcon: { color: '#20B8B2', fontSize: 18, fontWeight: '900' },
+  completedTitle: { flex: 1, fontSize: 15, fontWeight: '700' },
+  footerActions: { gap: 8, paddingTop: 4 }
 });

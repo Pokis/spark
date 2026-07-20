@@ -121,6 +121,18 @@ The normal first-release sequence is:
 
 # 6. Build and verify the signed production AAB on this PC.
 .\spark.cmd release -Action LocalBuild
+
+# 7. One time after Play has accepted the first bundle: prepare the publisher identity/key.
+.\spark.cmd release -Action PlaySetup -ProjectId djpokis-spark-habits
+
+# 8. After granting the printed email Play Console testing-release permission, verify access.
+.\spark.cmd release -Action PlayStatus
+
+# 9. Build and publish a new Internal-testing version with one command.
+.\spark.cmd release -Action LocalPublish -Track internal
+
+# 10. Review timestamped build, setup, status, success, and failure records.
+.\spark.cmd release -Action History
 ```
 
 `LocalSetup` calls Android Studio's `keytool` locally. It creates
@@ -130,8 +142,11 @@ file to the LastPass item containing that password, and record alias `spark-uplo
 printed SHA-256 file hash. If the file already exists, setup refuses to replace it.
 
 `LocalBuild` regenerates the ignored native Android project from `app.config.ts`, runs the release
-gate, asks for the upload-key password through a hidden PowerShell prompt, unlocks the key in
-memory, and starts one non-daemon Gradle build. It then verifies:
+gate, gets the upload-key password from either a hidden prompt or an explicitly selected ignored
+secrets file, unlocks the key in memory, and starts one non-daemon Gradle build. The Play bundle
+targets `armeabi-v7a` and `arm64-v8a`, covering 32-bit and 64-bit ARM phones/tablets, and limits
+Gradle/CMake concurrency to two workers so Windows does not terminate memory-heavy native C++
+compilation. Normal debug builds still include x86 targets for Android emulators. It then verifies:
 
 - that the App Bundle has a valid non-debug signature;
 - package ID `com.djpokis.sparkhabits.app`;
@@ -139,8 +154,103 @@ memory, and starts one non-daemon Gradle build. It then verifies:
 - a SHA-256 artifact hash.
 
 The output is `artifacts/release/spark-application-android-VERSION-CODE.aab` plus a matching
-`.sha256` file. The password is removed from the process environment when Gradle finishes. No EAS
-request is made and no EAS hosted-build allowance is used.
+`.sha256` file. A timestamped, secret-free JSON record is added to `artifacts/release/history`, and
+`latest-build.json` is refreshed. The password is removed from the process environment when Gradle
+finishes. No EAS request is made and no EAS hosted-build allowance is used.
+
+### One-command local Google Play publishing
+
+`PlaySetup` is a guarded one-time action. It enables `androidpublisher.googleapis.com` in the
+existing `djpokis-spark-habits` Google Cloud project, creates the `spark-play-publisher` service
+account if absent, creates one ignored JSON key if absent, and writes an ignored secrets-file shell.
+It does **not** grant itself Play Console access and cannot accept legal agreements. Immediately:
+
+1. attach `apps/mobile/credentials/google-play-publisher.json` to a LastPass secure note;
+2. open Play Console → **Users and permissions → Invite new users**;
+3. paste the service-account email printed by `PlaySetup`;
+4. grant access only to `com.djpokis.sparkhabits.app`;
+5. grant **View app information (read only)** and **Release apps to testing tracks**;
+6. do not grant Finance, Admin, or Production permissions; and
+7. run `PlayStatus`.
+
+`PlayStatus` authenticates, creates and deletes a disposable Play edit, and records the bundle
+codes and tracks visible to the credential. It does not upload or commit a release. A 403 normally
+means the service-account email has not received the app-level permission above.
+
+After that one-time setup, the routine command is:
+
+```powershell
+.\spark.cmd release -Action LocalPublish -Track internal
+```
+
+It performs, in order:
+
+1. authenticate without printing the private credential or token;
+2. query Google Play's highest reserved bundle version code;
+3. advance `android.versionCode` in `apps/mobile/app.config.ts` only if the local code was already
+   used (use `-NoAutoVersionCode` to refuse instead);
+4. show the exact version, track, and status and request confirmation;
+5. run the complete local signed build and verification;
+6. upload the AAB into a disposable Play edit;
+7. update the selected track, validate the edit, and commit it; and
+8. save timestamped build and publish JSON records, including links and previous track state.
+
+`Auto` release status means `Completed` for Internal/Alpha/Beta and `Draft` for Production. Examples:
+
+```powershell
+# Normal safe path
+.\spark.cmd release -Action LocalPublish -Track internal
+
+# Save a Production draft for review in Play Console; typed confirmation is mandatory.
+.\spark.cmd release -Action LocalPublish -Track production
+
+# Start a deliberate 10% Production rollout after Play access/policy approval.
+.\spark.cmd release -Action LocalPublish -Track production `
+  -ReleaseStatus InProgress -RolloutPercent 10
+```
+
+Production never honors `-Yes`; it always requests the exact typed confirmation. Google can still
+review or reject a committed edit, and Play's required forms, testing thresholds, agreements, and
+production-access decision remain manual.
+
+### Prompt versus ignored secret file
+
+With no secrets file, `LocalBuild`/`LocalPublish` request the upload password with a hidden prompt,
+and publisher actions ask for the service-account JSON path. To remove those repeated prompts on a
+trusted single-user PC:
+
+```powershell
+Copy-Item apps/mobile/credentials/local-release.secrets.example.json `
+  apps/mobile/credentials/local-release.secrets.json
+```
+
+Fill it from LastPass, or pass a different ignored file with `-SecretsFile`. Secret values are
+never accepted as command-line parameters. The convenience file contains a plaintext password;
+do not use it on a shared PC. Both the file and referenced service-account JSON must be outside the
+repository or covered by `.gitignore`, otherwise the launcher refuses to continue.
+
+Release notes default to `store/android/release-notes/current.json`. The file maps Play language
+codes to 1–500 character notes. Use `-ReleaseNotesFile` to select a different JSON file.
+
+### JSON release history and URL catalog
+
+Every build, Play setup/status, and publish attempt—including canceled and failed attempts—writes a
+record under `artifacts/release/history`. Convenience pointers are refreshed alongside it:
+
+- `latest-build.json`;
+- `latest-play-setup.json`;
+- `latest-play-status.json`; and
+- `latest-publish.json`.
+
+Run `.\spark.cmd release -Action History` to list recent records. Each publish record contains
+package/version/track/status, artifact path/hash/size, service-account email, source commit/branch,
+prior Play state, API result, and known Console/store/test/privacy URLs. It contains no password,
+private key, OAuth assertion, or access token.
+
+Edit the tracked `store/android/publisher-config.json` to preserve URLs that Google does not expose
+through the publishing API. Copy the numeric developer ID and app ID from a Play Console URL and
+the tester opt-in URLs from each track's **Testers** tab. Blank values remain `null` in output JSON
+rather than being guessed.
 
 `Inspect` does not contact Expo or Google. It reports values without printing API URLs, Firebase
 configuration, or other environment values. `Assets` locally regenerates and validates the
@@ -157,8 +267,8 @@ This produces an optimized, debug-signed APK and installs it on the chosen devic
 for behavior QA but must never be uploaded to Google Play.
 
 For the **first** Google Play upload, upload the locally produced `.aab` manually through Play
-Console. The local build does not require an Expo login, Google Cloud, a Play API service account,
-or EAS.
+Console. Once Play has registered the package, later releases can use `LocalPublish`. Neither path
+requires an Expo login or EAS.
 
 ### Optional EAS hosted-build commands
 

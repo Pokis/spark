@@ -24,6 +24,8 @@ count**:
 
 | Local feature | 100 users | 1,000 users | 10,000 users | 50,000 users | User control / cost note |
 | --- | ---: | ---: | ---: | ---: | --- |
+| Minimal Today/Calendar, explicit schedules, and completion-shifted recurrence | $0 | $0 | $0 | $0 | Encrypted local database and device calculations |
+| Optional feature visibility controls | $0 | $0 | $0 | $0 | Local settings; all non-core experience layers start off |
 | Simple mode and contextual Help me now | $0 | $0 | $0 | $0 | Local settings; both can be disabled |
 | Weekly reset and friction toolkit | $0 | $0 | $0 | $0 | Encrypted local records |
 | Leave-on-time planning | $0 | $0 | $0 | $0 | Local plan; no location API |
@@ -34,13 +36,13 @@ count**:
 | Notification lock-screen privacy | $0 | $0 | $0 | $0 | Local notification channels; notifications remain off by default |
 | Password-encrypted manual backups | $0 | $0 | $0 | $0 | Local cryptography and system file/share UI |
 | Automatic encrypted folder backups | $0 | $0 | $0 | $0 | Off by default; user chooses one Android folder; seven-file retention |
-| Six Android widgets and launcher shortcuts | $0 | $0 | $0 | $0 | Today, Capture, Focus, Routine, Progress, and Toolkit use local snapshots/static links; no background server |
+| Seven Android widgets and launcher shortcuts | $0 | $0 | $0 | $0 | Today, Calendar, Capture, Focus, Routine, Progress, and Toolkit use local snapshots/static links; no background server |
 | Optional creator-tip link | $0 | $0 | $0 | $0 | Build flag defaults off; no automated spend and no entitlement. A user may voluntarily pay Buy Me a Coffee; current service/processing fees are deducted from the contribution or passed to the supporter according to creator settings. |
 | Feature tutorials and collapsible navigation | $0 | $0 | $0 | $0 | Bundled copy, local dismissed-tip IDs, and UI state; no CMS, analytics, or experimentation service |
 | Bundled localization | $0 | $0 | $0 | $0 | 19 language catalogs, native locale declarations, and RTL support are bundled in the app; no translation API, server, or network request |
 | Privacy-safe diagnostics | $0 | $0 | $0 | $0 | Local self-check and explicit file share |
 | Startup Baseline Profile | $0 | $0 | $0 | $0 | Packaged build artifact |
-| Optional streaks, streak saves, and planned breaks | $0 | $0 | $0 | $0 | Per-habit opt-in; encrypted local JSON plus on-device calculation; no feature flag is required because it cannot create a third-party charge |
+| Optional streaks, streak saves, and planned breaks | $0 | $0 | $0 | $0 | Global visibility switch starts off, then per-habit opt-in; encrypted local JSON plus on-device calculation |
 
 If a user deliberately selects a Google Drive, OneDrive, Dropbox, or another
 cloud-backed folder for automatic backup, any storage quota, subscription, or
@@ -79,6 +81,7 @@ A Cloud Run URL by itself therefore does not turn features on.
 | Billing alerts | `billing_account_id` | blank | Terraform variables and apply |
 | Manual GitHub cloud deployment | `deploy_api` / `deploy_admin` workflow inputs | both `false` | GitHub Actions manual dispatch |
 | EAS hosted builds/submission | `SPARK_ALLOW_EAS_RELEASES` | unset / blocked | current PowerShell process only; use local Android builds, or deliberately set `true` after reviewing signing migration and current Expo pricing |
+| Local Google Play publishing API | explicit `PlaySetup` plus `LocalPublish`; no mobile runtime flag | not configured until operator setup | Existing `djpokis-spark-habits` project and Play Console app-only service-account permission; expected $0 and no EAS use |
 | Google Play sales fees | controlled by `purchasesEnabled` and whether a product is sold | no sales | Play Console and Admin → App config |
 
 The API enforces support, purchase, user-review, grant, promo, and role switches;
@@ -126,6 +129,7 @@ Firestore, Auth, and their free quotas are shared.
 | Promo-code inventory | $0 | $0 | $0 | $0–$0.25 | Roughly 1 to 500 assignments plus audits |
 | Admin role management | $0 | $0 | $0 | $0–$0.25 | Rare Auth/admin writes plus audits |
 | Static admin/privacy Hosting | $0 | $0 | $0 | $0 expected | Operator traffic should stay far below 10 GB/month |
+| Local Google Play publishing | $0 | $0 | $0 | $0 expected | A handful of operator API requests per release; no server or per-user traffic |
 | Google Play RTDN | $0 | $0 | $0 | $0 expected | Tiny messages; first 10 GiB Pub/Sub throughput is free |
 | One nightly maintenance job | $0 expected | $0 expected | $0 expected | $0 expected | Three Scheduler jobs are free per billing account; otherwise $0.10/job/month |
 | Uptime/5xx monitoring | $0–$1 | $0–$1 | $0–$1 | $0–$1 | Uptime allowance is large; the checks also wake Cloud Run |
@@ -184,6 +188,7 @@ These depend on deployments rather than user count:
 | Cloud Logging | First 50 GiB/project/month currently free; then $0.50/GiB for standard log-bucket ingestion | Shared `enable_cloud_runtime` control; structured logs are small and default retention is used |
 | EAS Build | Current Free plan lists 15 Android and 15 iOS builds | Optional; local Android builds avoid this dependency entirely |
 | Local Android/Gradle build | No hosted provider | $0 per build and no per-user infrastructure cost; uses this PC's electricity, storage, and CPU |
+| Google Play Developer Publishing API | Default publishing/monetization/review quota bucket currently 3,000 requests/minute | A release uses only a handful of operator requests; expected $0, with no running service and no EAS quota |
 
 Official pricing:
 
@@ -198,6 +203,7 @@ Official pricing:
 - [Google Cloud Observability](https://cloud.google.com/products/observability)
 - [Expo plans](https://expo.dev/pricing)
 - [Google Play service fees](https://support.google.com/googleplay/android-developer/answer/112622)
+- [Google Play Developer API quotas](https://developers.google.com/android-publisher/quotas)
 - [Buy Me a Coffee fees](https://help.buymeacoffee.com/en/articles/8105744-how-to-calculate-charges-on-your-payment)
 
 ## Cost controls already enforced

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { widgetTaskHandler } from './widgetTaskHandler';
 import {
+  CALENDAR_WIDGET_SNAPSHOT_KEY,
   FOCUS_WIDGET_SNAPSHOT_KEY,
   ROUTINE_WIDGET_SNAPSHOT_KEY,
   WIDGET_SNAPSHOT_KEY
@@ -11,6 +12,7 @@ import { SparkTodayWidget } from './SparkTodayWidget';
 import { SparkProgressWidget } from './SparkProgressWidget';
 import { SparkToolkitWidget } from './SparkToolkitWidget';
 import { SparkRoutineWidget } from './SparkRoutineWidget';
+import { SparkCalendarWidget } from './SparkCalendarWidget';
 
 jest.mock('react-native-android-widget', () => ({
   FlexWidget: 'FlexWidget',
@@ -108,6 +110,26 @@ describe('native widget task routing', () => {
     const broken = props('SparkRoutine', 'WIDGET_RESIZED');
     await widgetTaskHandler(broken);
     expect(broken.renderWidget.mock.calls[0][0].props.snapshot.routineId).toBeNull();
+  });
+
+  it('loads the monthly habit calendar snapshot and falls back safely', async () => {
+    await AsyncStorage.setItem(
+      CALENDAR_WIDGET_SNAPSHOT_KEY,
+      JSON.stringify({
+        month: '2026-07',
+        title: 'July 2026',
+        habits: [{ id: 'read', title: 'Read', icon: '📚', color: '#20B8B2', days: [] }]
+      })
+    );
+    const valid = props('SparkCalendar', 'WIDGET_ADDED');
+    await widgetTaskHandler(valid);
+    expect(valid.renderWidget.mock.calls[0][0].type).toBe(SparkCalendarWidget);
+    expect(valid.renderWidget.mock.calls[0][0].props.snapshot.title).toBe('July 2026');
+
+    await AsyncStorage.setItem(CALENDAR_WIDGET_SNAPSHOT_KEY, '{broken');
+    const broken = props('SparkCalendar', 'WIDGET_RESIZED');
+    await widgetTaskHandler(broken);
+    expect(broken.renderWidget.mock.calls[0][0].props.snapshot.habits).toEqual([]);
   });
 
   it('loads persisted Today state and ignores unknown widgets/actions', async () => {

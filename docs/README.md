@@ -63,6 +63,9 @@ the Internal-testing steps for the first release.
 The first free release can remain completely offline and have a $0 cloud runtime.
 The signed Android App Bundle is built on your PC with the `spark.cmd` launcher; EAS (Expo
 Application Services) is not required and its hosted-build quota is not consumed.
+After the first manual bundle enrollment, use the Android guide's **one-command local Google Play
+publishing** section for `PlaySetup`, `PlayStatus`, and `LocalPublish`. Release results and links are
+retained under `artifacts/release/history` and can be listed with the `History` action.
 
 ### I want support, grants, purchases, or the admin dashboard
 

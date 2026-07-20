@@ -9,9 +9,11 @@ import {
   isHabitPaused,
   isHabitScheduledOn,
   localWeekday,
+  nextHabitDueDate,
   recentDateKeys,
   rewardForVariant,
   rewardSummaryFromTotal,
+  scheduleLabel,
   supportiveInsights,
   type Completion,
   type FocusSession,
@@ -164,6 +166,94 @@ describe('domain edge cases', () => {
         { now, timeZone: 'UTC', completions: [] }
       )
     ).toBe(true);
+  });
+
+  it('moves an after-completion schedule from the actual completion date', () => {
+    const rollingHabit: Habit = {
+      ...habit,
+      schedule: {
+        type: 'afterCompletion',
+        everyDays: 3,
+        anchorDate: '2026-07-10'
+      }
+    };
+    const first = completion('first', '2026-07-12');
+    expect(nextHabitDueDate(rollingHabit, [first])).toBe('2026-07-15');
+    expect(
+      isHabitDue(rollingHabit, {
+        now: new Date('2026-07-14T12:00:00.000Z'),
+        timeZone: 'UTC',
+        completions: [first]
+      })
+    ).toBe(false);
+    expect(
+      isHabitDue(rollingHabit, {
+        now: new Date('2026-07-16T12:00:00.000Z'),
+        timeZone: 'UTC',
+        completions: [first]
+      })
+    ).toBe(true);
+
+    const completedLate = completion('late', '2026-07-17');
+    expect(nextHabitDueDate(rollingHabit, [first, completedLate])).toBe('2026-07-20');
+    expect(
+      isHabitDue(rollingHabit, {
+        now: new Date('2026-07-19T12:00:00.000Z'),
+        timeZone: 'UTC',
+        completions: [first, completedLate]
+      })
+    ).toBe(false);
+  });
+
+  it('labels every schedule and covers completion-shifted calendar opportunities', () => {
+    expect(nextHabitDueDate(habit, [])).toBeNull();
+    expect(scheduleLabel({ type: 'daily' })).toBe('Every day');
+    expect(scheduleLabel({ type: 'weekdays', days: [0, 1, 2, 3, 4, 5, 6] })).toBe('Every day');
+    expect(scheduleLabel({ type: 'weekdays', days: [1, 3, 9] })).toBe('Mon, Wed');
+    expect(scheduleLabel({ type: 'timesPerWeek', count: 1 })).toBe('1 time each week');
+    expect(scheduleLabel({ type: 'timesPerWeek', count: 3 })).toBe('3 times each week');
+    expect(scheduleLabel({ type: 'interval', everyDays: 1, anchorDate: '2026-07-10' })).toBe(
+      'Every 1 day on the calendar'
+    );
+    expect(scheduleLabel({ type: 'interval', everyDays: 2, anchorDate: '2026-07-10' })).toBe(
+      'Every 2 days on the calendar'
+    );
+    expect(scheduleLabel({ type: 'afterCompletion', everyDays: 1, anchorDate: '2026-07-10' })).toBe(
+      '1 day after completion'
+    );
+    expect(scheduleLabel({ type: 'afterCompletion', everyDays: 2, anchorDate: '2026-07-10' })).toBe(
+      '2 days after completion'
+    );
+    expect(scheduleLabel({ type: 'anytime' })).toBe('Whenever you want');
+
+    const rollingHabit: Habit = {
+      ...habit,
+      schedule: { type: 'afterCompletion', everyDays: 3, anchorDate: '2026-07-10' }
+    };
+    const first = completion('first', '2026-07-12');
+    const future = completion('future', '2026-07-20');
+    expect(nextHabitDueDate(rollingHabit, [])).toBe('2026-07-10');
+    expect(nextHabitDueDate(rollingHabit, [first, future], '2026-07-15')).toBe('2026-07-15');
+    expect(isHabitScheduledOn(rollingHabit, '2026-07-15', 3, [first, future])).toBe(true);
+    expect(isHabitScheduledOn(rollingHabit, '2026-07-16', 4, [first, future])).toBe(false);
+    expect(
+      countOpportunities(
+        rollingHabit,
+        new Date('2026-07-16T12:00:00.000Z'),
+        'UTC',
+        7,
+        [first]
+      )
+    ).toBe(2);
+    expect(
+      countOpportunities(
+        rollingHabit,
+        new Date('2026-07-12T12:00:00.000Z'),
+        'UTC',
+        7,
+        [first]
+      )
+    ).toBe(1);
   });
 
   it('scales opportunity counts across paused weekly and fixed schedules', () => {

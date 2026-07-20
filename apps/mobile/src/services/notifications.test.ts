@@ -98,6 +98,36 @@ describe('notification planning', () => {
     ).toEqual(['2026-07-18', '2026-07-20']);
   });
 
+  it('schedules one reminder relative to the latest completion', () => {
+    const completion: Completion = {
+      id: 'done-late',
+      habitId: habit.id,
+      variantId: 'tiny',
+      variantKind: 'tiny',
+      reward: 1,
+      occurredAt: '2026-07-17T08:00:00.000Z',
+      loggedAt: '2026-07-17T08:00:00.000Z',
+      localDate: '2026-07-17',
+      source: 'today'
+    };
+    expect(
+      nextReminderDates(
+        {
+          ...habit,
+          schedule: {
+            type: 'afterCompletion',
+            everyDays: 3,
+            anchorDate: '2026-07-10'
+          }
+        },
+        [completion],
+        new Date('2026-07-18T07:00:00.000Z'),
+        'UTC',
+        7
+      )
+    ).toEqual(['2026-07-20']);
+  });
+
   it('respects current and historical pause intervals', () => {
     expect(
       nextReminderDates(

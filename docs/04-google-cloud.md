@@ -225,6 +225,18 @@ load.
 
 ## 7. Connect Google Play
 
+There are two deliberately separate Google identities:
+
+- `spark-play-publisher@djpokis-spark-habits.iam.gserviceaccount.com` is an optional local release
+  uploader created by `PlaySetup`. Its ignored JSON key is backed up in LastPass and it receives
+  only app-release permissions in Play Console.
+- the Cloud Run runtime service account below verifies purchases without any downloaded JSON key.
+
+Do not reuse the publisher key in Cloud Run and do not give the local publisher purchase, finance,
+Firestore, Cloud Run, or project-admin roles. Enabling the Android Publisher API and performing a
+few local release calls has no expected charge or running resource; it is independent of the
+default-off cloud runtime.
+
 The Cloud Run service account appears in Terraform output. In Play Console, grant it the smallest
 API permissions that permit purchase lookup and acknowledgement. Do not create or download a JSON
 key. Cloud Run automatically supplies its service-account identity.

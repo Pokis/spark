@@ -42,6 +42,13 @@ export interface AppSettings {
     | 'vi';
   simpleMode: boolean;
   progressiveHelpEnabled: boolean;
+  adaptiveSuggestionsEnabled: boolean;
+  actionSizesEnabled: boolean;
+  focusToolEnabled: boolean;
+  captureToolEnabled: boolean;
+  routinesEnabled: boolean;
+  streaksEnabled: boolean;
+  planningToolsEnabled: boolean;
   reducedMotion: boolean;
   hapticsEnabled: boolean;
   sensoryProfile: 'calm' | 'balanced' | 'celebratory';
@@ -193,24 +200,31 @@ export const defaultSettings: AppSettings = {
   displayName: '',
   language: 'system',
   simpleMode: false,
-  progressiveHelpEnabled: true,
+  progressiveHelpEnabled: false,
+  adaptiveSuggestionsEnabled: false,
+  actionSizesEnabled: false,
+  focusToolEnabled: false,
+  captureToolEnabled: false,
+  routinesEnabled: false,
+  streaksEnabled: false,
+  planningToolsEnabled: false,
   reducedMotion: false,
   hapticsEnabled: true,
   sensoryProfile: 'balanced',
   quietUntil: null,
   highContrast: false,
   minimumViableDay: false,
-  rememberContextByTime: true,
+  rememberContextByTime: false,
   contextByPeriod: {
     morning: null,
     afternoon: null,
     evening: null
   },
   launchCountdownEnabled: false,
-  transitionNudgesEnabled: true,
-  showRewards: true,
-  showRhythmPercentages: true,
-  insightsEnabled: true,
+  transitionNudgesEnabled: false,
+  showRewards: false,
+  showRhythmPercentages: false,
+  insightsEnabled: false,
   hiddenInsightIds: [],
   dismissedTutorialIds: [],
   supporterThemeEnabled: false,

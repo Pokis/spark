@@ -1,27 +1,30 @@
-import type {
-  Habit,
-  HabitContext,
-  MomentumCadence,
-  ReminderWindow,
-  HabitVariantKind,
-  ScheduleRule
+import {
+  addCalendarDays,
+  calendarDayDifference,
+  localDateKey,
+  scheduleLabel,
+  type Habit,
+  type HabitContext,
+  type MomentumCadence,
+  type ReminderWindow,
+  type ScheduleRule
 } from '@spark/domain';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
-import { addCalendarDays, calendarDayDifference, localDateKey } from '@spark/domain';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useLocalDraft } from '../hooks/useLocalDraft';
+import { createId } from '../lib/id';
+import { isValidPreferredTime } from '../services/notifications';
 import { useSpark } from '../state/SparkProvider';
 import { habitColors, useTheme } from '../theme';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Chip } from './Chip';
+import { CollapsibleSection } from './CollapsibleSection';
 import { FormField } from './FormField';
 import { Screen } from './Screen';
 import { SettingRow } from './SettingRow';
 import { Body, Muted, SectionHeading } from './Typography';
-import { createId } from '../lib/id';
-import { isValidPreferredTime } from '../services/notifications';
-import { useLocalDraft } from '../hooks/useLocalDraft';
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const colorNames = ['Coral', 'Teal', 'Purple', 'Blue', 'Gold', 'Green'];
@@ -33,34 +36,27 @@ const contexts: { value: HabitContext; label: string }[] = [
   { value: 'outside', label: 'Outside' },
   { value: 'phone', label: 'Phone' }
 ];
-const starterTemplates = [
+const scheduleChoices: { type: ScheduleRule['type']; title: string; detail: string }[] = [
+  { type: 'daily', title: 'Every day', detail: 'Available once each day.' },
+  { type: 'weekdays', title: 'Certain days', detail: 'Choose exact days of the week.' },
+  { type: 'timesPerWeek', title: 'Times each week', detail: 'Flexible days within a rolling week.' },
+  { type: 'interval', title: 'Every few days', detail: 'Fixed calendar rhythm, even if completed late.' },
   {
-    title: 'Read something',
-    tiny: 'Read one sentence',
-    standard: 'Read for 5 minutes',
-    stretch: 'Read for 15 minutes',
-    icon: '📚'
+    type: 'afterCompletion',
+    title: 'After I complete it',
+    detail: 'The next date shifts from when you actually finish.'
   },
-  {
-    title: 'Move my body',
-    tiny: 'Put on movement shoes',
-    standard: 'Move for 5 minutes',
-    stretch: 'Move for 15 minutes',
-    icon: '🏃'
-  },
-  {
-    title: 'Reset my space',
-    tiny: 'Put away one thing',
-    standard: 'Clear one small surface',
-    stretch: 'Do a 15-minute reset',
-    icon: '✨'
-  }
-] as const;
+  { type: 'anytime', title: 'Whenever I want', detail: 'Always available; no scheduled date.' }
+];
 
 type ScheduleType = ScheduleRule['type'];
 
-function variantByKind(habit: Habit | undefined, kind: HabitVariantKind) {
+function variantFor(habit: Habit | undefined, kind: 'tiny' | 'standard' | 'stretch') {
   return habit?.variants.find((variant) => variant.kind === kind);
+}
+
+function singleVariant(habit: Habit | undefined) {
+  return variantFor(habit, 'standard') ?? habit?.variants[0];
 }
 
 export function HabitEditor({
@@ -78,35 +74,10 @@ export function HabitEditor({
 }) {
   const spark = useSpark();
   const theme = useTheme();
+  const existingUsesSizes = (habit?.variants.length ?? 0) > 1;
   const [title, setTitle] = useState(habit?.title ?? initialTitle ?? '');
-  const [reason, setReason] = useState(habit?.reason ?? '');
-  const [cue, setCue] = useState(habit?.cue ?? '');
-  const [environment, setEnvironment] = useState(habit?.friction?.environment ?? '');
-  const [materials, setMaterials] = useState(habit?.friction?.materials ?? '');
-  const [firstStep, setFirstStep] = useState(habit?.friction?.firstStep ?? '');
-  const [obstacle, setObstacle] = useState(habit?.friction?.obstacle ?? '');
-  const [fallback, setFallback] = useState(habit?.friction?.fallback ?? '');
-  const [futureNote, setFutureNote] = useState(habit?.friction?.futureNote ?? '');
-  const [icon, setIcon] = useState(habit?.icon ?? '✨');
-  const [color, setColor] = useState(habit?.color ?? habitColors[0]);
-  const [tiny, setTiny] = useState(variantByKind(habit, 'tiny')?.label ?? 'Touch the first step');
-  const [standard, setStandard] = useState(
-    variantByKind(habit, 'standard')?.label ?? initialTitle ?? ''
-  );
-  const [stretch, setStretch] = useState(
-    variantByKind(habit, 'stretch')?.label ?? 'Do a little extra'
-  );
-  const [tinyMinutes, setTinyMinutes] = useState(
-    String(variantByKind(habit, 'tiny')?.targetMinutes ?? 1)
-  );
-  const [standardMinutes, setStandardMinutes] = useState(
-    String(variantByKind(habit, 'standard')?.targetMinutes ?? 5)
-  );
-  const [stretchMinutes, setStretchMinutes] = useState(
-    String(variantByKind(habit, 'stretch')?.targetMinutes ?? 15)
-  );
-  const [scheduleType, setScheduleType] = useState<ScheduleType>(
-    habit?.schedule.type ?? 'daily'
+  const [scheduleType, setScheduleType] = useState<ScheduleType | null>(
+    habit?.schedule.type ?? null
   );
   const [days, setDays] = useState<number[]>(
     habit?.schedule.type === 'weekdays' ? habit.schedule.days : [1, 2, 3, 4, 5]
@@ -115,168 +86,158 @@ export function HabitEditor({
     String(habit?.schedule.type === 'timesPerWeek' ? habit.schedule.count : 3)
   );
   const [intervalDays, setIntervalDays] = useState(
-    String(habit?.schedule.type === 'interval' ? habit.schedule.everyDays : 2)
+    String(
+      habit?.schedule.type === 'interval' || habit?.schedule.type === 'afterCompletion'
+        ? habit.schedule.everyDays
+        : 2
+    )
   );
+  const [useSizes, setUseSizes] = useState(existingUsesSizes);
+  const [tiny, setTiny] = useState(variantFor(habit, 'tiny')?.label ?? 'Do the smallest step');
+  const [standard, setStandard] = useState(
+    singleVariant(habit)?.label ?? initialTitle ?? habit?.title ?? ''
+  );
+  const [stretch, setStretch] = useState(variantFor(habit, 'stretch')?.label ?? 'Do a little extra');
+  const [tinyMinutes, setTinyMinutes] = useState(String(variantFor(habit, 'tiny')?.targetMinutes ?? 1));
+  const [standardMinutes, setStandardMinutes] = useState(String(singleVariant(habit)?.targetMinutes ?? 1));
+  const [stretchMinutes, setStretchMinutes] = useState(String(variantFor(habit, 'stretch')?.targetMinutes ?? 15));
+  const [icon, setIcon] = useState(habit?.icon ?? '✨');
+  const [color, setColor] = useState(habit?.color ?? habitColors[0]);
+  const [reason, setReason] = useState(habit?.reason ?? '');
+  const [cue, setCue] = useState(habit?.cue ?? '');
+  const [firstStep, setFirstStep] = useState(habit?.friction?.firstStep ?? '');
+  const [fallback, setFallback] = useState(habit?.friction?.fallback ?? '');
+  const [selectedContexts, setSelectedContexts] = useState<HabitContext[]>(habit?.contexts ?? ['anywhere']);
+  const [priority, setPriority] = useState<1 | 2 | 3>(habit?.priority ?? 2);
+  const [reminderEnabled, setReminderEnabled] = useState(habit?.reminderEnabled ?? false);
+  const [reminderWindow, setReminderWindow] = useState<ReminderWindow>(habit?.reminderWindow ?? 'exact');
   const [preferredTime, setPreferredTime] = useState(habit?.preferredTime ?? '09:00');
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [reminderEnabled, setReminderEnabled] = useState(habit?.reminderEnabled ?? false);
-  const [reminderWindow, setReminderWindow] = useState<ReminderWindow>(
-    habit?.reminderWindow ?? 'exact'
-  );
-  const [priority, setPriority] = useState<1 | 2 | 3>(habit?.priority ?? 2);
-  const [selectedContexts, setSelectedContexts] = useState<HabitContext[]>(
-    habit?.contexts ?? ['anywhere']
-  );
-  const [momentumEnabled, setMomentumEnabled] = useState(
-    habit?.momentum?.enabled ?? false
-  );
-  const [momentumCadence, setMomentumCadence] = useState<MomentumCadence>(
-    habit?.momentum?.cadence ?? 'daily'
-  );
+  const [momentumEnabled, setMomentumEnabled] = useState(habit?.momentum?.enabled ?? false);
+  const [momentumCadence, setMomentumCadence] = useState<MomentumCadence>(habit?.momentum?.cadence ?? 'daily');
+  const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [advanced, setAdvanced] = useState(Boolean(habit));
+
   const clearDraft = useLocalDraft(
     `habit-${habit?.id ?? 'new'}`,
     {
-      title,
-      reason,
-      cue,
-      environment,
-      materials,
-      firstStep,
-      obstacle,
-      fallback,
-      futureNote,
-      icon,
-      color,
-      tiny,
-      standard,
-      stretch,
-      tinyMinutes,
-      standardMinutes,
-      stretchMinutes,
-      scheduleType,
-      days,
-      weeklyCount,
-      intervalDays,
-      preferredTime,
-      reminderEnabled,
-      reminderWindow,
-      priority,
-      selectedContexts,
-      momentumEnabled,
-      momentumCadence,
-      advanced
+      title, scheduleType, days, weeklyCount, intervalDays, useSizes, tiny, standard,
+      stretch, tinyMinutes, standardMinutes, stretchMinutes, icon, color, reason, cue,
+      firstStep, fallback, selectedContexts, priority, reminderEnabled, reminderWindow,
+      preferredTime, momentumEnabled, momentumCadence, advanced
     },
     (draft) => {
-      setTitle(draft.title);
-      setReason(draft.reason);
-      setCue(draft.cue);
-      setEnvironment(draft.environment ?? '');
-      setMaterials(draft.materials ?? '');
+      setTitle(draft.title ?? '');
+      setScheduleType(draft.scheduleType ?? null);
+      setDays(draft.days ?? [1, 2, 3, 4, 5]);
+      setWeeklyCount(draft.weeklyCount ?? '3');
+      setIntervalDays(draft.intervalDays ?? '2');
+      setUseSizes(draft.useSizes ?? false);
+      setTiny(draft.tiny ?? 'Do the smallest step');
+      setStandard(draft.standard ?? '');
+      setStretch(draft.stretch ?? 'Do a little extra');
+      setTinyMinutes(draft.tinyMinutes ?? '1');
+      setStandardMinutes(draft.standardMinutes ?? '1');
+      setStretchMinutes(draft.stretchMinutes ?? '15');
+      setIcon(draft.icon ?? '✨');
+      setColor(draft.color ?? habitColors[0]);
+      setReason(draft.reason ?? '');
+      setCue(draft.cue ?? '');
       setFirstStep(draft.firstStep ?? '');
-      setObstacle(draft.obstacle ?? '');
       setFallback(draft.fallback ?? '');
-      setFutureNote(draft.futureNote ?? '');
-      setIcon(draft.icon);
-      setColor(draft.color);
-      setTiny(draft.tiny);
-      setStandard(draft.standard);
-      setStretch(draft.stretch);
-      setTinyMinutes(draft.tinyMinutes);
-      setStandardMinutes(draft.standardMinutes);
-      setStretchMinutes(draft.stretchMinutes);
-      setScheduleType(draft.scheduleType);
-      setDays(draft.days);
-      setWeeklyCount(draft.weeklyCount);
-      setIntervalDays(draft.intervalDays);
-      setPreferredTime(draft.preferredTime);
-      setReminderEnabled(draft.reminderEnabled);
-      setReminderWindow(draft.reminderWindow);
-      setPriority(draft.priority);
-      setSelectedContexts(draft.selectedContexts);
-      setMomentumEnabled(draft.momentumEnabled ?? habit?.momentum?.enabled ?? false);
-      setMomentumCadence(draft.momentumCadence ?? habit?.momentum?.cadence ?? 'daily');
-      setAdvanced(draft.advanced);
+      setSelectedContexts(draft.selectedContexts ?? ['anywhere']);
+      setPriority(draft.priority ?? 2);
+      setReminderEnabled(draft.reminderEnabled ?? false);
+      setReminderWindow(draft.reminderWindow ?? 'exact');
+      setPreferredTime(draft.preferredTime ?? '09:00');
+      setMomentumEnabled(draft.momentumEnabled ?? false);
+      setMomentumCadence(draft.momentumCadence ?? 'daily');
+      setAdvanced(draft.advanced ?? false);
     }
   );
 
-  function schedule(): ScheduleRule {
+  function buildSchedule(): ScheduleRule {
+    const today = localDateKey(new Date(), spark.timeZone);
     if (scheduleType === 'weekdays') return { type: 'weekdays', days };
     if (scheduleType === 'timesPerWeek') {
       return { type: 'timesPerWeek', count: Math.max(1, Math.min(7, Number(weeklyCount) || 1)) };
     }
-    if (scheduleType === 'interval') {
+    if (scheduleType === 'interval' || scheduleType === 'afterCompletion') {
+      const existingAnchor = habit?.schedule.type === scheduleType ? habit.schedule.anchorDate : today;
       return {
-        type: 'interval',
+        type: scheduleType,
         everyDays: Math.max(1, Math.min(365, Number(intervalDays) || 1)),
-        anchorDate: localDateKey(new Date(), spark.timeZone)
+        anchorDate: existingAnchor
       };
     }
     if (scheduleType === 'anytime') return { type: 'anytime' };
     return { type: 'daily' };
   }
 
+  function variants(): Habit['variants'] {
+    if (!useSizes) {
+      return [{
+        id: singleVariant(habit)?.id ?? createId('variant'),
+        kind: 'standard',
+        label: title.trim(),
+        targetMinutes: Math.max(1, Number(standardMinutes) || 1),
+        reward: 1
+      }];
+    }
+    return [
+      {
+        id: variantFor(habit, 'tiny')?.id ?? createId('variant'), kind: 'tiny',
+        label: tiny.trim(), targetMinutes: Math.max(1, Number(tinyMinutes) || 1), reward: 1
+      },
+      {
+        id: variantFor(habit, 'standard')?.id ?? createId('variant'), kind: 'standard',
+        label: standard.trim() || title.trim(), targetMinutes: Math.max(1, Number(standardMinutes) || 5), reward: 2
+      },
+      {
+        id: variantFor(habit, 'stretch')?.id ?? createId('variant'), kind: 'stretch',
+        label: stretch.trim(), targetMinutes: Math.max(1, Number(stretchMinutes) || 15), reward: 3
+      }
+    ];
+  }
+
   async function save() {
-    if (!title.trim() || !tiny.trim() || !standard.trim() || !stretch.trim()) {
-      Alert.alert('A few words are missing', 'Give the habit and all three versions a label.');
+    if (!title.trim()) {
+      Alert.alert('Name the habit', 'Add a short name, such as Take vitamins.');
+      return;
+    }
+    if (!scheduleType) {
+      Alert.alert('Choose how often', 'Select when this habit should appear.');
       return;
     }
     if (scheduleType === 'weekdays' && days.length === 0) {
-      Alert.alert('Choose a day', 'Select at least one day for this rhythm.');
+      Alert.alert('Choose at least one day', 'Pick the days when this habit should appear.');
+      return;
+    }
+    if (useSizes && (!tiny.trim() || !stretch.trim())) {
+      Alert.alert('Check the action sizes', 'Give the smaller and larger options a short label.');
       return;
     }
     if (reminderEnabled && reminderWindow === 'exact' && !isValidPreferredTime(preferredTime)) {
-      Alert.alert(
-        'Check the reminder time',
-        'Use a 24-hour time from 00:00 through 23:59, for example 09:30.'
-      );
+      Alert.alert('Check the reminder time', 'Choose a valid time, such as 09:30.');
       return;
     }
     setSaving(true);
     const habitId = habit?.id ?? createId('habit');
-    const momentumAnchor =
-      habit?.momentum?.anchorDate ?? localDateKey(new Date(), spark.timeZone);
-    const momentumCadenceDays = momentumCadence === 'everyOtherDay' ? 2 : 1;
+    const momentumAnchor = habit?.momentum?.anchorDate ?? localDateKey(new Date(), spark.timeZone);
+    const cadenceDays = momentumCadence === 'everyOtherDay' ? 2 : 1;
     const next: Habit = {
       id: habitId,
       title: title.trim(),
       reason: reason.trim() || undefined,
       cue: cue.trim() || undefined,
       friction: {
-        environment: environment.trim() || undefined,
-        materials: materials.trim() || undefined,
         firstStep: firstStep.trim() || undefined,
-        obstacle: obstacle.trim() || undefined,
-        fallback: fallback.trim() || undefined,
-        futureNote: futureNote.trim() || undefined
+        fallback: fallback.trim() || undefined
       },
       color,
       icon,
-      variants: [
-        {
-          id: variantByKind(habit, 'tiny')?.id ?? createId('variant'),
-          kind: 'tiny',
-          label: tiny.trim(),
-          targetMinutes: Math.max(1, Number(tinyMinutes) || 1),
-          reward: 1
-        },
-        {
-          id: variantByKind(habit, 'standard')?.id ?? createId('variant'),
-          kind: 'standard',
-          label: standard.trim(),
-          targetMinutes: Math.max(1, Number(standardMinutes) || 5),
-          reward: 2
-        },
-        {
-          id: variantByKind(habit, 'stretch')?.id ?? createId('variant'),
-          kind: 'stretch',
-          label: stretch.trim(),
-          targetMinutes: Math.max(1, Number(stretchMinutes) || 15),
-          reward: 3
-        }
-      ],
-      schedule: schedule(),
+      variants: variants(),
+      schedule: buildSchedule(),
       preferredTime,
       reminderEnabled,
       reminderWindow,
@@ -292,7 +253,7 @@ export function HabitEditor({
         anchorDate: momentumAnchor,
         protections: (habit?.momentum?.protections ?? []).filter((protection) => {
           const elapsed = calendarDayDifference(momentumAnchor, protection.windowStart);
-          return elapsed >= 0 && elapsed % momentumCadenceDays === 0;
+          return elapsed >= 0 && elapsed % cadenceDays === 0;
         })
       },
       archivedAt: habit?.archivedAt ?? null,
@@ -300,6 +261,12 @@ export function HabitEditor({
     };
     try {
       await spark.saveHabit(next);
+      if (useSizes && !spark.settings.actionSizesEnabled) {
+        await spark.updateSetting('actionSizesEnabled', true);
+      }
+      if (momentumEnabled && !spark.settings.streaksEnabled) {
+        await spark.updateSetting('streaksEnabled', true);
+      }
       await clearDraft();
       onSaved();
     } finally {
@@ -308,419 +275,145 @@ export function HabitEditor({
   }
 
   function toggleDay(day: number) {
-    setDays((current) =>
-      current.includes(day) ? current.filter((value) => value !== day) : [...current, day]
-    );
+    setDays((current) => current.includes(day)
+      ? current.filter((value) => value !== day)
+      : [...current, day]);
   }
 
   function toggleContext(context: HabitContext) {
-    setSelectedContexts((current) =>
-      current.includes(context)
-        ? current.filter((value) => value !== context)
-        : [...current, context]
-    );
-  }
-
-  function applyTemplate(template: (typeof starterTemplates)[number]) {
-    setTitle(template.title);
-    setTiny(template.tiny);
-    setStandard(template.standard);
-    setStretch(template.stretch);
-    setIcon(template.icon);
-  }
-
-  function suggestedTiny(value: string): string {
-    const lower = value.toLowerCase();
-    if (lower.includes('read')) return 'Read one sentence';
-    if (lower.includes('walk') || lower.includes('move') || lower.includes('exercise')) {
-      return 'Put on movement shoes';
-    }
-    if (lower.includes('clean') || lower.includes('tidy') || lower.includes('reset')) {
-      return 'Put away one thing';
-    }
-    if (lower.includes('write')) return 'Write one sentence';
-    return value.trim() ? `Touch the first step for ${value.trim()}` : 'Touch the first step';
+    setSelectedContexts((current) => current.includes(context)
+      ? current.filter((value) => value !== context)
+      : [...current, context]);
   }
 
   function preferredTimeDate(): Date {
     const value = new Date();
     const [hour, minute] = preferredTime.split(':').map(Number);
-    value.setHours(
-      Number.isInteger(hour) ? hour! : 9,
-      Number.isInteger(minute) ? minute! : 0,
-      0,
-      0
-    );
+    value.setHours(Number.isInteger(hour) ? hour! : 9, Number.isInteger(minute) ? minute! : 0, 0, 0);
     return value;
   }
 
   return (
-    <Screen>
+    <Screen testID="habit-editor">
+      <View style={styles.intro}>
+        <SectionHeading>{habit ? 'Edit habit' : 'New habit'}</SectionHeading>
+        <Muted>Only the name and frequency are required.</Muted>
+      </View>
+
       <Card>
-        <SectionHeading>{habit ? 'Edit this habit' : 'Create a habit'}</SectionHeading>
-        {!habit ? (
-          <>
-            <Muted>
-              A habit is something you want to repeat. Choose a starter or name your own; every
-              detail remains editable.
-            </Muted>
-            <View style={styles.choices}>
-              {starterTemplates.map((template) => (
-                <Chip
-                  key={template.title}
-                  label={`${template.icon} ${template.title}`}
-                  selected={title === template.title}
-                  onPress={() => applyTemplate(template)}
-                />
-              ))}
-            </View>
-          </>
-        ) : null}
         <FormField
           label="Habit name"
-          placeholder="e.g. Read something"
+          placeholder="Take vitamins"
           value={title}
           onChangeText={(value) => {
             setTitle(value);
             if (!habit && (!standard || standard === title)) setStandard(value);
-            if (!habit && (tiny === 'Touch the first step' || tiny.startsWith('Touch the first step for '))) {
-              setTiny(suggestedTiny(value));
-            }
           }}
           maxLength={80}
           autoFocus={!habit}
           testID="habit-title"
         />
-        <FormField
-          label="Why might this help?"
-          hint="Optional. A compassionate reason is more useful than a demand."
-          placeholder="I want to feel…"
-          value={reason}
-          onChangeText={setReason}
-          maxLength={240}
-          multiline
-        />
-        <FormField
-          label="Visible cue"
-          hint="Optional. Try: After I…, I will…"
-          placeholder="After I put down my mug…"
-          value={cue}
-          onChangeText={setCue}
-          maxLength={160}
-        />
       </Card>
 
-      <Button
-        label={advanced ? 'Hide fine-tuning' : 'Fine-tune sizes, schedule, and reminders'}
-        variant="secondary"
-        onPress={() => setAdvanced((value) => !value)}
-      />
-
-      {advanced ? (
-        <>
       <Card>
-        <SectionHeading>Pick a look</SectionHeading>
-        <View style={styles.choices}>
-          {iconChoices.map((value) => (
-            <Chip
-              key={value}
-              label={value}
-              selected={icon === value}
-              onPress={() => setIcon(value)}
-            />
-          ))}
-        </View>
-        <View style={styles.colors}>
-          {habitColors.map((value, index) => (
-            <Text
-              key={value}
-              accessibilityRole="button"
-              accessibilityLabel={`Choose ${colorNames[index]} color`}
-              accessibilityState={{ selected: color === value }}
-              onPress={() => setColor(value)}
+        <SectionHeading>How often?</SectionHeading>
+        <Muted>This decides when the habit appears on Today and in reminders.</Muted>
+        <View style={styles.scheduleList}>
+          {scheduleChoices.map((choice) => (
+            <Pressable
+              key={choice.type}
+              accessibilityRole="radio"
+              accessibilityLabel={choice.title}
+              accessibilityState={{ checked: scheduleType === choice.type }}
+              onPress={() => setScheduleType(choice.type)}
               style={[
-                styles.color,
+                styles.scheduleChoice,
                 {
-                  backgroundColor: value,
-                  borderColor: color === value ? theme.text : 'transparent'
+                  borderColor: scheduleType === choice.type ? theme.primary : theme.border,
+                  backgroundColor: scheduleType === choice.type ? `${theme.primary}12` : theme.surface
                 }
               ]}
             >
-              {color === value ? '✓' : ''}
-            </Text>
-          ))}
-        </View>
-      </Card>
-
-      <Card>
-        <SectionHeading>Three valid sizes</SectionHeading>
-        <Muted>Each version becomes a win when completed. Tiny earns 1 point, standard 2, and stretch 3.</Muted>
-        <View style={styles.variantRow}>
-          <View style={styles.variantInput}>
-            <FormField label="Tiny version" value={tiny} onChangeText={setTiny} maxLength={100} />
-          </View>
-          <View style={styles.minutesInput}>
-            <FormField
-              label="Min"
-              value={tinyMinutes}
-              onChangeText={setTinyMinutes}
-              keyboardType="number-pad"
-              maxLength={3}
-            />
-          </View>
-        </View>
-        <View style={styles.variantRow}>
-          <View style={styles.variantInput}>
-            <FormField
-              label="Standard version"
-              value={standard}
-              onChangeText={setStandard}
-              maxLength={100}
-            />
-          </View>
-          <View style={styles.minutesInput}>
-            <FormField
-              label="Min"
-              value={standardMinutes}
-              onChangeText={setStandardMinutes}
-              keyboardType="number-pad"
-              maxLength={3}
-            />
-          </View>
-        </View>
-        <View style={styles.variantRow}>
-          <View style={styles.variantInput}>
-            <FormField
-              label="Stretch version"
-              value={stretch}
-              onChangeText={setStretch}
-              maxLength={100}
-            />
-          </View>
-          <View style={styles.minutesInput}>
-            <FormField
-              label="Min"
-              value={stretchMinutes}
-              onChangeText={setStretchMinutes}
-              keyboardType="number-pad"
-              maxLength={3}
-            />
-          </View>
-        </View>
-      </Card>
-
-      <Card>
-        <SectionHeading>Friction toolkit</SectionHeading>
-        <Muted>
-          Record setup cues, materials, the first physical step, and a fallback. Spark stores
-          these prompts locally for future starts.
-        </Muted>
-        <FormField
-          label="Environment setup"
-          hint="What can already be open, visible, charged, or placed nearby?"
-          placeholder="Put the book on the pillow"
-          value={environment}
-          onChangeText={setEnvironment}
-          maxLength={240}
-        />
-        <FormField
-          label="Materials to gather"
-          placeholder="Shoes, water, keys…"
-          value={materials}
-          onChangeText={setMaterials}
-          maxLength={240}
-        />
-        <FormField
-          label="Literal first physical step"
-          placeholder="Open the document"
-          value={firstStep}
-          onChangeText={setFirstStep}
-          maxLength={240}
-        />
-        <FormField
-          label="Likely obstacle"
-          placeholder="I may not know where to begin"
-          value={obstacle}
-          onChangeText={setObstacle}
-          maxLength={240}
-        />
-        <FormField
-          label="Fallback if that happens"
-          placeholder="Read only the first heading"
-          value={fallback}
-          onChangeText={setFallback}
-          maxLength={240}
-        />
-        <FormField
-          label="Note to future me"
-          placeholder="Last time, music made this easier"
-          value={futureNote}
-          onChangeText={setFutureNote}
-          maxLength={400}
-          multiline
-        />
-      </Card>
-
-      <Card>
-        <SectionHeading>How often should Spark suggest this?</SectionHeading>
-        <View style={styles.choices}>
-          {(
-            [
-              ['daily', 'Daily'],
-              ['weekdays', 'Certain days'],
-              ['timesPerWeek', 'Times/week'],
-              ['interval', 'Every few days'],
-              ['anytime', 'Anytime']
-            ] as const
-          ).map(([value, label]) => (
-            <Chip
-              key={value}
-              label={label}
-              selected={scheduleType === value}
-              onPress={() => setScheduleType(value)}
-            />
+              <View style={styles.scheduleText}>
+                <Text style={[styles.scheduleTitle, { color: theme.text }]}>{choice.title}</Text>
+                <Muted>{choice.detail}</Muted>
+              </View>
+              <Text style={[styles.radio, { color: scheduleType === choice.type ? theme.primary : theme.textMuted }]}>
+                {scheduleType === choice.type ? '●' : '○'}
+              </Text>
+            </Pressable>
           ))}
         </View>
         {scheduleType === 'weekdays' ? (
           <View style={styles.choices}>
             {weekdayLabels.map((label, index) => (
-              <Chip
-                key={label}
-                label={label}
-                selected={days.includes(index)}
-                onPress={() => toggleDay(index)}
-              />
+              <Chip key={label} label={label} selected={days.includes(index)} onPress={() => toggleDay(index)} />
             ))}
           </View>
         ) : null}
         {scheduleType === 'timesPerWeek' ? (
-          <FormField
-            label="Times per rolling week"
-            value={weeklyCount}
-            onChangeText={setWeeklyCount}
-            keyboardType="number-pad"
-            maxLength={1}
-          />
+          <FormField label="How many times per week?" value={weeklyCount} onChangeText={setWeeklyCount} keyboardType="number-pad" maxLength={1} />
         ) : null}
-        {scheduleType === 'interval' ? (
+        {scheduleType === 'interval' || scheduleType === 'afterCompletion' ? (
           <FormField
-            label="Every number of days"
+            label={scheduleType === 'afterCompletion' ? 'Days after completion' : 'Repeat every number of days'}
+            hint={scheduleType === 'afterCompletion' ? 'Example: complete on Friday with 3 days selected → next due Monday.' : 'This follows fixed calendar dates.'}
             value={intervalDays}
             onChangeText={setIntervalDays}
             keyboardType="number-pad"
             maxLength={3}
           />
         ) : null}
+        {habit && scheduleType ? <Muted>Current choice: {scheduleLabel(buildSchedule())}</Muted> : null}
       </Card>
 
-      <Card>
-        <SectionHeading>Optional streak</SectionHeading>
-        <Muted>
-          Celebrate completed periods with a current streak, completed-period total, and personal best.
-        </Muted>
+      <CollapsibleSection
+        title="Optional details"
+        summary="Reminder, action sizes, appearance, and starting help"
+        expanded={advanced}
+        onExpandedChange={setAdvanced}
+      >
         <SettingRow
-          title="Track a streak for this habit"
-          description="Turn on daily or every-other-day streak tracking for this habit."
-          value={momentumEnabled}
-          onValueChange={setMomentumEnabled}
+          title="Use different action sizes"
+          description="Off is best for simple yes-or-no habits such as taking vitamins."
+          value={useSizes}
+          onValueChange={setUseSizes}
         />
-        {momentumEnabled ? (
-          <>
-            <Muted>How often should one completed action continue the streak?</Muted>
-            <View style={styles.choices}>
-              <Chip
-                label="Every day"
-                selected={momentumCadence === 'daily'}
-                onPress={() => setMomentumCadence('daily')}
-              />
-              <Chip
-                label="Every other day"
-                selected={momentumCadence === 'everyOtherDay'}
-                onPress={() => setMomentumCadence('everyOtherDay')}
-              />
+        {useSizes ? (
+          <Card style={styles.innerCard}>
+            <SectionHeading>Action sizes</SectionHeading>
+            <Muted>Each option counts as completing this habit.</Muted>
+            <View style={styles.variantRow}>
+              <View style={styles.variantInput}><FormField label="Small" value={tiny} onChangeText={setTiny} maxLength={100} /></View>
+              <View style={styles.minutesInput}><FormField label="Min" value={tinyMinutes} onChangeText={setTinyMinutes} keyboardType="number-pad" maxLength={3} /></View>
             </View>
-            <Body>
-              {momentumCadence === 'daily'
-                ? 'One completed action during each calendar day continues it.'
-                : 'One completed action anywhere in each two-day period continues it.'}
-            </Body>
-            <Muted>
-              You begin with 2 streak saves and earn another for every 5 completed periods (up to
-              3 held). Streak saves and planned breaks preserve continuity for selected periods.
-              Completed-action history continues to come from Done taps. Manage saves in Progress.
-            </Muted>
-            <Muted>
-              Your schedule above still decides when Spark suggests this habit. The streak only
-              adds an optional reward.
-            </Muted>
-            {habit?.momentum && habit.momentum.cadence !== momentumCadence ? (
-              <Muted>
-                Changing how often recalculates periods from the original streak start. Any old
-                protection that no longer fits is removed; completed actions and points remain
-                untouched.
-              </Muted>
-            ) : null}
-          </>
+            <View style={styles.variantRow}>
+              <View style={styles.variantInput}><FormField label="Regular" value={standard} onChangeText={setStandard} maxLength={100} /></View>
+              <View style={styles.minutesInput}><FormField label="Min" value={standardMinutes} onChangeText={setStandardMinutes} keyboardType="number-pad" maxLength={3} /></View>
+            </View>
+            <View style={styles.variantRow}>
+              <View style={styles.variantInput}><FormField label="Larger" value={stretch} onChangeText={setStretch} maxLength={100} /></View>
+              <View style={styles.minutesInput}><FormField label="Min" value={stretchMinutes} onChangeText={setStretchMinutes} keyboardType="number-pad" maxLength={3} /></View>
+            </View>
+          </Card>
         ) : null}
-      </Card>
 
-      <Card>
-        <SectionHeading>Make it easier to notice</SectionHeading>
-        <View style={styles.choices}>
-          {contexts.map((context) => (
-            <Chip
-              key={context.value}
-              label={context.label}
-              selected={selectedContexts.includes(context.value)}
-              onPress={() => toggleContext(context.value)}
-            />
-          ))}
-        </View>
-        <Muted>Importance helps Spark choose among several possible actions.</Muted>
-        <View style={styles.choices}>
-          {([1, 2, 3] as const).map((value) => (
-            <Chip
-              key={value}
-              label={value === 1 ? 'Nice' : value === 2 ? 'Helpful' : 'Important'}
-              selected={priority === value}
-              onPress={() => setPriority(value)}
-            />
-          ))}
-        </View>
         <SettingRow
-          title="Local reminder"
-          description="Scheduled by this device. No cloud required."
+          title="Reminder"
+          description="A private notification scheduled on this device."
           value={reminderEnabled}
           onValueChange={setReminderEnabled}
         />
         {reminderEnabled ? (
-          <View style={styles.timePicker}>
-            <Muted>Choose a time-of-day window or an exact local time.</Muted>
+          <Card style={styles.innerCard}>
             <View style={styles.choices}>
-              {(
-                [
-                  ['exact', 'Exact time'],
-                  ['morning', 'Morning'],
-                  ['afternoon', 'Afternoon'],
-                  ['evening', 'Evening']
-                ] as const
-              ).map(([value, label]) => (
-                <Chip
-                  key={value}
-                  label={label}
-                  selected={reminderWindow === value}
-                  onPress={() => setReminderWindow(value)}
-                />
+              {([['exact', 'Exact time'], ['morning', 'Morning'], ['afternoon', 'Afternoon'], ['evening', 'Evening']] as const).map(([value, label]) => (
+                <Chip key={value} label={label} selected={reminderWindow === value} onPress={() => setReminderWindow(value)} />
               ))}
             </View>
             {reminderWindow === 'exact' ? (
               <>
-                <Muted>Preferred time: {preferredTime}</Muted>
-                <Button
-                  label="Choose reminder time"
-                  variant="secondary"
-                  onPress={() => setShowTimePicker(true)}
-                />
+                <Button label={`Choose time · ${preferredTime}`} variant="secondary" onPress={() => setShowTimePicker(true)} />
                 {showTimePicker ? (
                   <DateTimePicker
                     value={preferredTimeDate()}
@@ -728,149 +421,113 @@ export function HabitEditor({
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={(_event, selected) => {
                       if (Platform.OS === 'android') setShowTimePicker(false);
-                      if (!selected) return;
-                      setPreferredTime(
-                        `${String(selected.getHours()).padStart(2, '0')}:${String(
-                          selected.getMinutes()
-                        ).padStart(2, '0')}`
-                      );
+                      if (selected) setPreferredTime(`${String(selected.getHours()).padStart(2, '0')}:${String(selected.getMinutes()).padStart(2, '0')}`);
                     }}
                   />
                 ) : null}
               </>
-            ) : (
-              <Muted>
-                Spark will schedule the reminder within the {reminderWindow} window.
-              </Muted>
-            )}
-            {reminderWindow === 'exact' && showTimePicker && Platform.OS === 'ios' ? (
-              <Button
-                label="Use this time"
-                variant="ghost"
-                onPress={() => setShowTimePicker(false)}
-              />
             ) : null}
-            <Button
-              label="Preview this reminder"
-              variant="ghost"
-              onPress={() =>
-                Alert.alert(
-                  `${icon} A small Spark?`,
-                  `${tiny}\n\nTiming: ${
-                    reminderWindow === 'exact' ? preferredTime : reminderWindow
-                  }\nReminder feedback: silent sound, one device vibration\nCompletion feedback: ${
-                    spark.settings.sensoryProfile
-                  }, ${
-                    spark.settings.hapticsEnabled ? 'haptic enabled' : 'haptic muted'
-                  }\nActions: Done · Later · Hide today`
-                )
-              }
-            />
-          </View>
+          </Card>
         ) : null}
-      </Card>
 
-        </>
-      ) : (
-        <Card>
-          <Muted>
-            Spark will start with a 1-minute tiny version, a 5-minute standard version, a
-            15-minute stretch, and a daily suggestion. Open fine-tuning whenever you want
-            different details.
-          </Muted>
+        <Card style={styles.innerCard}>
+          <SectionHeading>Appearance</SectionHeading>
+          <View style={styles.choices}>
+            {iconChoices.map((value) => <Chip key={value} label={value} selected={icon === value} onPress={() => setIcon(value)} />)}
+          </View>
+          <View style={styles.colors}>
+            {habitColors.map((value, index) => (
+              <Pressable
+                key={value}
+                accessibilityRole="radio"
+                accessibilityLabel={`${colorNames[index]} color`}
+                accessibilityState={{ checked: color === value }}
+                onPress={() => setColor(value)}
+                style={[styles.color, { backgroundColor: value, borderColor: color === value ? theme.text : 'transparent' }]}
+              >
+                <Text style={styles.colorCheck}>{color === value ? '✓' : ''}</Text>
+              </Pressable>
+            ))}
+          </View>
         </Card>
-      )}
 
-      {habit && onHistory ? (
-        <Card>
-          <SectionHeading>History and corrections</SectionHeading>
-          <Body>Review recent wins and pauses, add optional tags, or log something you forgot.</Body>
-          <Button label="Open habit history" variant="secondary" onPress={onHistory} />
+        <Card style={styles.innerCard}>
+          <SectionHeading>Helpful context</SectionHeading>
+          <FormField label="Why this matters" placeholder="Optional" value={reason} onChangeText={setReason} maxLength={240} multiline />
+          <FormField label="Cue" placeholder="After breakfast…" value={cue} onChangeText={setCue} maxLength={160} />
+          {spark.settings.adaptiveSuggestionsEnabled ? (
+            <>
+              <FormField label="Smallest physical first step" placeholder="Open the bottle" value={firstStep} onChangeText={setFirstStep} maxLength={240} />
+              <FormField label="Fallback when stuck" placeholder="Put it somewhere visible" value={fallback} onChangeText={setFallback} maxLength={240} />
+              <Muted>Where can this happen?</Muted>
+              <View style={styles.choices}>
+                {contexts.map((item) => <Chip key={item.value} label={item.label} selected={selectedContexts.includes(item.value)} onPress={() => toggleContext(item.value)} />)}
+              </View>
+              <Muted>Importance</Muted>
+              <View style={styles.choices}>
+                {([1, 2, 3] as const).map((value) => <Chip key={value} label={value === 1 ? 'Normal' : value === 2 ? 'Helpful' : 'High'} selected={priority === value} onPress={() => setPriority(value)} />)}
+              </View>
+            </>
+          ) : null}
         </Card>
-      ) : null}
+
+        {spark.settings.streaksEnabled ? (
+          <Card style={styles.innerCard}>
+            <SettingRow
+              title="Reward streak"
+              description="Optional celebration for consecutive periods."
+              value={momentumEnabled}
+              onValueChange={setMomentumEnabled}
+            />
+            {momentumEnabled ? (
+              <View style={styles.choices}>
+                <Chip label="Every day" selected={momentumCadence === 'daily'} onPress={() => setMomentumCadence('daily')} />
+                <Chip label="Every other day" selected={momentumCadence === 'everyOtherDay'} onPress={() => setMomentumCadence('everyOtherDay')} />
+              </View>
+            ) : null}
+          </Card>
+        ) : null}
+      </CollapsibleSection>
+
+      <Button label={habit ? 'Save changes' : 'Create habit'} loading={saving} onPress={() => void save()} testID="save-habit" />
+
+      {habit && onHistory ? <Button label="View completion history" variant="secondary" onPress={onHistory} /> : null}
 
       {habit ? (
-        <Card>
-          <SectionHeading>Pause this habit</SectionHeading>
-          <Body>Choose a pause length. Completed-action history remains visible in Progress.</Body>
-          <View style={styles.pauseActions}>
+        <CollapsibleSection title="Pause or archive" summary="Temporarily hide this habit or move it out of the active list">
+          <Body>Pause keeps the habit and its history while removing it from Today.</Body>
+          <Button label="Pause for 1 day" variant="secondary" onPress={() => void spark.pauseHabit(habit, addCalendarDays(localDateKey(new Date(), spark.timeZone), 1)).then(onSaved)} />
+          <Button label="Pause for 1 week" variant="secondary" onPress={() => void spark.pauseHabit(habit, addCalendarDays(localDateKey(new Date(), spark.timeZone), 7)).then(onSaved)} />
+          {habit.pausedUntil ? <Button label="Resume now" variant="ghost" onPress={() => void spark.pauseHabit(habit, null).then(onSaved)} /> : null}
+          {onArchive ? (
             <Button
-              label="Pause 1 day"
-              variant="secondary"
-              onPress={() =>
-                void spark
-                  .pauseHabit(
-                    habit,
-                    addCalendarDays(localDateKey(new Date(), spark.timeZone), 1)
-                  )
-                  .then(onSaved)
-              }
-            />
-            <Button
-              label="Pause 1 week"
-              variant="secondary"
-              onPress={() =>
-                void spark
-                  .pauseHabit(
-                    habit,
-                    addCalendarDays(localDateKey(new Date(), spark.timeZone), 7)
-                  )
-                  .then(onSaved)
-              }
-            />
-            {habit.pausedUntil ? (
-              <Button
-                label="Resume now"
-                variant="ghost"
-                onPress={() => void spark.pauseHabit(habit, null).then(onSaved)}
-              />
-            ) : null}
-          </View>
-        </Card>
-      ) : null}
-
-      <Button
-        label={habit ? 'Save changes' : 'Create habit'}
-        loading={saving}
-        onPress={() => void save()}
-        testID="save-habit"
-      />
-      {habit && onArchive ? (
-        <Button
-          label="Archive habit"
-          variant="danger"
-          onPress={() =>
-            Alert.alert(
-              'Archive this habit?',
-              'Its history stays in Progress, but it will stop appearing Today.',
-              [
-                { text: 'Keep it', style: 'cancel' },
+              label="Archive habit"
+              variant="danger"
+              onPress={() => Alert.alert('Archive this habit?', 'Its completion history will stay available.', [
+                { text: 'Cancel', style: 'cancel' },
                 { text: 'Archive', style: 'destructive', onPress: onArchive }
-              ]
-            )
-          }
-        />
+              ])}
+            />
+          ) : null}
+        </CollapsibleSection>
       ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  intro: { gap: 4 },
+  scheduleList: { gap: 8 },
+  scheduleChoice: { minHeight: 64, borderWidth: 1.5, borderRadius: 16, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  scheduleText: { flex: 1, gap: 2 },
+  scheduleTitle: { fontSize: 16, fontWeight: '800' },
+  radio: { fontSize: 23 },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  colors: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  color: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    borderWidth: 3,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontWeight: '900'
-  },
+  innerCard: { padding: 12 },
   variantRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
   variantInput: { flex: 1 },
   minutesInput: { width: 72 },
-  timePicker: { gap: 8 },
-  pauseActions: { gap: 8 }
+  colors: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  color: { width: 44, height: 44, borderRadius: 15, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  colorCheck: { color: '#FFFFFF', fontWeight: '900' }
 });

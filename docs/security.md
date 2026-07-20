@@ -2,7 +2,7 @@
 
 ## Current dependency audit
 
-The dependency audit was last reviewed on 2026-07-17.
+The production-dependency audit was re-run on 2026-07-20.
 
 `npm audit --omit=dev` reports one moderate advisory repeated across 21 transitive dependency
 instances:
@@ -17,7 +17,8 @@ Spark does not call those APIs. The affected copies currently arrive through:
 - the latest compatible Firebase Admin / Google Cloud dependency chain used by the optional
   control plane.
 
-The installed parent packages do not currently expose a non-breaking audit resolution.
+The installed parent packages do not currently expose a non-breaking audit resolution; npm still
+reports **No fix available** for this path.
 Do not use `npm audit fix --force`: it can replace Expo or Firebase packages with incompatible
 major versions. Dependabot is configured to check weekly. Re-run the commands below when those
 parent packages publish compatible updates:
@@ -42,19 +43,32 @@ steps, impact, and any suggested mitigation.
 
 ## Operational rules
 
-- Never place service-account JSON in this repository.
+- Never place a tracked service-account JSON in this repository. The local Play publisher accepts
+  an external key path or the ignored `apps/mobile/credentials/google-play-publisher.json` path.
+  Back up that key in LastPass, give its service-account email app-only/least-privilege Play access,
+  and rotate/delete it immediately if it appears in a commit, log, screenshot, or chat.
 - Keep the Spark application's Android upload key at the ignored
   `apps/mobile/credentials/spark-upload.p12` path only while building. Back up the `.p12`, its
   unique 20+ character password, alias `spark-upload`, and printed SHA-256 file hash in LastPass.
   Never commit, email, chat, screenshot, or place the password in `.env`, Gradle properties, or a
-  command-line argument.
+  command-line argument. On a trusted single-user PC only, the launcher can read it from the
+  deliberately ignored `local-release.secrets.json`; this is plaintext convenience, not encrypted
+  storage, so the hidden prompt remains the safer default.
 - Create the upload key only with `.\spark.cmd release -Action LocalSetup`. Build with
   `LocalBuild`, which requests the password through a hidden prompt, uses one non-daemon Gradle
-  process, clears the temporary process environment, and verifies the resulting AAB is not signed
-  by the Android debug certificate.
+  process with bounded native-build concurrency, clears the temporary process environment, and
+  verifies the resulting AAB is not signed by the Android debug certificate.
 - Do not generate a replacement upload key when moving PCs. Restore the same key/password from
   LastPass. If the upload key is truly lost or compromised after Play enrollment, follow Google
   Play's authenticated upload-key reset process and record the incident.
+- `PlaySetup` never grants the service account Google Play permissions. Grant only **View app
+  information** and **Release apps to testing tracks** for `com.djpokis.sparkhabits.app` while using
+  Internal/Closed testing. Add the separate Production-release permission only immediately before
+  deliberate Production automation, and review/remove it when no longer needed.
+- Publisher history JSON may contain local artifact paths, Git commit IDs, service-account email,
+  Play version/track state, and console/test links. It deliberately excludes upload passwords,
+  private keys, JWT assertions, and OAuth access tokens. `artifacts/` is ignored by Git; review a
+  history file before sharing because tester links and local paths are still operational metadata.
 - Use Cloud Run's service identity and Application Default Credentials.
 - Keep Firestore client rules deny-by-default; all cloud data access goes through the API.
 - Restrict admin access with the email allowlist and Firebase custom roles.
@@ -103,7 +117,7 @@ steps, impact, and any suggested mitigation.
   API 36, and contains none of the calendar, media/storage, overlay, camera, microphone-recording,
   or location permissions checked by the release scan; cleartext traffic is not enabled and
   `allowBackup=false`.
-- All six Spark widget receivers are non-exported. Exported third-party components are the main
+- All seven Spark widget receivers are non-exported. Exported third-party components are the main
   deep-link/share activity, a read-only widget-image provider scoped to its dedicated image
   directory, and AndroidX/Firebase receivers/services protected by their documented platform
   permissions.

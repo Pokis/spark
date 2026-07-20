@@ -34,9 +34,19 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="journey"
+        options={{
+          title: t('journey'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" color={color} size={size} />
+          )
+        }}
+      />
+      <Tabs.Screen
         name="focus"
         options={{
           title: t('focus'),
+          href: spark.settings.focusToolEnabled ? '/(tabs)/focus' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="timer-outline" color={color} size={size} />
           )
@@ -46,18 +56,9 @@ export default function TabsLayout() {
         name="capture"
         options={{
           title: t('capture'),
+          href: spark.settings.captureToolEnabled ? '/(tabs)/capture' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="flash-outline" color={color} size={size} />
-          )
-        }}
-      />
-      <Tabs.Screen
-        name="journey"
-        options={{
-          title: t('journey'),
-          href: spark.settings.simpleMode ? null : '/(tabs)/journey',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" color={color} size={size} />
           )
         }}
       />

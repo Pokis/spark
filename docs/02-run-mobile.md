@@ -87,7 +87,7 @@ typed confirmation. Use `.\spark.cmd release -Help` to see every release utility
 - Today recommendations and completion celebrations
 - rhythms, rewards, focus, capture, and routines
 - local reminders
-- six Android widgets—Today, Quick Capture, Focus, Routine, Progress, and Toolkit—plus four launcher shortcuts in a native build
+- seven Android widgets—Today, Habit Calendar, Quick Capture, Focus, Routine, Progress, and Toolkit—plus four launcher shortcuts in a native build
 - Android Share to Spark in a native build
 - locally generated focus soundscapes in a native build
 - JSON, encrypted, automatic-folder backup and restore
@@ -143,7 +143,7 @@ After installing a native build:
 1. Long-press an empty area of the Android home screen.
 2. Choose **Widgets**.
 3. Find **Spark Today**, **Spark Quick Capture**, **Spark Focus**, **Spark Routine**,
-   **Spark Progress**, or **Spark Toolkit**.
+   **Spark Habit Calendar**, **Spark Progress**, or **Spark Toolkit**.
 4. Drag it to the home screen.
 
 The Today widget updates when Spark data changes and receives a periodic Android refresh. Its
@@ -153,10 +153,11 @@ opens the minimal local capture form and does not create an item until **Save th
 The Focus widget derives remaining time from the persisted session timestamps and opens narrow
 pause/resume action routes. Android launchers may refresh the displayed minute label only on their
 own schedule, but opening Pause/Resume always recalculates from the database.
-The Progress widget shows lifetime wins, fixed Spark points, and today’s count, then opens the
-local Progress screen. Routine keeps the current or first routine step visible and opens that
+The Habit Calendar widget shows the current month for up to two habits and opens Calendar without
+writing. The Progress widget shows lifetime wins, fixed Spark points, and today’s count, then opens
+the local Calendar/Record screen. Routine keeps the current or first routine step visible and opens that
 routine without changing its state. Toolkit opens Capture, two-minute Focus, Departure, or Help
-in one tap. All six widgets use local snapshots/static links and add **$0** server cost. Because widget
+in one tap. All seven widgets use local snapshots/static links and add **$0** server cost. Because widget
 definitions are native configuration, run `./spark.cmd android` again after pulling a widget
 change; an Expo Go reload cannot install new widget definitions.
 

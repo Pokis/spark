@@ -63,6 +63,18 @@ function spark(overrides: Record<string, unknown> = {}) {
     remoteConfig: defaultAppConfig,
     timeZone: 'UTC',
     saveHabit: jest.fn(async () => undefined),
+    completeHabit: jest.fn(async () => ({
+      id: 'new-completion',
+      habitId: habit.id,
+      variantId: 'tiny',
+      variantKind: 'tiny',
+      reward: 1,
+      occurredAt: '2026-07-17T12:00:00.000Z',
+      loggedAt: '2026-07-17T12:00:00.000Z',
+      localDate: '2026-07-17',
+      source: 'today'
+    })),
+    undoCompletion: jest.fn(async () => undefined),
     setCheckIn: jest.fn(async () => undefined),
     updateSetting: jest.fn(async () => undefined),
     refresh: jest.fn(async () => undefined),
@@ -78,26 +90,28 @@ describe('first-run understanding experience', () => {
 
   afterEach(() => jest.useRealTimers());
 
-  it('defines the app, habits, wins, and fixed points before asking for a habit', async () => {
+  it('explains the minimal app, then requires an explicit frequency for the first habit', async () => {
     const value = spark();
     mockedSpark.mockReturnValue(value);
     const view = await render(<OnboardingScreen />);
 
-    expect(view.getByText(/Spark is a habit and focus tracker/)).toBeTruthy();
-    expect(view.getByText(/Every completed action builds your progress/)).toBeTruthy();
+    expect(view.getByText('A habit list and calendar.')).toBeTruthy();
+    expect(view.getByText(/choose how often each should happen/)).toBeTruthy();
+    expect(view.getByText(/Extra tools.*start hidden/)).toBeTruthy();
     await fireEvent.press(view.getByTestId('onboarding-continue'));
-    expect(view.getByText('Habit = what you want to repeat')).toBeTruthy();
-    await fireEvent.press(view.getByTestId('onboarding-continue'));
-    expect(view.getByText('Tiny = 1 point')).toBeTruthy();
-    expect(view.getByText(/fixed point values build a clear progress record/)).toBeTruthy();
-    await fireEvent.press(view.getByTestId('onboarding-continue'));
-    expect(view.getByText('Your real life stays on this device.')).toBeTruthy();
-    await fireEvent.press(view.getByTestId('onboarding-continue'));
-    expect(view.getByText(/includes two editable examples/)).toBeTruthy();
-
+    expect(view.getByText('How often?')).toBeTruthy();
     await fireEvent.changeText(view.getByTestId('onboarding-first-habit'), 'Open my notes');
+    await fireEvent.press(view.getByText('After I complete it'));
+    await fireEvent.changeText(view.getByDisplayValue('2'), '3');
     await fireEvent.press(view.getByTestId('onboarding-continue'));
     await waitFor(() => expect(value.saveHabit).toHaveBeenCalled());
+    expect(value.saveHabit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Open my notes',
+        schedule: expect.objectContaining({ type: 'afterCompletion', everyDays: 3 }),
+        variants: [expect.objectContaining({ kind: 'standard' })]
+      })
+    );
     expect(value.updateSetting).toHaveBeenCalledWith('onboardingComplete', true);
     expect(mockedRouter.replace).toHaveBeenCalledWith('/(tabs)');
   });
@@ -118,43 +132,20 @@ describe('first-run understanding experience', () => {
     expect(mockedRouter.push).toHaveBeenCalledWith('/(tabs)/journey');
   });
 
-  it('explains first actions and keeps optional suggestion controls reversible', async () => {
+  it('puts due habits first and keeps optional controls out of the default Today view', async () => {
     const value = spark();
     mockedSpark.mockReturnValue(value);
     const view = await render(<TodayScreen />);
 
-    expect(view.getByText('New here? Start with this')).toBeTruthy();
-    await fireEvent.press(view.getByRole('button', { name: 'Dismiss' }));
-    expect(value.updateSetting).toHaveBeenCalledWith('dismissedTutorialIds', [
-      'getting-started'
-    ]);
-    expect(view.getByText('0 total Spark points')).toBeTruthy();
-    expect(view.getByText(/Tap Done only after you do it/)).toBeTruthy();
-
-    await fireEvent.press(
-      view.getByRole('button', { name: 'Expand Adjust today’s suggestions' })
-    );
-    await fireEvent.press(view.getByRole('button', { name: /Running low/ }));
-    await waitFor(() =>
-      expect(value.setCheckIn).toHaveBeenCalledWith('empty', null, null)
-    );
-    expect(view.getByText(/Low energy selected/)).toBeTruthy();
-    await fireEvent.press(
-      view.getByRole('button', { name: 'Collapse Adjust today’s suggestions' })
-    );
-    expect(view.queryByText('How much energy do you have?')).toBeNull();
-
-    await fireEvent.press(view.getByRole('button', { name: 'Expand Need fewer choices?' }));
-    await fireEvent.press(
-      view.getByRole('button', { name: 'Show only one tiny action' })
-    );
-    await waitFor(() =>
-      expect(value.updateSetting).toHaveBeenCalledWith('minimumViableDay', true)
-    );
-    expect(view.getByText(/One-action view is on/)).toBeTruthy();
+    expect(view.getByText('Up next')).toBeTruthy();
+    expect(view.getByText('Drink some water')).toBeTruthy();
+    expect(view.queryByText('Adjust suggestions')).toBeNull();
+    expect(view.queryByText(/Spark points/)).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Open habit calendar' }));
+    expect(mockedRouter.push).toHaveBeenCalledWith('/(tabs)/journey');
   });
 
-  it('shows exactly which logged win produced each point entry', async () => {
+  it('shows completions in a calendar and keeps points hidden unless enabled', async () => {
     const completion = {
       id: 'completion-1',
       habitId: habit.id,
@@ -177,18 +168,17 @@ describe('first-run understanding experience', () => {
     );
     const view = await render(<JourneyScreen />);
 
-    expect(view.getByText('1 Spark point')).toBeTruthy();
-    expect(view.getByLabelText('Level 1')).toBeTruthy();
+    expect(view.getByRole('tab', { name: 'Month' }).props.accessibilityState).toEqual({ selected: true });
+    expect(view.getByText('Drink some water')).toBeTruthy();
+    expect(view.queryByText('1 Spark point')).toBeNull();
+    await fireEvent.press(view.getByRole('tab', { name: 'Record' }));
+    expect(view.getByText('Total completions')).toBeTruthy();
+    expect(view.getByText('Active habits')).toBeTruthy();
+    expect(view.queryByText('Points')).toBeNull();
     await fireEvent.press(
-      view.getByRole('button', { name: 'Expand Recent completed actions' })
+      view.getByRole('button', { name: 'Expand Recent completions' })
     );
-    expect(view.getByText('💧 Take one sip')).toBeTruthy();
-    expect(view.getByText('+1')).toBeTruthy();
-    await fireEvent.press(
-      view.getByRole('button', {
-        name: 'Open history for Drink some water; 1 Spark point'
-      })
-    );
+    await fireEvent.press(view.getByText('💧 Drink some water'));
     expect(mockedRouter.push).toHaveBeenCalledWith('/habit/starter_water/history');
   });
 });

@@ -151,6 +151,55 @@ Copy `apps/admin/.env.example` to `apps/admin/.env.local`. Restart Vite after ed
 The Google account has no effective role. Bootstrap it through `ADMIN_EMAIL_ALLOWLIST`, then use
 the Admins page to set a custom claim and sign out/in.
 
+## Local Google Play publishing fails
+
+Start with the read-only credential/state check:
+
+```powershell
+.\spark.cmd release -Action PlayStatus
+.\spark.cmd release -Action History
+```
+
+Every failure writes `artifacts/release/latest-play-status.json` or
+`latest-publish.json`. Read `error.stage`, `error.statusCode`, and `error.message`; the files never
+contain the private key or access token.
+
+Common stages and fixes:
+
+| Stage/error | Meaning | Fix |
+| --- | --- | --- |
+| `credentials` | JSON key missing, malformed, tracked, or points at an unexpected token host | Restore the exact publisher JSON from LastPass to the ignored credentials path and check `local-release.secrets.json`. |
+| `authentication` / 401 | Key is revoked, expired by policy, or has an invalid clock/JWT | Confirm Windows time, restore the current key, or deliberately create/backup a replacement publisher key. Do not replace the Android upload key. |
+| `create-edit` / 403 | Android Publisher API disabled or service-account email lacks Play app access | Run guarded `PlaySetup`, then invite the printed email in Play Console with app-only View + testing-release permission. |
+| `upload-bundle` and “version code already used” | Source code was not above Play's maximum, often because auto-versioning was disabled | Retry without `-NoAutoVersionCode`; the command re-queries Play and uses `max + 1`. |
+| `update-track` / 403 | The credential can upload but cannot release to that track | Add only the exact track permission. Production needs the separate Production release permission. |
+| `validate-edit` | Bundle, release notes, target devices, policy state, or track configuration is invalid | Open the recorded Play Console link and correct the named validation issue; do not blindly retry. |
+| `commit-edit` | Play rejected or conflicted with another open change | Check Play Console Publishing overview, then run `PlayStatus` before retrying. |
+
+### LocalPublish stops in React Native C++ or Reanimated
+
+If Gradle reports a failed `buildCMakeRelWithDebInfo[x86]` task with no actual C++ `error:` line,
+Google Play was not contacted and the bundle was not uploaded. Windows terminated a native
+compiler process while several large ABI builds were competing for memory. Current release
+automation prevents this by building the paired ARM phone/tablet ABIs only and limiting Gradle and
+CMake to two workers; debug/emulator builds are unchanged. Pull the current scripts and rerun the
+same command:
+
+```powershell
+.\spark.cmd release -Action LocalPublish -Track internal
+```
+
+`PlayStatus` will be checked again before the build. A failed pre-upload attempt does not consume a
+Google Play version code, so do not manually change or decrement it.
+
+If a failed upload might have reserved a version code, do not guess and do not decrement the
+source. `LocalPublish` always checks Play again. Preserve the failed JSON record—it identifies the
+stage, edit ID, and any uploaded version code returned before failure.
+
+If the JSON contains `null` for app-dashboard or tester links, fill the non-secret IDs/URLs in
+`store/android/publisher-config.json`. The publishing API does not return those Console-specific
+links.
+
 ## Cloud Run returns 500 for Play verification
 
 Check:

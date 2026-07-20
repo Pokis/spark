@@ -71,11 +71,16 @@ param(
   [ValidateSet('internal', 'alpha', 'beta', 'production')]
   [string]$Track = 'internal',
 
+  [ValidateSet('Auto', 'Draft', 'Completed', 'InProgress')]
+  [string]$ReleaseStatus = 'Auto',
+
   [string]$Topic,
   [string]$Device,
   [string]$Avd,
   [string]$BuildId,
   [string]$OutputDirectory = 'artifacts\release',
+  [string]$SecretsFile,
+  [string]$ReleaseNotesFile,
   [string]$Message,
   [string]$ProjectId,
   [string]$Region = 'europe-central2',
@@ -86,6 +91,8 @@ param(
   [string]$Provider = 'Firebase',
   [ValidateRange(1, 50)]
   [int]$Limit = 10,
+  [ValidateRange(0, 100)]
+  [double]$RolloutPercent = 0,
   [int]$Port = 0,
   [switch]$Clear,
   [switch]$Offline,
@@ -96,6 +103,7 @@ param(
   [switch]$Yes,
   [switch]$NoWait,
   [switch]$ClearCache,
+  [switch]$NoAutoVersionCode,
   [switch]$Help
 )
 
@@ -365,6 +373,10 @@ release
     LocalStatus  Show whether the private upload key and native signing guard exist.
     LocalSetup   Create the private Google Play upload key on this PC. Run once.
     LocalBuild   Build and verify a signed Android App Bundle (.aab) on this PC.
+    PlaySetup    One-time Google Cloud API/service-account/key preparation; guarded.
+    PlayStatus   Verify the Play credential and show bundles/tracks; no release change.
+    LocalPublish Check version, build locally, upload, and update a Play track.
+    History      Show recent build/publish/setup JSON records and their paths.
     Native       Build/install an optimized debug-signed APK for phone testing.
     Inspect      Fast local identity/version/flag/privacy summary; no network.
     Check        Required-file, identity, and privacy-placeholder check (default).
@@ -381,21 +393,33 @@ release
     EasSubmit      Submit one hosted build; blocked unless its cost flag is enabled.
 
   Parameters:
-    -OutputDirectory <path>  LocalBuild/EasDownload output; default: artifacts\release.
+    -OutputDirectory <path>  Local build/download plus JSON history; default: artifacts\release.
+    -SecretsFile <path>      Optional ignored JSON containing the upload-key password
+                             and service-account-key path. Otherwise prompt securely.
+    -ReleaseNotesFile <path> Optional localized JSON; default: store Android current notes.
     -Device <model-or-id>    Native-test target; omit for the device picker.
     -Profile <name>          Optional EasBuild/EasList profile; default: production.
-    -Track <name>            Optional EasSubmit Play track; default: internal.
+    -Track <name>            LocalPublish/EasSubmit Play track; default: internal.
+    -ReleaseStatus <value>   Auto|Draft|Completed|InProgress. Auto completes testing
+                             releases but leaves production as a draft.
+    -RolloutPercent <0..100> Required only for production InProgress rollout.
+    -NoAutoVersionCode       Refuse rather than advancing an already-used Play code.
+    -ProjectId <id>          PlaySetup Google Cloud project; publisher config is default.
     -BuildId <id>            Required for EasDownload/EasSubmit.
     -Message <text>          Optional EasBuild message.
-    -Limit 1..50             EasList count; default: 10.
+    -Limit 1..50             EasList/History count; default: 10.
     -NoWait                  Queue EasBuild/EasSubmit without waiting.
     -ClearCache              Clear the hosted EAS build cache.
-    -Yes                     Skip LocalSetup/EasBuild/EasSubmit confirmation.
+    -Yes                     Skip eligible confirmations. Production always asks.
 
   Recommended local sequence:
     .\spark.cmd release -Action LocalStatus
     .\spark.cmd release -Action LocalSetup
     .\spark.cmd release -Action LocalBuild
+    .\spark.cmd release -Action PlaySetup -ProjectId djpokis-spark-habits
+    .\spark.cmd release -Action PlayStatus
+    .\spark.cmd release -Action LocalPublish -Track internal
+    .\spark.cmd release -Action History
 
   Other examples:
     .\spark.cmd release -Action Verify
@@ -1189,6 +1213,12 @@ try {
         -BuildMessage $Message `
         -ListLimit $Limit `
         -TargetDevice $Device `
+        -GoogleCloudProjectId $ProjectId `
+        -SecretsFile $SecretsFile `
+        -ReleaseNotesFile $ReleaseNotesFile `
+        -RequestedReleaseStatus $ReleaseStatus `
+        -RolloutPercent $RolloutPercent `
+        -DisableAutoVersionCode:$NoAutoVersionCode `
         -QueueOnly:$NoWait `
         -ResetBuildCache:$ClearCache `
         -SkipConfirmation:$Yes

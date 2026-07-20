@@ -42,7 +42,7 @@ indexes, Terraform, and release documentation.
 Validation snapshot on **2026-07-17**:
 
 - workspace TypeScript checks passed;
-- 261 automated tests passed: 194 mobile, 26 domain, 25 API, and 16 admin;
+- repository-wide automated tests and coverage gates span mobile, domain, API, admin, and release scripts;
 - coverage gates passed across mobile `app/` and `src/`, the domain package, core API application,
   and admin source;
 - admin, domain, API, shared contracts, and Android JavaScript export builds passed;
@@ -78,7 +78,7 @@ local/cloud data boundary, monetization choice, and remaining native-QA caveat i
   daily or every-other-day streak with planned breaks and earned streak saves instead of an
   all-or-nothing reset.
 - **Energy before ambition.** The app asks what is realistic now.
-- **Low friction.** Today presents a short, actionable set rather than an overwhelming backlog.
+- **Low friction.** Today begins with the actual due habits; every non-core tool is opt-in.
 - **Immediate, non-exploitative reward.** Completions use color, haptics, motion, and fixed progress
   rewards. Spark does not use casino-style randomized payouts.
 - **No shame.** Missed days are not shown as moral failures.
@@ -95,14 +95,18 @@ care for ADHD or any other condition.
 
 ### Offline mobile features
 
-- guided onboarding and starter data;
-- Today recommendations based on schedule, energy, available time, place, and recent activity;
-- compact remembered check-ins, Same as yesterday, time-of-day context memory, Pick for me,
-  a one-action Rescue my day mode, quiet return cards, and neutral deferrals;
-- Simple mode, contextual Help me now, a no-grade weekly reset, tomorrow context/tiny planning,
-  and a per-habit friction toolkit;
-- tiny, default, and stretch habit variants;
-- daily, weekday, weekly-frequency, interval, and flexible schedules;
+- two-page minimal onboarding, no seeded sample data, and a useful empty Today state;
+- an explicit required frequency for every habit: daily, selected weekdays, times per week,
+  fixed interval, completion-shifted interval, or whenever;
+- yes-or-no habits with one Done button by default, plus optional small/regular/larger variants;
+- a schedule-first Today list with one compact row per due habit, completion undo, and a collapsed
+  completed-today section;
+- a Week/Month/Record habit calendar with per-habit monthly grids and exact history access;
+- one Optional features screen that independently enables action sizes, adaptive suggestions,
+  Focus, Capture, routines, streaks, planning, points, and local pattern observations;
+- optional recommendations based on energy, available time, place, and recent activity;
+- contextual Help me now, weekly planning, tomorrow context/tiny planning, and a per-habit
+  friction toolkit, available as secondary opt-in tools;
 - interval-aware habit pause history, archive, detailed history/correction, completion tags,
   exact or windowed reminder scheduling, preview, and editing;
 - guarded completion taps, accessible undo, tactile completion celebration, and deterministic
@@ -118,8 +122,8 @@ care for ADHD or any other condition.
   buffer, and a Focus home-screen widget with pause/resume controls;
 - editable/template-based routines with reorder, duplicate, archive/restore, skip, tiny mode,
   pause/resume after restart, finish estimates, and habit/focus links;
-- Journey summaries, weekly reflection, per-habit calendars, locally derived/hideable supportive
-  observations, and materialized long-term progress views;
+- Calendar records, weekly reflection, locally derived/hideable supportive observations, and
+  materialized long-term progress views;
 - configurable theme, high contrast, text scale, reduced motion, and haptics;
 - a one-action sensory Quiet now switch, optional device-authentication app lock, sensitive
   app-preview protection, and notification lock-screen privacy;
@@ -131,11 +135,11 @@ care for ADHD or any other condition.
 - password/recovery-code encrypted backups and bounded automatic backups to one user-selected
   Android folder;
 - deliberate selected-action image/text sharing and user-chosen one-week changes;
-- six zero-cloud-cost Android widgets: explicit-confirmation Today, Quick Capture, reliable
-  Focus controls, the current Routine step, Progress, and a four-action Toolkit, plus four safe
-  launcher shortcuts;
-- collapsible Settings/Progress sections, width-safe add controls, history-aware Back fallbacks,
-  and eleven skippable, dismissible, fully replayable feature tutorials;
+- seven zero-cloud-cost Android widgets: explicit-confirmation Today, a two-habit monthly Calendar,
+  Quick Capture, reliable Focus controls, the current Routine step, Progress, and a four-action
+  Toolkit, plus four safe launcher shortcuts;
+- collapsible Settings sections, width-safe add controls, history-aware Back fallbacks, and sixteen
+  skippable, dismissible, fully replayable feature tutorials;
 - bundled language selection for 19 languages, including Lithuanian, with localized navigation,
   essential daily actions, dates/times, RTL Arabic support, and safe English fallback;
 - privacy-safe content-redacted diagnostics and an Android startup Baseline Profile;
@@ -392,12 +396,13 @@ After a native build is installed:
 
 1. long-press an empty area of the Android home screen;
 2. choose **Widgets**;
-3. find **Spark Today**, **Spark Quick Capture**, **Spark Focus**, **Spark Routine**,
-   **Spark Progress**, or **Spark Toolkit**;
+3. find **Spark Today**, **Spark Habit Calendar**, **Spark Quick Capture**, **Spark Focus**,
+   **Spark Routine**, **Spark Progress**, or **Spark Toolkit**;
 4. drag the desired widget to the home screen;
-5. confirm Today requires explicit logging, Quick Capture opens the minimal form, Focus reflects
-   the persisted timer and opens pause/resume actions, Routine shows the saved/current step,
-   Progress opens the local history, and Toolkit opens its four labeled destinations.
+5. confirm Today requires explicit logging, Habit Calendar shows local monthly completion cells,
+   Quick Capture opens the minimal form, Focus reflects the persisted timer and opens pause/resume
+   actions, Routine shows the saved/current step, Progress opens Calendar/Record, and Toolkit opens
+   its four labeled destinations.
 
 These widgets use only local snapshots and static deep links, so their runtime cloud cost is $0
 regardless of user count. Adding or changing widget definitions requires rebuilding/reinstalling
@@ -592,8 +597,10 @@ npm.cmd run e2e:android
 ```
 
 The authoritative flow is
-`apps/mobile/e2e/maestro/full-offline-flow.yaml`. It resets local state and covers onboarding,
-habit creation, tiny completion, reward, capture, focus closure, and process restart.
+`apps/mobile/e2e/maestro/full-offline-flow.yaml`. It resets local state and covers minimal
+onboarding, an explicit completion-shifted schedule, one-button completion, Calendar review, and
+process restart. Optional Focus/Capture/routine paths are covered separately after their switches
+are enabled.
 
 ### Required manual matrix
 
@@ -607,7 +614,7 @@ At minimum, test:
 - TalkBack, 200% text/display scaling, high contrast, dark mode, and reduced motion;
 - notification denied, delayed, tapped, completed, edited, paused, timezone changed, and device
   rebooted;
-- widget add, resize, refresh, tiny completion, and process-death behavior;
+- all seven widgets: add, resize, refresh, deep-link, no-silent-write, and process-death behavior;
 - backup export, clear app data, import, destructive confirmation, and data comparison;
 - network offline/online transitions for every optional cloud action;
 - pending, cancelled, restored, refunded, and revoked test purchases before monetization.
@@ -763,9 +770,26 @@ owner/project ID and environment values before relying on cloud builds.
 
 `LocalSetup` creates the ignored upload key on this PC; save both its `.p12` file and password in
 LastPass. `LocalBuild` creates and verifies the signed Android App Bundle in `artifacts/release`
-without contacting EAS or consuming hosted quota. Increase `android.versionCode` in
-`apps/mobile/app.config.ts` before every later Play upload. Use Play App Signing and complete the
-first Google Play upload manually in Play Console.
+without contacting EAS or consuming hosted quota. Every build now also writes timestamped JSON
+history under `artifacts/release/history` and refreshes `latest-build.json`.
+
+After the Play Console application has accepted its first bundle, prepare one-time API access and
+then publish later Internal-test updates with one local command:
+
+```powershell
+.\spark.cmd release -Action PlaySetup -ProjectId djpokis-spark-habits # one time; guarded
+# Back up the generated JSON key in LastPass and grant its printed email app-only Play permission.
+.\spark.cmd release -Action PlayStatus                            # verify permission/read state
+.\spark.cmd release -Action LocalPublish -Track internal         # check code, build, upload, release
+.\spark.cmd release -Action History                              # find every saved JSON result/link
+```
+
+`LocalPublish` uses the official Google Play Developer API directly from this PC. It checks the
+highest version code already reserved by Play, advances the local code only when necessary, builds
+and verifies the AAB, updates the selected track, and saves success or failure JSON. It never uses
+EAS. Internal testing is the default. Production remains a draft unless explicitly requested and
+always requires typed confirmation. Google review, account testing requirements, legal forms, and
+policy attestations cannot be bypassed by the API.
 
 The generated Play icon, feature graphic, six phone screenshots, listings for all 19 bundled
 languages, and

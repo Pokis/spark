@@ -4,6 +4,11 @@ This folder contains the ready-to-upload graphics, listing copy, and recommended
 answers for Spark's first **free, offline Android release**. Start here instead of collecting
 files from the rest of the repository.
 
+> **Screenshot recapture required after the July 20 minimal-interface overhaul.** The icon,
+> feature graphic, listing copy, declarations, dimensions, and file-generation pipeline remain
+> usable. The six checked-in phone captures show the previous interface and must not be uploaded
+> for a build containing the new Today, frequency editor, Calendar, or Optional features screens.
+
 ## Five-minute upload map
 
 1. Build the signed bundle locally with `.\spark.cmd release -Action LocalBuild` from
@@ -18,6 +23,21 @@ The local bundle command does not contact EAS (Expo Application Services), Fireb
 Cloud and does not use a hosted-build quota. First-time upload-key creation is explained in the
 [release checklist](../../docs/release-checklist.md).
 
+After Play has accepted the first bundle, later Internal-test releases can use the direct local
+publisher:
+
+```powershell
+.\spark.cmd release -Action PlayStatus
+.\spark.cmd release -Action LocalPublish -Track internal
+```
+
+This builds locally, uses the official Google Play Developer API, and consumes no EAS quota.
+Release notes come from [release-notes/current.json](./release-notes/current.json); stable project
+and Console/test URLs live in [publisher-config.json](./publisher-config.json). Every attempt writes
+secret-free JSON history under `artifacts/release`. The one-time service-account preparation and
+least-privilege Play invitation are documented in
+[PowerShell tools](../../docs/12-powershell-tools.md#one-command-local-google-play-publishing).
+
 The publisher's confirmed identity, audience, price, hosting, and feature-boundary choices are in
 [release-decisions.md](./release-decisions.md).
 
@@ -30,14 +50,15 @@ Google, Expo, Firebase, or any other service and costs nothing to run.
 | --- | --- | --- |
 | App icon | `graphics/app-icon-512.png` | 512 × 512, 32-bit PNG, below 1 MB |
 | Feature graphic | `graphics/feature-graphic-1024x500.png` | 1024 × 500, 24-bit PNG, no alpha |
-| Phone screenshots | `graphics/phone/01-*.png` through `06-*.png` | Six real-app captures, each 1080 × 1920, 24-bit PNG, no alpha |
+| Phone screenshots | `graphics/phone/01-*.png` through `06-*.png` | Dimensions valid; visual recapture required for the July 20 interface |
 | Default English listing | `listing/en-US.md` | Title, short description, full description, and notes |
 | Localized listings | [`listing/README.md`](./listing/README.md) | Nineteen listings matching every language bundled by Spark, including Lithuanian and Arabic |
 | Screenshot descriptions | `asset-manifest.md` | Upload order and accessible description for every image |
 | Play declarations | `declarations.md` | Ads, access, audience, content rating, Data safety, health, accounts, and permissions |
 
-The screenshots were captured from the local release-like Android build with representative,
-non-sensitive test data. They are not mockups and contain no real person's data.
+The existing screenshots were captured from a local release-like Android build with
+representative, non-sensitive test data, but they predate the current minimal interface. Preserve
+the same real-app/no-personal-data rule when replacing them.
 
 ## What still requires you
 
@@ -52,7 +73,10 @@ completed safely by code:
 - confirm the recommended 18+ target audience and the health-app category described in
   `declarations.md`;
 - apply the confirmed all-available-countries, free-app, and `djpokis@gmail.com` choices in Play;
-- upload the signed `.aab`, answer the console forms, and make the final declarations yourself.
+- manually enroll the first signed `.aab` (later artifacts may use `LocalPublish`), answer the
+  console forms, and make the final declarations yourself;
+- install the current release candidate and recapture the six phone screens listed in
+  [asset-manifest.md](./asset-manifest.md) before running the Assets command.
 
 Do not upload until the descriptions and declarations still match the exact build. The initial
 pack assumes cloud sync, remote support, purchases, analytics, ads, and the creator-tip link are
